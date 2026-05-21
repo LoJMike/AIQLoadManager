@@ -1,0 +1,7 @@
+{
+  "name": "boolean",
+  "version": "3.2.0",
+  "description": "Local stub — replaces deprecated boolean@3.2.0 with no warnings",
+  "main": "index.js",
+  "license": "MIT"
+}

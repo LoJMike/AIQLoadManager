@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-check:
+    name: Lint & dependency check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for deprecation warnings
+        run: |
+          output=$(npm install 2>&1)
+          if echo "$output" | grep -q "deprecated"; then
+            echo "❌ Deprecation warnings found:"
+            echo "$output" | grep "deprecated"
+            exit 1
+          fi
+          echo "✅ No deprecation warnings"
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
+      - name: Verify key files exist
+        run: |
+          test -f src/main/index-v2.js            && echo "✅ main entry"
+          test -f src/main/db.js                  && echo "✅ db wrapper"
+          test -f src/main/multiUsageTracker.js   && echo "✅ usage tracker"
+          test -f src/main/multiQueueManager.js   && echo "✅ queue manager"
+          test -f src/main/queueRouter.js         && echo "✅ router"
+          test -f src/renderer/App.jsx            && echo "✅ React app"
+          test -f stubs/boolean/index.js          && echo "✅ boolean stub"
+          test -f CLAUDE.md                       && echo "✅ Claude instructions"
+
+      - name: Check no API keys in source
+        run: |
+          if grep -r "sk-ant-api" src/ 2>/dev/null; then
+            echo "❌ Anthropic API key found in source!"; exit 1
+          fi
+          if grep -r "sk-proj-" src/ 2>/dev/null; then
+            echo "❌ OpenAI API key found in source!"; exit 1
+          fi
+          if grep -r "xai-" src/ 2>/dev/null; then
+            echo "❌ xAI API key found in source!"; exit 1
+          fi
+          echo "✅ No API keys in source"
+
+  build-check:
+    name: Vite build check
+    runs-on: ubuntu-latest
+    needs: lint-and-check
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Build renderer
+        run: node_modules/.bin/vite build
+        env:
+          NODE_ENV: production

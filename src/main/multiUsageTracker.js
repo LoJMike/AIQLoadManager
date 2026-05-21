@@ -1,0 +1,167 @@
+/**
+ * MultiUsageTracker — uses node:sqlite built-in (Node 22+, zero npm deps)
+ * open() is now synchronous.
+ */
+
+'use strict';
+
+const path = require('path');
+const { app } = require('electron');
+const { openDatabase } = require('./db');
+const { v4: uuidv4 } = require('./uuid');
+
+const COST_TABLE = {
+  anthropic: { 'claude-opus-4-6': [5.00, 25.00], 'claude-sonnet-4-6': [3.00, 15.00], 'claude-haiku-4-5': [1.00, 5.00] },
+  openai:    { 'gpt-4o': [2.50, 10.00], 'gpt-4o-mini': [0.15, 0.60], 'gpt-4.1': [2.00, 8.00], 'gpt-4.1-mini': [0.40, 1.60], 'o4-mini': [1.10, 4.40] },
+  gemini:    { 'gemini-2.5-pro': [1.25, 10.00], 'gemini-2.0-flash': [0.10, 0.40], 'gemini-1.5-flash': [0.075, 0.30] },
+  groq:      { 'llama-3.3-70b-versatile': [0.59, 0.79], 'llama-3.1-8b-instant': [0.05, 0.08], 'mixtral-8x7b-32768': [0.24, 0.24] },
+  deepseek:  { 'deepseek-chat': [0.14, 0.28], 'deepseek-reasoner': [0.55, 2.19] },
+  mistral:   { 'mistral-large-latest': [2.00, 6.00], 'mistral-small-latest': [0.10, 0.30], 'codestral-latest': [0.30, 0.90], 'open-mistral-7b': [0.04, 0.04] },
+  grok:      { 'grok-4': [3.00, 15.00], 'grok-4.1-fast': [0.20, 0.50], 'grok-3-mini': [0.30, 0.50] },
+};
+
+const RATE_LIMITS = {
+  anthropic: { rpm: 50,  rpd: null,   tpm: 100_000   },
+  openai:    { rpm: 500, rpd: null,   tpm: 200_000   },
+  gemini:    { rpm: 15,  rpd: 1500,   tpm: 1_000_000 },
+  groq:      { rpm: 30,  rpd: 14_400, tpm: 6_000     },
+  deepseek:  { rpm: 60,  rpd: null,   tpm: 100_000   },
+  mistral:   { rpm: 2,   rpd: null,   tpm: null       },
+  grok:      { rpm: 60,  rpd: null,   tpm: 500_000   },
+};
+
+class MultiUsageTracker {
+  constructor() {
+    this.db       = null;
+    this._budgets = {};
+  }
+
+  /** Synchronous open — call before using */
+  open(dbPath) {
+    const p = dbPath || path.join(
+      app ? app.getPath('userData') : require('os').tmpdir(),
+      'ai-queue.db'
+    );
+    this.db = openDatabase(p);
+    this._initSchema();
+    this._loadBudgets();
+    return this;
+  }
+
+  _initSchema() {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS messages (
+        id              TEXT PRIMARY KEY,
+        provider        TEXT NOT NULL,
+        model           TEXT,
+        timestamp       INTEGER NOT NULL,
+        input_tokens    INTEGER DEFAULT 0,
+        output_tokens   INTEGER DEFAULT 0,
+        cost_usd        REAL    DEFAULT 0,
+        queue_item_id   TEXT,
+        conversation_id TEXT
+      );
+      CREATE TABLE IF NOT EXISTS settings (
+        key   TEXT PRIMARY KEY,
+        value TEXT
+      )
+    `);
+  }
+
+  _loadBudgets() {
+    try {
+      const rows = this.db.prepare(
+        "SELECT key, value FROM settings WHERE key LIKE ?"
+      ).all('budget.%');
+      for (const row of rows) {
+        this._budgets[row.key.replace('budget.', '')] = parseFloat(row.value) || 0;
+      }
+    } catch (_) {}
+  }
+
+  recordMessage(provider, { model, inputTokens = 0, outputTokens = 0, queueItemId = null, conversationId = null }) {
+    const id        = uuidv4();
+    const timestamp = Date.now();
+    const costUsd   = this._estimateCost(provider, model, inputTokens, outputTokens);
+
+    this.db.prepare(
+      'INSERT INTO messages (id,provider,model,timestamp,input_tokens,output_tokens,cost_usd,queue_item_id,conversation_id) VALUES (?,?,?,?,?,?,?,?,?)'
+    ).run(id, provider, model, timestamp, inputTokens, outputTokens, costUsd, queueItemId, conversationId);
+
+    return { id, provider, costUsd };
+  }
+
+  getStatusAll() {
+    const result = {};
+    for (const name of Object.keys(RATE_LIMITS)) result[name] = this.getStatus(name);
+    return result;
+  }
+
+  getStatus(provider) {
+    const limits  = RATE_LIMITS[provider] || {};
+    const now     = Date.now();
+    const oneMin  = 60_000, oneDay = 86_400_000, oneMonth = 2_592_000_000;
+
+    const lastMin   = this.db.prepare('SELECT * FROM messages WHERE provider=? AND timestamp>=? ORDER BY timestamp ASC').all(provider, now - oneMin);
+    const lastDay   = this.db.prepare('SELECT * FROM messages WHERE provider=? AND timestamp>=?').all(provider, now - oneDay);
+    const lastMonth = this.db.prepare('SELECT * FROM messages WHERE provider=? AND timestamp>=?').all(provider, now - oneMonth);
+
+    const rpmUsed    = lastMin.length;
+    const rpdUsed    = lastDay.length;
+    const tokLastMin = lastMin.reduce((s, m) => s + (m.input_tokens || 0) + (m.output_tokens || 0), 0);
+    const costMonth  = lastMonth.reduce((s, m) => s + (m.cost_usd || 0), 0);
+    const totalIn    = lastMonth.reduce((s, m) => s + (m.input_tokens || 0), 0);
+    const totalOut   = lastMonth.reduce((s, m) => s + (m.output_tokens || 0), 0);
+
+    const rpmHead = limits.rpm ? Math.max(0, limits.rpm - rpmUsed)    : Infinity;
+    const rpdHead = limits.rpd ? Math.max(0, limits.rpd - rpdUsed)    : Infinity;
+    const tpmHead = limits.tpm ? Math.max(0, limits.tpm - tokLastMin) : Infinity;
+    const canSend = rpmHead > 0 && rpdHead > 0 && tpmHead > 0;
+
+    let nextSlotMs = 0;
+    if (!canSend && lastMin.length > 0) {
+      nextSlotMs = Math.max(0, (lastMin[0].timestamp + oneMin) - now);
+    }
+
+    const budget    = this._budgets[provider] || 0;
+    const budgetPct = budget > 0 ? Math.min(100, Math.round((costMonth / budget) * 100)) : null;
+
+    return {
+      provider, canSend, nextSlotMs, limits,
+      requests: { lastMin: rpmUsed, lastDay: rpdUsed },
+      tokens:   { totalIn, totalOut, totalAll: totalIn + totalOut },
+      cost:     { lastMonth: +costMonth.toFixed(6), budget, budgetPct },
+      headroom: {
+        rpm: rpmHead === Infinity ? null : rpmHead,
+        rpd: rpdHead === Infinity ? null : rpdHead,
+        tpm: tpmHead === Infinity ? null : tpmHead,
+      },
+      timestamp: now,
+    };
+  }
+
+  getHistory(provider, limit = 50) {
+    return this.db.prepare(
+      'SELECT * FROM messages WHERE provider=? ORDER BY timestamp DESC LIMIT ?'
+    ).all(provider, limit);
+  }
+
+  canSend(provider)         { return this.getStatus(provider).canSend; }
+  msUntilNextSlot(provider) { const s = this.getStatus(provider); return s.canSend ? 0 : s.nextSlotMs; }
+
+  setBudget(provider, usd) {
+    this._budgets[provider] = parseFloat(usd) || 0;
+    this.db.prepare('INSERT OR REPLACE INTO settings (key,value) VALUES (?,?)').run(
+      `budget.${provider}`, String(this._budgets[provider])
+    );
+  }
+
+  getBudgets() { return { ...this._budgets }; }
+
+  _estimateCost(provider, model, inputTokens, outputTokens) {
+    const [inRate = 0, outRate = 0] = COST_TABLE[provider]?.[model] || [];
+    return (inputTokens / 1_000_000) * inRate + (outputTokens / 1_000_000) * outRate;
+  }
+}
+
+module.exports = { MultiUsageTracker, RATE_LIMITS, COST_TABLE };

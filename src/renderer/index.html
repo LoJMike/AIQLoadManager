@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Queue Manager</title>
+  <!-- CSP: allow wasm-unsafe-eval for sql.js WebAssembly, unsafe-inline for Vite HMR -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval';
+                 style-src 'self' 'unsafe-inline';
+                 connect-src 'self' ws://localhost:3000;" />
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/main.jsx"></script>
+</body>
+</html>
