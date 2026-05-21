@@ -1,0 +1,86 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+
+    // ── Dev ──────────────────────────────────────────────────────────────────
+
+    {
+      "label": "Start Renderer (Vite)",
+      "type": "npm",
+      "script": "dev:renderer",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+          "file": 1, "line": 2, "column": 3, "severity": 4, "message": 5
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*vite.*",
+          "endsPattern": "^.*Local:.*localhost"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "dev"
+      }
+    },
+
+    {
+      "label": "Start Electron (Main)",
+      "type": "npm",
+      "script": "start:win",
+      "group": "build",
+      "isBackground": true,
+      "dependsOn": "Start Renderer (Vite)",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "dev"
+      }
+    },
+
+    // ── Build ────────────────────────────────────────────────────────────────
+
+    {
+      "label": "Build Windows Installer",
+      "type": "npm",
+      "script": "build:win",
+      "group": "build",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+
+    // ── Git shortcuts ────────────────────────────────────────────────────────
+
+    {
+      "label": "Git: Add + Commit + Push",
+      "type": "shell",
+      "command": "git add . && git commit -m \"chore: update\" && git push origin main",
+      "group": "none",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+
+    {
+      "label": "npm install",
+      "type": "npm",
+      "script": "install",
+      "group": "build",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    }
+  ]
+}

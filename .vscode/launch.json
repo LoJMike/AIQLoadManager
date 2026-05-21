@@ -1,0 +1,94 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+
+    // ── 1. Start Vite renderer (runs npm run dev:renderer) ────────────────────
+    {
+      "name": "① Start Renderer (Vite)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:renderer"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "presentation": {
+        "group": "compound",
+        "order": 1
+      }
+    },
+
+    // ── 2. Debug Electron main process ───────────────────────────────────────
+    {
+      "name": "② Debug Electron Main",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
+      "runtimeArgs": ["--inspect=5858", "."],
+      "windows": {
+        "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron.cmd"
+      },
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "sourceMaps": true,
+      "skipFiles": [
+        "<node_internals>/**",
+        "${workspaceFolder}/node_modules/**"
+      ],
+      "outFiles": ["${workspaceFolder}/src/main/**/*.js"],
+      "presentation": {
+        "group": "compound",
+        "order": 2
+      }
+    },
+
+    // ── 3. Attach to Electron renderer (Chrome DevTools Protocol) ─────────────
+    {
+      "name": "③ Attach to Renderer (Chrome)",
+      "type": "chrome",
+      "request": "attach",
+      "port": 9222,
+      "webRoot": "${workspaceFolder}/src/renderer",
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "webpack:///./src/*": "${webRoot}/*"
+      },
+      "presentation": {
+        "group": "compound",
+        "order": 3
+      }
+    },
+
+    // ── 4. Attach Node debugger (if Electron already running with --inspect) ──
+    {
+      "name": "④ Attach to Electron (already running)",
+      "type": "node",
+      "request": "attach",
+      "port": 5858,
+      "sourceMaps": true,
+      "skipFiles": [
+        "<node_internals>/**",
+        "${workspaceFolder}/node_modules/**"
+      ]
+    }
+  ],
+
+  // ── Compound: launch everything at once ─────────────────────────────────────
+  "compounds": [
+    {
+      "name": "▶ Launch AIQLoadManager (Full)",
+      "configurations": [
+        "① Start Renderer (Vite)",
+        "② Debug Electron Main"
+      ],
+      "stopAll": true,
+      "presentation": {
+        "group": "compound",
+        "order": 0
+      }
+    }
+  ]
+}

@@ -1,16 +1,16 @@
 {
-  "name": "ai-queue-manager",
-  "version": "1.3.0",
-  "description": "Cross-platform AI prompt queue manager — Claude, GPT, Gemini, Groq, DeepSeek, Mistral, Grok",
+  "name": "aiqloadmanager",
+  "version": "0.1.40",
+  "description": "AIQLoadManager — Cross-platform AI prompt queue manager for Claude, GPT, Gemini, Groq, DeepSeek, Mistral, xAI Grok",
   "main": "src/main/index-v2.js",
   "scripts": {
-    "start": "node_modules/.bin/electron .",
-    "start:win": "set NODE_ENV=development&& node_modules\\.bin\\electron .",
-    "dev:renderer": "node_modules/.bin/vite --port 3000",
-    "dev:win": "node_modules/.bin/concurrently \"npm run dev:renderer\" \"node_modules/.bin/wait-on http://localhost:3000 && npm run start:win\"",
-    "build": "node_modules/.bin/vite build && node_modules/.bin/electron-builder",
-    "build:win": "node_modules/.bin/vite build && node_modules/.bin/electron-builder --win",
-    "build:mac": "node_modules/.bin/vite build && node_modules/.bin/electron-builder --mac"
+    "start": "npx --no-install electron .",
+    "start:win": "set NODE_ENV=development&& npx --no-install electron .",
+    "dev:renderer": "npx --no-install vite --port 3000",
+    "dev:win": "npx --no-install concurrently \"npm run dev:renderer\" \"npx --no-install wait-on http://localhost:3000 && npm run start:win\"",
+    "build": "npx --no-install vite build && npx --no-install electron-builder",
+    "build:win": "npx --no-install vite build && npx --no-install electron-builder --win",
+    "build:mac": "npx --no-install vite build && npx --no-install electron-builder --mac"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0",
@@ -29,10 +29,10 @@
     "wait-on": "^8.0.3"
   },
   "overrides": {
-    "glob": "11.0.2",
+    "glob": "*",
     "rimraf": "^6.0.0",
-    "tar": "^7.0.0",
     "inflight": "npm:lru-cache@^11.0.0",
+    "tar": "^7.0.0",
     "npmlog": "^7.0.0",
     "gauge": "^5.0.0",
     "are-we-there-yet": "^4.0.0",
