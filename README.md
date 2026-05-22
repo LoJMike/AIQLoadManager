@@ -23,6 +23,7 @@ prompts across 9 AI providers — 7 cloud APIs plus Ollama and LM Studio for ful
 | **Tag-based priority** | ⚡ Urgent bumps queue position on all plans; paid tier extends priority boosts to all tag types |
 | **Projects & chats** | Named projects; continue existing conversation threads |
 | **Persistent history** | Conversation history survives app restarts — stored in local SQLite, not memory |
+| **Compare mode** | Pro — send the same prompt to multiple providers simultaneously; responses shown side-by-side |
 | **Budget alerts** | Monthly USD cap per provider with visual progress |
 | **Bulk input** | Paste many prompts (one per line) for batch queuing |
 
@@ -110,6 +111,8 @@ src/
     multiUsageTracker.js     ← Per-provider token/rate tracking
     multiQueueManager.js     ← Queue CRUD + processing loop
     queueRouter.js           ← Routing decision engine
+    conversationStore.js     ← SQLite write-through for conversation history
+    licenseChecker.js        ← License validation + feature flag helpers
     providers/
       baseProvider.js        ← Abstract base class
       providerRegistry.js    ← Manages all providers
@@ -201,10 +204,11 @@ Tags are multi-select. The first non-Urgent tag sets the routing `task_type`; Ur
 
 ## Version
 
-Current version: **0.3.0**
+Current version: **0.3.2**
 
 | What changed | Version |
 |---|---|
+| Compare mode (Pro) — multi-provider fan-out, side-by-side results | 0.3.2 |
 | Persistent conversation history (SQLite write-through) | 0.3.1 |
 | Prompt type tags + tag-driven queue priority | 0.3.0 |
 | Live token estimation + provider cost comparison | 0.3.0 |
@@ -213,15 +217,29 @@ Current version: **0.3.0**
 
 ---
 
+## Compare mode (Pro)
+
+Send the same prompt to multiple providers simultaneously and compare responses side by side. Useful for:
+- Benchmarking output quality across models before committing to one
+- Spotting when providers disagree (great signal for ambiguous or subjective prompts)
+- Finding the best provider for a specific task type
+
+**How it works:** Select "⚖ Compare" in the Add tab, tick 2 or more configured providers, and queue. The queue fans out in parallel via `Promise.allSettled` — a single provider failure doesn't abort the rest. Results appear in the Queue tab as a side-by-side column view when all providers have replied. Each column shows the provider name, model used, response text, copy button, and token counts.
+
+Compare mode requires a Pro license. No conversation history is injected — each provider gets a fresh context, keeping the comparison fair.
+
+---
+
 ## Roadmap
 
 | Feature | Tier | Notes |
 |---|---|---|
+| **Pro+ tier** | Pro+ | A higher tier above Pro for power users: Consensus mode, advanced chaining, priority support. Details TBD. |
+| **Consensus mode** | Pro+ | After Compare mode collects responses from all providers, a meta-model synthesises the best answer, flags disagreements, or votes across outputs. Extends Compare mode's data model — no separate queue needed. |
 | **Cross-provider conversation context** | Starter | When the router re-routes a conversation to a different provider (e.g. due to rate limits), the relevant history is adapted and forwarded automatically. No other tool does this — it's only possible because AIQ already sees all provider traffic. |
 | Image generation | Starter | DALL-E 3, Flux, Ideogram, Stable Diffusion (local via ComfyUI) |
 | Video generation | Pro | Runway, Pika, Kling — async job polling fits the queue model perfectly |
 | Prompt template library | Starter | Named variables, fill-and-queue |
-| Response comparison mode | Pro | Same prompt → multiple providers, side-by-side diff |
 | Prompt chaining | Pro | Output of one item becomes input of the next |
 | Batch CSV import | Starter | Upload CSV of prompts, queue all at once |
 | Webhook output delivery | Pro | POST results to any URL on completion |

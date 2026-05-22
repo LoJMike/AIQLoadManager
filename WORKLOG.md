@@ -1,5 +1,65 @@
 # Work Log — AI Queue Load Manager
 
+## Session 9 — 2026-05-22
+**Goal:** Documentation accuracy cleanup pass — fix stale version numbers, remove shipped features from roadmap, add missing files to project structure, verify landing page.
+**Completed:**
+- [x] Fixed `README.md` version line: "Current version: **0.3.0**" → "Current version: **0.3.2**"
+- [x] Removed "Response comparison mode" from README roadmap table — it shipped as Compare mode in 0.3.2, no longer a future item
+- [x] Added `conversationStore.js` and `licenseChecker.js` to README project structure section (both files exist in `src/main/` but were missing from the tree)
+- [x] Verified `landing-page.html` — Compare mode feature card, Pro+/Consensus roadmap cards, and feature comparison table all current and accurate, no changes needed
+**Decisions Made:**
+- Roadmap table should only list features not yet shipped; shipped features belong in the features table and the version history table
+**Files Changed:**
+- `README.md`
+
+---
+
+## Session 8 — 2026-05-22
+**Goal:** Implement Compare mode (Pro) — fan-out same prompt to multiple providers, side-by-side results. Add Consensus mode + Pro+ tier to roadmap. Update README + landing page.
+**Completed:**
+- [x] Added `compare_providers TEXT DEFAULT NULL` column to `queue_items` schema in `multiQueueManager.js` + silent `ALTER TABLE` migration for existing DBs
+- [x] Updated `addItem()` to accept `compareProviders: string[]` — stored as JSON; validated (length ≥ 2) before persisting
+- [x] Added `_processCompareItem(item)` to `MultiQueueManager` — uses `Promise.allSettled` to fan out to all selected providers in parallel; partial failures (one provider down) don't abort the rest; stores results as a JSON array `[{provider, model, response, usage, error}]` in the `response` column
+- [x] Updated `_tick()` — compare items detected by `item.compare_providers` and routed to `_processCompareItem()`, bypassing the router
+- [x] Added Pro license gate in `add-to-queue` IPC handler in `index-v2.js` — throws clear error if compare mode requested without Pro
+- [x] Added `item-compare-complete` push event to `preload-v2.js` as `onCompareComplete`
+- [x] Updated `App.jsx` — wired `onCompareComplete` toast (`⚖ "label" — N/M providers responded`); passes `license` prop to `AddPromptPanel`
+- [x] Added Compare mode UI to `AddPromptPanel.jsx` — three-way mode toggle (Single / ⚖ Compare / Bulk); provider checkbox grid (configured providers only with colour dot + checkmark); Pro gate card with upgrade CTA; disabled submit until 2+ providers selected; compare submit passes `compareProviders` array to IPC
+- [x] Updated `QueueSettingsProjects.jsx` — `⚖ Compare` badge in queue item meta row; expanded view renders side-by-side columns (one per provider: name, model, response text, copy button, token counts, red border on error)
+- [x] Added Compare mode section to `README.md` with architecture notes
+- [x] Added Compare mode to README features table
+- [x] Added Pro+ tier + Consensus mode to README roadmap
+- [x] Updated `landing-page.html` — new Compare mode feature card; two new roadmap cards (Pro+ tier, Consensus mode); updated compare/features table row (replaced "Roadmap" label with live ✓ for Compare; added Consensus row as Pro+)
+- [x] Bumped version `0.3.1` → `0.3.2` in `package.json` and `CLAUDE.md`
+**Decisions Made:**
+- `Promise.allSettled` chosen over `Promise.all` — a single provider being rate-limited or erroring should never abort the whole comparison. Each provider gets its own result slot.
+- Compare items bypass the router entirely — user explicitly chose the providers, no routing logic needed. `used_provider` is set to `'compare'` in the DB.
+- Response stored as JSON array in the existing `response TEXT` column — no schema change to the response column needed; the UI detects compare items by checking `item.compare_providers`.
+- Pro gate is enforced server-side in the IPC handler, not just in the UI — the renderer can't spoof around it.
+- Conversation history not injected for compare items — fresh context keeps the comparison fair across providers.
+- Compare mode is Pro; Consensus mode (synthesis/voting across compare results) is Pro+ (roadmap).
+- Pro+ tier added to roadmap as a concept — details/pricing TBD, placeholder for higher-tier features.
+**Problems Encountered:**
+- `AddPromptPanel.jsx` style block was duplicated after inserting compare mode branch — consolidated both `<style>` blocks into one.
+- `package.json` write via file tools truncates at ~2242 bytes (filesystem/mount quirk) — used Python `json.dump` via bash for safe writes going forward.
+**Next Steps:**
+- [ ] Run `npm run dev:win` to test: (a) Compare toggle appears in Add tab, (b) Pro gate shows for free plan, (c) selecting 2+ providers enables submit, (d) compare item appears in queue with ⚖ badge, (e) expanded view shows side-by-side columns with copy buttons
+- [ ] When Pro licensing is live: ensure `license.getLicense().plan === 'pro'` returns correctly so the compare gate works in production
+- [ ] Consensus mode implementation (Pro+): read the stored `results[]` JSON, feed to a meta-provider, post-process the synthesis back as a special queue item
+**Files Changed:**
+- `src/main/multiQueueManager.js`
+- `src/main/index-v2.js`
+- `src/main/preload-v2.js`
+- `src/renderer/App.jsx`
+- `src/renderer/components/AddPromptPanel.jsx`
+- `src/renderer/components/QueueSettingsProjects.jsx`
+- `README.md`
+- `landing-page.html`
+- `package.json` (version bump to 0.3.2)
+- `CLAUDE.md` (version table updated to 0.3.2)
+
+---
+
 ## Session 7 — 2026-05-22
 **Goal:** Persist conversation history to SQLite; plan cross-provider context feature; update docs
 **Completed:**

@@ -74,8 +74,11 @@ export function QueuePanel({ queue, providers, onRefresh }) {
             </div>
             <div className="qi-meta">
               <span style={{ color: STATUS_COLORS[item.status], fontWeight: 600 }}>{item.status}</span>
-              {item.used_provider && <span>via {item.used_provider}</span>}
-              {item.routing_mode  && item.routing_mode !== 'auto' && <span>{item.routing_mode}</span>}
+              {item.compare_providers && (
+                <span style={{ color: 'var(--accent)', fontWeight: 600 }}>⚖ Compare</span>
+              )}
+              {item.used_provider && item.used_provider !== 'compare' && <span>via {item.used_provider}</span>}
+              {item.routing_mode && item.routing_mode !== 'auto' && item.routing_mode !== 'compare' && <span>{item.routing_mode}</span>}
 
               {/* Tag badges — parse JSON array stored in DB */}
               {(() => {
@@ -114,12 +117,63 @@ export function QueuePanel({ queue, providers, onRefresh }) {
               </span>
             </div>
 
-            {/* Expanded response */}
-            {expanded === item.id && item.response && (
-              <div style={{ marginTop: 10, padding: '10px 14px', background: 'var(--bg2)', borderRadius: 6, fontSize: 12, color: 'var(--text2)', lineHeight: 1.6, whiteSpace: 'pre-wrap', maxHeight: 300, overflowY: 'auto' }}>
-                {item.response}
-              </div>
-            )}
+            {/* Expanded response — compare items get side-by-side columns */}
+            {expanded === item.id && item.response && (() => {
+              const isCompare = !!item.compare_providers;
+              if (!isCompare) {
+                return (
+                  <div style={{ marginTop: 10, padding: '10px 14px', background: 'var(--bg2)', borderRadius: 6, fontSize: 12, color: 'var(--text2)', lineHeight: 1.6, whiteSpace: 'pre-wrap', maxHeight: 300, overflowY: 'auto' }}>
+                    {item.response}
+                  </div>
+                );
+              }
+              let results = [];
+              try { results = JSON.parse(item.response); } catch (_) {}
+              return (
+                <div style={{ marginTop: 12, overflowX: 'auto' }}>
+                  <div style={{ display: 'flex', gap: 10, minWidth: `${results.length * 280}px` }}>
+                    {results.map((r, i) => (
+                      <div key={i} style={{
+                        flex: '1 1 260px', minWidth: 240,
+                        background: 'var(--bg2)', border: '1px solid var(--border-dim)',
+                        borderRadius: 8, padding: '12px 14px',
+                        borderTop: r.error ? '2px solid var(--danger)' : '2px solid var(--success)',
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{
+                              display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
+                              background: providers.find(p => p.name === r.provider)?.color || 'var(--text3)',
+                            }} />
+                            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text1)' }}>
+                              {providers.find(p => p.name === r.provider)?.displayName || r.provider}
+                            </span>
+                          </div>
+                          {r.response && (
+                            <button className="ghost" style={{ fontSize: 10, padding: '2px 6px' }}
+                              onClick={() => navigator.clipboard.writeText(r.response)}
+                              title="Copy response">Copy</button>
+                          )}
+                        </div>
+                        {r.model && (
+                          <div style={{ fontSize: 10, color: 'var(--text3)', fontFamily: 'monospace', marginBottom: 8 }}>{r.model}</div>
+                        )}
+                        {r.error ? (
+                          <div style={{ fontSize: 11, color: 'var(--danger)', lineHeight: 1.5 }}>✗ {r.error}</div>
+                        ) : (
+                          <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.6, whiteSpace: 'pre-wrap', maxHeight: 260, overflowY: 'auto' }}>{r.response}</div>
+                        )}
+                        {r.usage && (
+                          <div style={{ marginTop: 8, fontSize: 10, color: 'var(--text3)', fontFamily: 'monospace' }}>
+                            {r.usage.inputTokens ?? '?'}↑ · {r.usage.outputTokens ?? '?'}↓ tokens
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             {item.error && (
               <div style={{ marginTop: 8, fontSize: 12, color: 'var(--danger)', background: 'rgba(248,113,113,0.07)', padding: '6px 10px', borderRadius: 5 }}>

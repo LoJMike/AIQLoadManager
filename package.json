@@ -1,7 +1,7 @@
 {
   "name": "aiq-load-manager",
-  "version": "0.3.1",
-  "description": "AI Queue Load Manager — Cross-platform AI prompt queue manager for Claude, GPT, Gemini, Groq, DeepSeek, Mistral, xAI Grok, Ollama, LM Studio",
+  "version": "0.3.2",
+  "description": "AI Queue Load Manager \u2014 Cross-platform AI prompt queue manager for Claude, GPT, Gemini, Groq, DeepSeek, Mistral, xAI Grok, Ollama, LM Studio",
   "main": "src/main/index-v2.js",
   "scripts": {
     "start": "npx --no-install electron .",

@@ -54,8 +54,9 @@ contextBridge.exposeInMainWorld('aiQueue', {
   windowClose:        ()              => ipcRenderer.invoke('window-close'),
 
   // Push events (main → renderer)
-  onQueueUpdate:  (cb) => { ipcRenderer.on('queue-update',  (_, d) => cb(d)); return () => ipcRenderer.removeAllListeners('queue-update');  },
-  onUsageUpdate:  (cb) => { ipcRenderer.on('usage-update',  (_, d) => cb(d)); return () => ipcRenderer.removeAllListeners('usage-update');  },
-  onItemComplete: (cb) => { ipcRenderer.on('item-complete', (_, d) => cb(d)); return () => ipcRenderer.removeAllListeners('item-complete'); },
-  onItemError:    (cb) => { ipcRenderer.on('item-error',    (_, d) => cb(d)); return () => ipcRenderer.removeAllListeners('item-error');    },
+  onQueueUpdate:      (cb) => { ipcRenderer.on('queue-update',          (_, d) => cb(d)); return () => ipcRenderer.removeAllListeners('queue-update');          },
+  onUsageUpdate:      (cb) => { ipcRenderer.on('usage-update',          (_, d) => cb(d)); return () => ipcRenderer.removeAllListeners('usage-update');          },
+  onItemComplete:     (cb) => { ipcRenderer.on('item-complete',         (_, d) => cb(d)); return () => ipcRenderer.removeAllListeners('item-complete');         },
+  onItemError:        (cb) => { ipcRenderer.on('item-error',            (_, d) => cb(d)); return () => ipcRenderer.removeAllListeners('item-error');            },
+  onCompareComplete:  (cb) => { ipcRenderer.on('item-compare-complete', (_, d) => cb(d)); return () => ipcRenderer.removeAllListeners('item-compare-complete'); },
 });

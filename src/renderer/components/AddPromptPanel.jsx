@@ -105,14 +105,18 @@ function TagChips({ selectedTags, onToggle }) {
 
 // ── Main component ─────────────────────────────────────────────────────────
 
-export default function AddPromptPanel({ providers, projects, onSubmit }) {
-  const [form,          setForm]        = useState(EMPTY);
-  const [selectedTags,  setTags]        = useState([]);
-  const [conversations, setConvs]       = useState([]);
-  const [routePreview,  setPreview]     = useState(null);
-  const [submitting,    setSubmitting]  = useState(false);
-  const [bulk,          setBulk]        = useState(false);
-  const [bulkText,      setBulkText]    = useState('');
+export default function AddPromptPanel({ providers, projects, onSubmit, license }) {
+  const [form,             setForm]         = useState(EMPTY);
+  const [selectedTags,     setTags]         = useState([]);
+  const [conversations,    setConvs]        = useState([]);
+  const [routePreview,     setPreview]      = useState(null);
+  const [submitting,       setSubmitting]   = useState(false);
+  const [bulk,             setBulk]         = useState(false);
+  const [bulkText,         setBulkText]     = useState('');
+  const [compareMode,      setCompareMode]  = useState(false);
+  const [compareSel,       setCompareSel]   = useState([]); // selected provider names
+
+  const isPro = license?.plan === 'pro';
 
   // Live token estimate (pure maths — no debounce needed)
   const tokenEstimate = useMemo(() => estimateTokens(form.prompt), [form.prompt]);
@@ -124,6 +128,15 @@ export default function AddPromptPanel({ providers, projects, onSubmit }) {
 
   function toggleTag(id) {
     setTags(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
+  }
+
+  function toggleCompareProvider(name) {
+    setCompareSel(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]);
+  }
+
+  function setMode(m) {
+    setBulk(m === 'bulk');
+    setCompareMode(m === 'compare');
   }
 
   // When provider changes, load its conversations
@@ -165,24 +178,41 @@ export default function AddPromptPanel({ providers, projects, onSubmit }) {
     if (!form.prompt.trim()) return;
     setSubmitting(true);
     try {
-      await onSubmit({
-        prompt:         form.prompt,
-        label:          form.label || null,
-        systemPrompt:   form.systemPrompt || null,
-        provider:       form.routingMode === 'manual' ? form.provider : (form.provider || null),
-        routingMode:    form.routingMode,
-        taskType,
-        tags:           selectedTags,
-        model:          form.model || null,
-        maxTokens:      parseInt(form.maxTokens) || 1024,
-        projectId:      form.projectId || null,
-        projectName:    projects.find(p => p.id === form.projectId)?.name || null,
-        conversationId: form.conversationId || null,
-        scheduledFor:   form.scheduledFor || null,
-      });
-      setForm(f => ({ ...EMPTY, routingMode: f.routingMode }));
-      setTags([]);
-      setPreview(null);
+      if (compareMode) {
+        // Compare mode — fan out to selected providers, no routing/conversation context
+        await onSubmit({
+          prompt:          form.prompt,
+          label:           form.label || null,
+          systemPrompt:    form.systemPrompt || null,
+          tags:            selectedTags,
+          maxTokens:       parseInt(form.maxTokens) || 1024,
+          compareProviders: compareSel,
+          routingMode:     'compare',
+        });
+        setForm(f => ({ ...EMPTY }));
+        setTags([]);
+        setCompareSel([]);
+      } else {
+        // Normal single-prompt mode
+        await onSubmit({
+          prompt:         form.prompt,
+          label:          form.label || null,
+          systemPrompt:   form.systemPrompt || null,
+          provider:       form.routingMode === 'manual' ? form.provider : (form.provider || null),
+          routingMode:    form.routingMode,
+          taskType,
+          tags:           selectedTags,
+          model:          form.model || null,
+          maxTokens:      parseInt(form.maxTokens) || 1024,
+          projectId:      form.projectId || null,
+          projectName:    projects.find(p => p.id === form.projectId)?.name || null,
+          conversationId: form.conversationId || null,
+          scheduledFor:   form.scheduledFor || null,
+        });
+        setForm(f => ({ ...EMPTY, routingMode: f.routingMode }));
+        setTags([]);
+        setPreview(null);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -214,13 +244,127 @@ export default function AddPromptPanel({ providers, projects, onSubmit }) {
       <div className="panel-title">Add to Queue</div>
       <div className="panel-sub">Schedule one or more prompts across your AI providers</div>
 
-      {/* Bulk / Single toggle */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        <button className={bulk ? 'secondary' : 'primary'} onClick={() => setBulk(false)}>Single prompt</button>
-        <button className={bulk ? 'primary' : 'secondary'} onClick={() => setBulk(true)}>Bulk (one per line)</button>
+      {/* Mode toggle: Single / Compare / Bulk */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+        <button className={!bulk && !compareMode ? 'primary' : 'secondary'} onClick={() => setMode('single')}>Single prompt</button>
+        <button className={compareMode ? 'primary' : 'secondary'} onClick={() => setMode('compare')} title="Pro — send same prompt to multiple providers, see responses side by side">
+          ⚖ Compare <span style={{ fontSize: 10, opacity: 0.7, marginLeft: 3 }}>Pro</span>
+        </button>
+        <button className={bulk ? 'primary' : 'secondary'} onClick={() => setMode('bulk')}>Bulk (one per line)</button>
       </div>
 
-      {bulk ? (
+      {compareMode ? (
+        /* ── Compare mode ── */
+        <form onSubmit={handleSubmit}>
+          {/* Prompt card */}
+          <div className="card" style={{ marginBottom: 16 }}>
+            <div className="form-group">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                <label style={{ marginBottom: 0 }}>Prompt *</label>
+                {form.prompt.trim() && (
+                  <span style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'monospace' }}>
+                    ~{tokenEstimate.toLocaleString()} tokens in · {(form.maxTokens || 1024).toLocaleString()} max out
+                  </span>
+                )}
+              </div>
+              <textarea
+                placeholder="What would you like to compare across providers?"
+                value={form.prompt}
+                onChange={e => set('prompt', e.target.value)}
+                rows={4}
+                required
+              />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <TagChips selectedTags={selectedTags} onToggle={toggleTag} />
+            </div>
+          </div>
+
+          {/* Provider selection card */}
+          <div className="card" style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Providers to compare
+              </div>
+              {compareSel.length > 0 && (
+                <span style={{ fontSize: 11, color: 'var(--text3)' }}>{compareSel.length} selected</span>
+              )}
+            </div>
+
+            {!isPro ? (
+              /* Pro gate */
+              <div style={{ padding: '14px 16px', background: 'rgba(168,85,247,0.07)', border: '1px solid rgba(168,85,247,0.25)', borderRadius: 8 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', marginBottom: 6 }}>⚖ Compare mode is a Pro feature</div>
+                <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.6 }}>
+                  Upgrade to Pro to send the same prompt to multiple providers simultaneously and view responses side by side.
+                </div>
+                <button type="button" className="primary" style={{ marginTop: 12, fontSize: 12 }}
+                  onClick={() => window.aiQueue.openExternal('https://example.com/upgrade')}>
+                  Upgrade to Pro →
+                </button>
+              </div>
+            ) : configuredProviders.length < 2 ? (
+              <div style={{ fontSize: 12, color: 'var(--text3)', padding: '10px 0' }}>
+                You need at least 2 configured providers to use Compare mode. Add API keys in Settings.
+              </div>
+            ) : (
+              <>
+                <div className="compare-provider-grid">
+                  {configuredProviders.map(p => {
+                    const selected = compareSel.includes(p.name);
+                    return (
+                      <button
+                        key={p.name}
+                        type="button"
+                        className={`compare-provider-chip ${selected ? 'selected' : ''}`}
+                        style={selected ? { '--chip-accent': p.color } : {}}
+                        onClick={() => toggleCompareProvider(p.name)}
+                      >
+                        <span className="cpc-dot" style={{ background: p.color }} />
+                        <span className="cpc-label">{p.displayName}</span>
+                        {selected && <span className="cpc-check">✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+                {compareSel.length === 1 && (
+                  <div style={{ marginTop: 10, fontSize: 11, color: 'var(--warning)' }}>Select at least 2 providers to compare.</div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Options card */}
+          <div className="card" style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Options
+            </div>
+            <div className="form-row form-row-2">
+              <div className="form-group">
+                <label>Label <span style={{ color: 'var(--text3)', fontWeight: 400 }}>(optional)</span></label>
+                <input placeholder="e.g. Compare coding task" value={form.label} onChange={e => set('label', e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label>Max tokens per provider</label>
+                <input type="number" min={64} max={32000} value={form.maxTokens} onChange={e => set('maxTokens', e.target.value)} />
+              </div>
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>System prompt <span style={{ color: 'var(--text3)', fontWeight: 400 }}>(optional — same for all providers)</span></label>
+              <textarea placeholder="You are a helpful assistant…" value={form.systemPrompt} onChange={e => set('systemPrompt', e.target.value)} rows={2} />
+            </div>
+          </div>
+
+          <button type="submit" className="primary"
+            disabled={submitting || !form.prompt.trim() || !isPro || compareSel.length < 2}>
+            {submitting ? 'Queuing compare…' : `⚖ Compare across ${compareSel.length || '?'} providers`}
+          </button>
+          <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text3)' }}>
+            Responses run in parallel. Results appear in the Queue tab when all providers reply.
+          </div>
+        </form>
+
+      ) : bulk ? (
         /* ── Bulk mode ── */
         <div className="card">
           <div className="form-group">
@@ -447,74 +591,79 @@ export default function AddPromptPanel({ providers, projects, onSubmit }) {
       )}
 
       <style>{`
-        /* ── Tag chip grid ───────────────────────────────────── */
-        .tag-chip-grid {
+        /* ── Compare provider chips ──────────────────────────── */
+        .compare-provider-grid {
           display: flex;
           flex-wrap: wrap;
-          gap: 7px;
+          gap: 8px;
         }
-        .tag-chip {
+        .compare-provider-chip {
           display: inline-flex;
           align-items: center;
-          gap: 5px;
-          padding: 5px 11px;
-          border-radius: 20px;
+          gap: 7px;
+          padding: 7px 13px;
+          border-radius: 8px;
           border: 1px solid var(--border-dim);
           background: var(--bg3);
           color: var(--text2);
           font-size: 12px;
           cursor: pointer;
           transition: all 0.15s ease;
-          white-space: nowrap;
           font-family: inherit;
         }
-        .tag-chip:hover {
+        .compare-provider-chip:hover {
           border-color: var(--border);
-          color: var(--text1);
           background: var(--bg4);
+          color: var(--text1);
         }
+        .compare-provider-chip.selected {
+          background: color-mix(in srgb, var(--chip-accent) 12%, transparent);
+          border-color: color-mix(in srgb, var(--chip-accent) 55%, transparent);
+          color: var(--text1);
+          font-weight: 500;
+        }
+        .cpc-dot {
+          width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+        }
+        .cpc-check {
+          font-size: 11px;
+          color: var(--success);
+          font-weight: 700;
+        }
+        /* ── Tag chip grid ───────────────────────────────────── */
+        .tag-chip-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+        .tag-chip {
+          display: inline-flex; align-items: center; gap: 5px;
+          padding: 5px 11px; border-radius: 20px;
+          border: 1px solid var(--border-dim); background: var(--bg3);
+          color: var(--text2); font-size: 12px; cursor: pointer;
+          transition: all 0.15s ease; white-space: nowrap; font-family: inherit;
+        }
+        .tag-chip:hover { border-color: var(--border); color: var(--text1); background: var(--bg4); }
         .tag-chip.active {
           background: color-mix(in srgb, var(--chip-color) 14%, transparent);
           border-color: color-mix(in srgb, var(--chip-color) 55%, transparent);
           color: var(--chip-color);
         }
         .tag-chip.urgent.active {
-          background: rgba(249, 115, 22, 0.12);
-          border-color: rgba(249, 115, 22, 0.55);
-          color: #f97316;
-          font-weight: 600;
+          background: rgba(249,115,22,0.12); border-color: rgba(249,115,22,0.55);
+          color: #f97316; font-weight: 600;
         }
         .chip-emoji { font-size: 13px; line-height: 1; }
         .chip-label { font-weight: 500; }
 
         /* ── Route preview ───────────────────────────────────── */
-        .route-preview {
-          padding: 8px 12px;
-          border-radius: 6px;
-          font-size: 12px;
-        }
+        .route-preview { padding: 8px 12px; border-radius: 6px; font-size: 12px; }
         .route-preview.ok   { background: rgba(52,211,153,0.08); color: var(--success); border: 1px solid rgba(52,211,153,0.2); }
         .route-preview.wait { background: rgba(251,191,36,0.08);  color: var(--warning); border: 1px solid rgba(251,191,36,0.2); }
 
         /* ── Provider comparison table ───────────────────────── */
-        .candidates-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 11.5px;
-        }
+        .candidates-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
         .candidates-table th {
-          text-align: left;
-          padding: 4px 8px;
-          color: var(--text3);
-          font-weight: 600;
-          border-bottom: 1px solid var(--border);
-          white-space: nowrap;
+          text-align: left; padding: 4px 8px; color: var(--text3);
+          font-weight: 600; border-bottom: 1px solid var(--border); white-space: nowrap;
         }
-        .candidates-table td {
-          padding: 5px 8px;
-          border-bottom: 1px solid rgba(255,255,255,0.04);
-          white-space: nowrap;
-        }
+        .candidates-table td { padding: 5px 8px; border-bottom: 1px solid rgba(255,255,255,0.04); white-space: nowrap; }
         .candidates-table tr:last-child td { border-bottom: none; }
         .candidates-table .winner-row td   { background: rgba(52,211,153,0.06); }
         .candidates-table .winner-row td:first-child { border-left: 2px solid var(--success); }

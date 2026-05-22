@@ -614,6 +614,11 @@
         <p>See a live token count as you type and a ranked per-provider cost table before you hit queue. Know exactly what each prompt will cost on Claude vs. Groq vs. Gemini — before you send it.</p>
       </div>
       <div class="fcard">
+        <div class="fcard-icon">⚖️</div>
+        <h3>Compare mode <span style="font-size:.72rem;font-weight:600;background:rgba(168,85,247,0.12);color:#a855f7;border:1px solid rgba(168,85,247,0.3);padding:1px 7px;border-radius:5px;margin-left:4px;">Pro</span></h3>
+        <p>Send the same prompt to multiple providers simultaneously. Responses arrive in parallel and display as side-by-side columns — provider name, model, full text, copy button, token count. Instantly see whether Claude, GPT-4o, or Gemini does better on your task.</p>
+      </div>
+      <div class="fcard">
         <div class="fcard-icon">🔒</div>
         <h3>100% local &amp; private</h3>
         <p>Everything stays on your machine. API keys are stored in your OS keychain. No cloud sync, no telemetry, no middleman reading your prompts.</p>
@@ -688,6 +693,20 @@
           <span class="tier-tag tt-starter">Starter</span>
         </div>
         <p>When the router re-routes a conversation to a different provider mid-thread — because of rate limits, cost, or availability — the stored history is automatically adapted to the new provider's format and forwarded. Your conversation keeps going, invisibly. No other tool can do this, because no other tool routes across providers in the first place.</p>
+      </div>
+      <div class="rcard" style="border-color:rgba(251,191,36,0.30);">
+        <div class="rcard-header">
+          <h4>Pro+ tier</h4>
+          <span class="tier-tag" style="background:rgba(251,191,36,0.10);color:#d97706;border:1px solid rgba(251,191,36,0.30);">Pro+</span>
+        </div>
+        <p>A tier above Pro for power users who need the full stack: Consensus mode, advanced prompt chaining, webhook output delivery, and priority support. Designed for teams and high-volume workflows. Details and pricing TBD.</p>
+      </div>
+      <div class="rcard" style="border-color:rgba(251,191,36,0.30);">
+        <div class="rcard-header">
+          <h4>Consensus mode</h4>
+          <span class="tier-tag" style="background:rgba(251,191,36,0.10);color:#d97706;border:1px solid rgba(251,191,36,0.30);">Pro+</span>
+        </div>
+        <p>Compare mode already collects every provider's response in one place. Consensus mode goes further: a meta-model synthesises the best answer from all of them, flags where providers disagree, or runs a majority-vote across outputs. One click from Compare — no separate queue, no extra setup.</p>
       </div>
       <div class="rcard">
         <div class="rcard-header">
@@ -981,7 +1000,11 @@
             <td><span class="chk-ic">✓</span></td><td><span class="chk-ic">✓</span></td><td><span class="chk-ic">✓</span></td>
           </tr>
           <tr class="feat-row"><td class="fn">Prompt template library<small>Roadmap</small></td><td><span class="dsh-ic">–</span></td><td><span class="chk-ic">✓</span></td><td><span class="chk-ic">✓</span></td></tr>
-          <tr class="feat-row"><td class="fn">Response comparison mode<small>A/B across providers — Roadmap</small></td><td><span class="dsh-ic">–</span></td><td><span class="dsh-ic">–</span></td><td><span class="chk-ic">✓</span></td></tr>
+          <tr class="feat-row">
+            <td class="fn">⚖ Compare mode<small>Same prompt → multiple providers → side-by-side results</small></td>
+            <td><span class="dsh-ic">–</span></td><td><span class="dsh-ic">–</span></td><td><span class="chk-ic">✓</span></td>
+          </tr>
+          <tr class="feat-row"><td class="fn">Consensus mode<small>Synthesise / vote across Compare results — Pro+ Roadmap</small></td><td><span class="dsh-ic">–</span></td><td><span class="dsh-ic">–</span></td><td><span class="dsh-ic">Pro+</span></td></tr>
           <tr class="feat-row"><td class="fn">Prompt chaining<small>Multi-step pipelines — Roadmap</small></td><td><span class="dsh-ic">–</span></td><td><span class="dsh-ic">–</span></td><td><span class="chk-ic">✓</span></td></tr>
           <tr class="feat-row"><td class="fn">Webhook output delivery<small>Roadmap</small></td><td><span class="dsh-ic">–</span></td><td><span class="dsh-ic">–</span></td><td><span class="chk-ic">✓</span></td></tr>
 

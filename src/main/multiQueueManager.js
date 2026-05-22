@@ -129,8 +129,9 @@ class MultiQueueManager {
         input_tokens    INTEGER DEFAULT 0,
         output_tokens   INTEGER DEFAULT 0,
         cost_usd        REAL DEFAULT 0,
-        error           TEXT,
-        routing_reason  TEXT
+        error            TEXT,
+        routing_reason   TEXT,
+        compare_providers TEXT DEFAULT NULL
       );
       CREATE TABLE IF NOT EXISTS projects (
         id          TEXT PRIMARY KEY,
@@ -141,10 +142,9 @@ class MultiQueueManager {
       )
     `);
 
-    // Migration: add `tags` column to existing databases that predate this feature
-    try {
-      this.db.exec("ALTER TABLE queue_items ADD COLUMN tags TEXT DEFAULT '[]'");
-    } catch (_) { /* column already exists — safe to ignore */ }
+    // Migrations — silent ALTER TABLE for columns added in later versions
+    try { this.db.exec("ALTER TABLE queue_items ADD COLUMN tags TEXT DEFAULT '[]'"); }             catch (_) {}
+    try { this.db.exec("ALTER TABLE queue_items ADD COLUMN compare_providers TEXT DEFAULT NULL"); } catch (_) {}
   }
 
   _resetStuck() {
@@ -157,20 +157,23 @@ class MultiQueueManager {
 
   addItem({ prompt, label=null, systemPrompt=null, provider=null, routingMode='auto',
             taskType='general', tags=[], model=null, maxTokens=1024, projectId=null,
-            projectName=null, conversationId=null, scheduledFor=null, priority=0 }) {
+            projectName=null, conversationId=null, scheduledFor=null, priority=0,
+            compareProviders=null }) {
     if (!prompt?.trim()) throw new Error('Prompt cannot be empty');
-    const id       = uuidv4();
-    const now      = Date.now();
-    const tagsJson = JSON.stringify(Array.isArray(tags) ? tags : []);
-    const scheduledMs = scheduledFor ? new Date(scheduledFor).getTime() : null;
+    const id           = uuidv4();
+    const now          = Date.now();
+    const tagsJson     = JSON.stringify(Array.isArray(tags) ? tags : []);
+    const scheduledMs  = scheduledFor ? new Date(scheduledFor).getTime() : null;
+    const compareJson  = Array.isArray(compareProviders) && compareProviders.length >= 2
+                           ? JSON.stringify(compareProviders) : null;
 
     this.db.prepare(
       `INSERT INTO queue_items
        (id,label,prompt,system_prompt,provider,routing_mode,task_type,tags,model,max_tokens,
-        project_id,project_name,conversation_id,status,priority,created_at,scheduled_for)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,'pending',?,?,?)`
+        project_id,project_name,conversation_id,compare_providers,status,priority,created_at,scheduled_for)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending',?,?,?)`
     ).run(id, label, prompt, systemPrompt, provider, routingMode, taskType, tagsJson, model,
-          maxTokens, projectId, projectName, conversationId, priority, now, scheduledMs);
+          maxTokens, projectId, projectName, conversationId, compareJson, priority, now, scheduledMs);
 
     const item = this._getItem(id);
     this.push('queue-update', { action: 'added', item });
@@ -256,6 +259,13 @@ class MultiQueueManager {
       return;
     }
 
+    // Compare items bypass the router — they fan out to multiple named providers directly
+    if (next.compare_providers) {
+      await this._processCompareItem(next);
+      this._timer = setTimeout(() => this._tick(), 1500);
+      return;
+    }
+
     const decision = this.router.route(next);
     if (decision.wait) {
       const waitMs = Math.min(decision.waitMs || 5000, 60_000);
@@ -310,6 +320,78 @@ class MultiQueueManager {
     } finally {
       this.processing = false;
     }
+  }
+
+  /**
+   * Fan-out a compare item to multiple providers in parallel.
+   * Uses Promise.allSettled so a single provider failure doesn't abort the rest.
+   * Response is stored as a JSON array: [{provider, model, response, usage, error}].
+   */
+  async _processCompareItem(item) {
+    this.processing = true;
+    let providers = [];
+    try { providers = JSON.parse(item.compare_providers || '[]'); } catch (_) {}
+
+    this._set(item.id, { status: STATUS.PROCESSING, started_at: Date.now() });
+    this.push('queue-update', { action: 'processing', id: item.id, provider: 'compare' });
+
+    const settled = await Promise.allSettled(
+      providers.map(providerName =>
+        this.registry.sendMessage(providerName, {
+          prompt:      item.prompt,
+          systemPrompt: item.system_prompt,
+          model:       null,                // each provider uses its own default
+          maxTokens:   item.max_tokens || 1024,
+          queueItemId: item.id,
+        })
+      )
+    );
+
+    const results = settled.map((outcome, i) => {
+      const providerName = providers[i];
+      if (outcome.status === 'fulfilled') {
+        return {
+          provider: outcome.value.provider || providerName,
+          model:    outcome.value.model,
+          response: outcome.value.response,
+          usage:    outcome.value.usage,
+          error:    null,
+        };
+      }
+      return {
+        provider: providerName,
+        model:    null,
+        response: null,
+        usage:    null,
+        error:    outcome.reason?.message || String(outcome.reason),
+      };
+    });
+
+    const succeeded = results.filter(r => r.response !== null);
+
+    if (succeeded.length === 0) {
+      const errMsg = results.map(r => `${r.provider}: ${r.error}`).join('; ');
+      this._set(item.id, { status: STATUS.ERROR, error: `All providers failed — ${errMsg}` });
+      this.push('item-error', { id: item.id, provider: 'compare', error: errMsg });
+    } else {
+      this._set(item.id, {
+        status:        STATUS.COMPLETE,
+        completed_at:  Date.now(),
+        response:      JSON.stringify(results),
+        used_provider: 'compare',
+        used_model:    results.filter(r => r.model).map(r => r.model).join(', '),
+        input_tokens:  results.reduce((s, r) => s + (r.usage?.inputTokens  || 0), 0),
+        output_tokens: results.reduce((s, r) => s + (r.usage?.outputTokens || 0), 0),
+      });
+      this.push('item-compare-complete', {
+        id:      item.id,
+        label:   item.label || item.prompt.slice(0, 60),
+        results,
+      });
+      this.push('usage-update', { allStatus: this.tracker.getStatusAll() });
+    }
+
+    this.processing = false;
   }
 
   _getItem(id) {

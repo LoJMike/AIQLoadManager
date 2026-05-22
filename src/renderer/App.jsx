@@ -56,11 +56,16 @@ export default function App() {
     const offUsage  = api.onUsageUpdate(({ allStatus }) => {
       if (allStatus) setUsageAll(allStatus);
     });
-    const offDone   = api.onItemComplete(({ label, provider }) => {
+    const offDone    = api.onItemComplete(({ label, provider }) => {
       showToast(`✓ "${(label || '').slice(0, 40)}" done via ${provider}`, 'success');
     });
-    const offError  = api.onItemError(({ error }) => {
+    const offError   = api.onItemError(({ error }) => {
       showToast(`✗ ${(error || '').slice(0, 80)}`, 'error');
+    });
+    const offCompare = api.onCompareComplete(({ label, results }) => {
+      const ok = (results || []).filter(r => r.response).length;
+      const n  = (results || []).length;
+      showToast(`⚖ "${(label || '').slice(0, 35)}" — ${ok}/${n} providers responded`, 'success');
     });
 
     const usageTimer = setInterval(async () => {
@@ -68,7 +73,7 @@ export default function App() {
     }, 15_000);
 
     return () => {
-      offQueue(); offUsage(); offDone(); offError();
+      offQueue(); offUsage(); offDone(); offError(); offCompare();
       clearInterval(usageTimer);
     };
   }, []);
@@ -136,7 +141,7 @@ export default function App() {
       <main className="main-panel">
         {tab === 'usage'    && <UsageDashboard  providers={providers} usageAll={usageAll} />}
         {tab === 'queue'    && <QueuePanel      queue={queue} providers={providers} onRefresh={loadAll} />}
-        {tab === 'add'      && <AddPromptPanel  providers={providers} projects={projects} onSubmit={handleAddPrompt} />}
+        {tab === 'add'      && <AddPromptPanel  providers={providers} projects={projects} onSubmit={handleAddPrompt} license={license} />}
         {tab === 'projects' && <ProjectsPanel   projects={projects} providers={providers} onRefresh={loadAll} />}
         {tab === 'settings' && <SettingsPanel   providers={providers} onRefresh={loadAll} showToast={showToast} />}
         {tab === 'license'  && <LicensePanel   showToast={showToast} />}

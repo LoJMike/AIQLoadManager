@@ -87,10 +87,16 @@ function setupIPC() {
   ipcMain.handle('add-to-queue', (_, item) => {
     const tags     = Array.isArray(item.tags) ? item.tags : [];
     const isPaid   = license.getLicense().plan === 'pro';
-    const priority = computePriority(tags, isPaid);
-    // Derive task_type from tags; fall back to whatever the UI sent, then 'general'
     const taskType = tagsToTaskType(tags) || item.taskType || 'general';
-    return queue.addItem({ ...item, tags, taskType, priority });
+    const priority = computePriority(tags, isPaid);
+
+    // Compare mode requires a Pro license
+    const compareProviders = Array.isArray(item.compareProviders) ? item.compareProviders : null;
+    if (compareProviders && compareProviders.length >= 2 && !isPaid) {
+      throw new Error('Compare mode requires a Pro license. Upgrade in the License tab.');
+    }
+
+    return queue.addItem({ ...item, tags, taskType, priority, compareProviders });
   });
 
   // Expose tag metadata to the renderer so it can render chips without

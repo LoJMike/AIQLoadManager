@@ -19,7 +19,7 @@ These three values must always match each other. When one changes, update all th
 | **Project name (display — short)** | `AIQ Load Manager` |
 | **`package.json` → `"name"`** | `aiq-load-manager` |
 | **`package.json` → `"productName"`** (build section) | `AI Queue Load Manager` |
-| **`package.json` → `"version"`** | `0.3.1` |
+| **`package.json` → `"version"`** | `0.3.2` |
 | **GitHub repo** | https://github.com/LoJMike/AIQLoadManager |
 | **Local path (Windows)** | `C:\Users\mikel\Desktop\AIQLoadManager Project` |
 
