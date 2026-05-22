@@ -8,17 +8,31 @@ const { v4: uuidv4 } = require('../uuid');
 class BaseProvider {
   constructor(name, usageTracker, store) {
     if (new.target === BaseProvider) throw new Error('BaseProvider is abstract');
-    this.name    = name;
-    this.tracker = usageTracker;
-    this.store   = store;           // electron-store instance (may be null)
-    this.apiKey  = null;
-    this.client  = null;
-    this.conversations = new Map(); // convId → messages[]
+    this.name      = name;
+    this.tracker   = usageTracker;
+    this.store     = store;           // electron-store instance (may be null)
+    this.convStore = null;            // ConversationStore (wired in after construction)
+    this.apiKey    = null;
+    this.client    = null;
+    this.conversations = new Map();   // convId → messages[] (fast in-memory cache)
 
     // Load persisted key synchronously — store is already initialised by main
     const saved = this._loadKey();
     if (saved) {
       try { this._initClient(saved); } catch (_) {}
+    }
+  }
+
+  /**
+   * Called by ProviderRegistry after construction to attach SQLite persistence.
+   * Warms the in-memory conversation cache from the database so history
+   * survives across app restarts without any change to concrete providers.
+   */
+  attachConvStore(convStore) {
+    this.convStore = convStore;
+    const loaded = convStore.loadAll(this.name);
+    for (const [convId, msgs] of loaded.entries()) {
+      this.conversations.set(convId, msgs);
     }
   }
 
@@ -66,9 +80,19 @@ class BaseProvider {
       { role: 'assistant', content: assistantMsg },
     ].slice(-40); // cap at 20 turns
     this.conversations.set(convId, updated);
+
+    // Write-through to SQLite so history survives restarts
+    if (this.convStore) {
+      this.convStore.appendTurn(this.name, convId, userMsg, assistantMsg);
+    }
   }
 
-  clearConversation(convId) { this.conversations.delete(convId); }
+  clearConversation(convId) {
+    this.conversations.delete(convId);
+    if (this.convStore) {
+      this.convStore.clearConversation(this.name, convId);
+    }
+  }
 
   newConvId(projectId = null) {
     const prefix = projectId ? `${this.name}-proj-${projectId}` : `${this.name}-conv`;

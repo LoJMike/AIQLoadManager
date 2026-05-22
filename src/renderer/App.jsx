@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import UsageDashboard from './components/UsageDashboard';
 import AddPromptPanel from './components/AddPromptPanel';
-import { QueuePanel, SettingsPanel, ProjectsPanel } from './components/index.js';
+import { QueuePanel, SettingsPanel, ProjectsPanel, TitleBar, LicensePanel } from './components/index.js';
 import './App.css';
 
 const NAV = [
@@ -10,6 +10,7 @@ const NAV = [
   { id: 'add',      label: 'Add',      icon: '+' },
   { id: 'projects', label: 'Projects', icon: '⌂' },
   { id: 'settings', label: 'Settings', icon: '⚙' },
+  { id: 'license',  label: 'License',  icon: '◈' },
 ];
 
 export default function App() {
@@ -19,24 +20,27 @@ export default function App() {
   const [queue,      setQueue]      = useState([]);
   const [projects,   setProjects]   = useState([]);
   const [queueState, setQueueState] = useState({ paused: false, processing: false });
+  const [license,    setLicense]    = useState(null);
   const [toast,      setToast]      = useState(null);
 
   const api = window.aiQueue;
 
   const loadAll = useCallback(async () => {
     try {
-      const [p, u, q, pr, qs] = await Promise.all([
+      const [p, u, q, pr, qs, lic] = await Promise.all([
         api.getProviders(),
         api.getUsageAll(),
         api.getQueue(),
         api.getProjects(),
         api.getQueueState(),
+        api.getLicense(),
       ]);
       setProviders(p   || []);
       setUsageAll(u    || {});
       setQueue(q       || []);
       setProjects(pr   || []);
       setQueueState(qs || { paused: false, processing: false });
+      setLicense(lic   || null);
     } catch (e) {
       console.error('loadAll error:', e);
     }
@@ -89,13 +93,10 @@ export default function App() {
   const pendingCount = queue.filter(i => i.status === 'pending').length;
 
   return (
+    <div className="app-root">
+    <TitleBar title="AIQ Load Manager" />
     <div className="app-shell">
       <nav className="sidebar">
-        <div className="sidebar-brand">
-          <span className="brand-icon">⬡</span>
-          <span className="brand-name">AI Queue</span>
-        </div>
-
         <div className="sidebar-nav">
           {NAV.map(n => (
             <button
@@ -138,11 +139,13 @@ export default function App() {
         {tab === 'add'      && <AddPromptPanel  providers={providers} projects={projects} onSubmit={handleAddPrompt} />}
         {tab === 'projects' && <ProjectsPanel   projects={projects} providers={providers} onRefresh={loadAll} />}
         {tab === 'settings' && <SettingsPanel   providers={providers} onRefresh={loadAll} showToast={showToast} />}
+        {tab === 'license'  && <LicensePanel   showToast={showToast} />}
       </main>
 
       {toast && (
         <div className={`toast toast-${toast.type}`}>{toast.msg}</div>
       )}
+    </div>
     </div>
   );
 }

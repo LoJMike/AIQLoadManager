@@ -15,6 +15,7 @@ const { AnthropicProvider }                                        = require('./
 const { OpenAIProvider }                                           = require('./openaiProvider');
 const { GeminiProvider }                                           = require('./geminiProvider');
 const { GroqProvider, DeepSeekProvider, MistralProvider, GrokProvider } = require('./openaiCompatProviders');
+const { OllamaProvider, LMStudioProvider }                         = require('./localProviders');
 
 const PROVIDER_CLASSES = {
   anthropic: AnthropicProvider,
@@ -24,27 +25,35 @@ const PROVIDER_CLASSES = {
   deepseek:  DeepSeekProvider,
   mistral:   MistralProvider,
   grok:      GrokProvider,
+  ollama:    OllamaProvider,
+  lmstudio:  LMStudioProvider,
 };
 
 // Human-readable metadata (logo colour used by the GUI)
 const PROVIDER_META = {
-  anthropic: { displayName: 'Claude (Anthropic)', color: '#d97757', icon: 'ti-robot',     website: 'https://anthropic.com'      },
-  openai:    { displayName: 'OpenAI (ChatGPT)',   color: '#10a37f', icon: 'ti-brand-openai', website: 'https://platform.openai.com' },
-  gemini:    { displayName: 'Google Gemini',      color: '#4285f4', icon: 'ti-brand-google', website: 'https://ai.google.dev'       },
-  groq:      { displayName: 'Groq',               color: '#f55036', icon: 'ti-bolt',       website: 'https://console.groq.com'    },
-  deepseek:  { displayName: 'DeepSeek',           color: '#4d6bfe', icon: 'ti-brain',      website: 'https://platform.deepseek.com'},
-  mistral:   { displayName: 'Mistral AI',         color: '#ff7000', icon: 'ti-wind',       website: 'https://mistral.ai'          },
-  grok:      { displayName: 'xAI Grok',           color: '#1da1f2', icon: 'ti-brand-x',   website: 'https://console.x.ai'        },
+  anthropic: { displayName: 'Claude (Anthropic)', color: '#d97757', icon: 'ti-robot',        website: 'https://anthropic.com'       },
+  openai:    { displayName: 'OpenAI (ChatGPT)',   color: '#10a37f', icon: 'ti-brand-openai',  website: 'https://platform.openai.com' },
+  gemini:    { displayName: 'Google Gemini',      color: '#4285f4', icon: 'ti-brand-google',  website: 'https://ai.google.dev'       },
+  groq:      { displayName: 'Groq',               color: '#f55036', icon: 'ti-bolt',          website: 'https://console.groq.com'    },
+  deepseek:  { displayName: 'DeepSeek',           color: '#4d6bfe', icon: 'ti-brain',         website: 'https://platform.deepseek.com'},
+  mistral:   { displayName: 'Mistral AI',         color: '#ff7000', icon: 'ti-wind',          website: 'https://mistral.ai'          },
+  grok:      { displayName: 'xAI Grok',           color: '#1da1f2', icon: 'ti-brand-x',      website: 'https://console.x.ai'        },
+  ollama:    { displayName: 'Ollama (Local)',      color: '#ffffff', icon: 'ti-server',        website: 'https://ollama.com',          local: true },
+  lmstudio:  { displayName: 'LM Studio (Local)',  color: '#a855f7', icon: 'ti-cpu',           website: 'https://lmstudio.ai',         local: true },
 };
 
 class ProviderRegistry {
-  constructor(multiUsageTracker, store) {
+  constructor(multiUsageTracker, store, convStore = null) {
     this.tracker = multiUsageTracker;
     this.store   = store;
     this.providers = {};
 
     for (const [name, ProviderClass] of Object.entries(PROVIDER_CLASSES)) {
-      this.providers[name] = new ProviderClass(multiUsageTracker, store);
+      const provider = new ProviderClass(multiUsageTracker, store);
+      // Attach SQLite conversation persistence if available — no change needed
+      // in any concrete provider class; BaseProvider handles it via attachConvStore().
+      if (convStore) provider.attachConvStore(convStore);
+      this.providers[name] = provider;
     }
   }
 

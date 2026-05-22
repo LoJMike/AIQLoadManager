@@ -18,16 +18,22 @@ const COST_TABLE = {
   deepseek:  { 'deepseek-chat': [0.14, 0.28], 'deepseek-reasoner': [0.55, 2.19] },
   mistral:   { 'mistral-large-latest': [2.00, 6.00], 'mistral-small-latest': [0.10, 0.30], 'codestral-latest': [0.30, 0.90], 'open-mistral-7b': [0.04, 0.04] },
   grok:      { 'grok-4': [3.00, 15.00], 'grok-4.1-fast': [0.20, 0.50], 'grok-3-mini': [0.30, 0.50] },
+  // Local providers — all models are $0.00 (any unrecognised model falls back to [0,0])
+  ollama:    {},
+  lmstudio:  {},
 };
 
 const RATE_LIMITS = {
-  anthropic: { rpm: 50,  rpd: null,   tpm: 100_000   },
-  openai:    { rpm: 500, rpd: null,   tpm: 200_000   },
-  gemini:    { rpm: 15,  rpd: 1500,   tpm: 1_000_000 },
-  groq:      { rpm: 30,  rpd: 14_400, tpm: 6_000     },
-  deepseek:  { rpm: 60,  rpd: null,   tpm: 100_000   },
-  mistral:   { rpm: 2,   rpd: null,   tpm: null       },
-  grok:      { rpm: 60,  rpd: null,   tpm: 500_000   },
+  anthropic: { rpm: 50,   rpd: null,   tpm: 100_000   },
+  openai:    { rpm: 500,  rpd: null,   tpm: 200_000   },
+  gemini:    { rpm: 15,   rpd: 1500,   tpm: 1_000_000 },
+  groq:      { rpm: 30,   rpd: 14_400, tpm: 6_000     },
+  deepseek:  { rpm: 60,   rpd: null,   tpm: 100_000   },
+  mistral:   { rpm: 2,    rpd: null,   tpm: null       },
+  grok:      { rpm: 60,   rpd: null,   tpm: 500_000   },
+  // Local providers — effectively unlimited (hardware-bound, not policy-bound)
+  ollama:    { rpm: 9999, rpd: null,   tpm: null       },
+  lmstudio:  { rpm: 9999, rpd: null,   tpm: null       },
 };
 
 class MultiUsageTracker {
@@ -74,7 +80,9 @@ class MultiUsageTracker {
         "SELECT key, value FROM settings WHERE key LIKE ?"
       ).all('budget.%');
       for (const row of rows) {
-        this._budgets[row.key.replace('budget.', '')] = parseFloat(row.value) || 0;
+        const val = parseFloat(row.value);
+        // null = no limit stored; 0 = explicitly blocked; positive = cap
+        this._budgets[row.key.replace('budget.', '')] = isNaN(val) ? null : val;
       }
     } catch (_) {}
   }
@@ -116,21 +124,28 @@ class MultiUsageTracker {
     const rpmHead = limits.rpm ? Math.max(0, limits.rpm - rpmUsed)    : Infinity;
     const rpdHead = limits.rpd ? Math.max(0, limits.rpd - rpdUsed)    : Infinity;
     const tpmHead = limits.tpm ? Math.max(0, limits.tpm - tokLastMin) : Infinity;
-    const canSend = rpmHead > 0 && rpdHead > 0 && tpmHead > 0;
+    const rateOk   = rpmHead > 0 && rpdHead > 0 && tpmHead > 0;
+
+    // Budget block: $0 budget on a paid provider = hard block (no requests sent)
+    const budgetBlocked = this.isBudgetBlocked(provider);
+    const canSend = rateOk && !budgetBlocked;
 
     let nextSlotMs = 0;
-    if (!canSend && lastMin.length > 0) {
+    if (!rateOk && lastMin.length > 0) {
       nextSlotMs = Math.max(0, (lastMin[0].timestamp + oneMin) - now);
     }
 
-    const budget    = this._budgets[provider] || 0;
-    const budgetPct = budget > 0 ? Math.min(100, Math.round((costMonth / budget) * 100)) : null;
+    // null = no limit set; 0 = hard block; positive = monthly cap in USD
+    const budget    = this._budgets[provider] ?? null;
+    const budgetPct = (budget !== null && budget > 0)
+      ? Math.min(100, Math.round((costMonth / budget) * 100))
+      : null;
 
     return {
       provider, canSend, nextSlotMs, limits,
       requests: { lastMin: rpmUsed, lastDay: rpdUsed },
       tokens:   { totalIn, totalOut, totalAll: totalIn + totalOut },
-      cost:     { lastMonth: +costMonth.toFixed(6), budget, budgetPct },
+      cost:     { lastMonth: +costMonth.toFixed(6), budget, budgetPct, budgetBlocked },
       headroom: {
         rpm: rpmHead === Infinity ? null : rpmHead,
         rpd: rpdHead === Infinity ? null : rpdHead,
@@ -149,11 +164,42 @@ class MultiUsageTracker {
   canSend(provider)         { return this.getStatus(provider).canSend; }
   msUntilNextSlot(provider) { const s = this.getStatus(provider); return s.canSend ? 0 : s.nextSlotMs; }
 
+  /**
+   * Returns true when a provider is hard-blocked because its budget is
+   * explicitly set to $0.  Local providers (Ollama, LM Studio) are exempt —
+   * they are always $0/request so blocking them by budget makes no sense.
+   */
+  isBudgetBlocked(provider) {
+    if (this._budgets[provider] !== 0) return false;
+    // Local providers cost $0/request regardless — $0 budget should not block them
+    const costs = COST_TABLE[provider];
+    if (!costs) return false;
+    return Object.values(costs).some(([inRate = 0]) => inRate > 0);
+  }
+
+  /**
+   * Set a monthly spend budget.
+   *   null / '' / undefined  →  remove limit entirely
+   *   0                      →  hard-block spending on this provider
+   *   positive number        →  soft monthly cap in USD
+   */
   setBudget(provider, usd) {
-    this._budgets[provider] = parseFloat(usd) || 0;
-    this.db.prepare('INSERT OR REPLACE INTO settings (key,value) VALUES (?,?)').run(
-      `budget.${provider}`, String(this._budgets[provider])
-    );
+    if (usd === null || usd === undefined || usd === '') {
+      // No limit — remove the stored entry
+      this._budgets[provider] = null;
+      this.db.prepare("DELETE FROM settings WHERE key=?").run(`budget.${provider}`);
+    } else {
+      const amount = parseFloat(usd);
+      if (isNaN(amount)) {
+        this._budgets[provider] = null;
+        this.db.prepare("DELETE FROM settings WHERE key=?").run(`budget.${provider}`);
+      } else {
+        this._budgets[provider] = amount;
+        this.db.prepare('INSERT OR REPLACE INTO settings (key,value) VALUES (?,?)').run(
+          `budget.${provider}`, String(amount)
+        );
+      }
+    }
   }
 
   getBudgets() { return { ...this._budgets }; }
@@ -161,6 +207,20 @@ class MultiUsageTracker {
   _estimateCost(provider, model, inputTokens, outputTokens) {
     const [inRate = 0, outRate = 0] = COST_TABLE[provider]?.[model] || [];
     return (inputTokens / 1_000_000) * inRate + (outputTokens / 1_000_000) * outRate;
+  }
+
+  /**
+   * Public cost estimator — same maths as _estimateCost but callable from
+   * outside the class (e.g. IPC handlers, tests).
+   *
+   * @param {string} provider      - e.g. 'anthropic'
+   * @param {string} model         - e.g. 'claude-haiku-4-5'
+   * @param {number} inputTokens   - estimated input tokens (use charCount/4 as proxy)
+   * @param {number} outputTokens  - max output tokens (from queue item)
+   * @returns {number}             - estimated cost in USD
+   */
+  estimateCost(provider, model, inputTokens, outputTokens) {
+    return this._estimateCost(provider, model, inputTokens, outputTokens);
   }
 }
 

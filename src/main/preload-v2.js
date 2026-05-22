@@ -32,14 +32,26 @@ contextBridge.exposeInMainWorld('aiQueue', {
   deleteProject:      (id)            => ipcRenderer.invoke('delete-project', id),
 
   // Conversations
-  getConversations:   (provider)              => ipcRenderer.invoke('get-conversations', provider),
-  clearConversation:  (provider, convId)      => ipcRenderer.invoke('clear-conversation', { provider, convId }),
+  getConversations:        (provider)         => ipcRenderer.invoke('get-conversations', provider),
+  getConversationHistory:  (provider, convId) => ipcRenderer.invoke('get-conversation-history', { provider, convId }),
+  clearConversation:       (provider, convId) => ipcRenderer.invoke('clear-conversation', { provider, convId }),
 
-  // Routing preview
+  // Routing preview & tag metadata
   previewRoute:       (item)          => ipcRenderer.invoke('preview-route', item),
+  getPromptTags:      ()              => ipcRenderer.invoke('get-prompt-tags'),
+
+  // License
+  getLicense:         ()              => ipcRenderer.invoke('get-license'),
+  setLicenseKey:      (key)           => ipcRenderer.invoke('set-license-key', key),
+  removeLicenseKey:   ()              => ipcRenderer.invoke('remove-license-key'),
 
   // Misc
   openExternal:       (url)           => ipcRenderer.invoke('open-external', url),
+
+  // Window controls (custom title bar)
+  windowMinimize:     ()              => ipcRenderer.invoke('window-minimize'),
+  windowMaximize:     ()              => ipcRenderer.invoke('window-maximize'),
+  windowClose:        ()              => ipcRenderer.invoke('window-close'),
 
   // Push events (main → renderer)
   onQueueUpdate:  (cb) => { ipcRenderer.on('queue-update',  (_, d) => cb(d)); return () => ipcRenderer.removeAllListeners('queue-update');  },

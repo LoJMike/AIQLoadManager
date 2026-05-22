@@ -4,6 +4,69 @@
 
 'use strict';
 
+/**
+ * Priority boost per tag, split by license tier.
+ *
+ * Free tier  — only ⚡ Urgent gives a priority bump. All other tags are
+ *              purely for routing and display.
+ *
+ * Paid tier  — every tag contributes to priority, so tagged prompts naturally
+ *              jump ahead of untagged ones. Urgent doubles its boost.
+ *
+ * Priority is computed in the IPC layer (index-v2.js) so the renderer
+ * cannot manipulate it directly — it only sends a `tags` string array.
+ */
+const TAG_PRIORITY = {
+  free: {
+    urgent: 10,
+  },
+  paid: {
+    chat:       2,
+    research:   8,
+    code:       8,
+    web_search: 6,
+    writing:    4,
+    analysis:   6,
+    image:      5,
+    translate:  2,
+    urgent:     20,
+  },
+};
+
+/**
+ * Derive the routing task_type from a tags array.
+ * The first tag that maps to a known task type wins; 'urgent' is a modifier
+ * and has no task type of its own.
+ */
+const TAG_TO_TASK_TYPE = {
+  chat:       'general',
+  research:   'research',
+  code:       'coding',
+  web_search: 'research',
+  writing:    'general',
+  analysis:   'research',
+  image:      'graphics',
+  translate:  'general',
+};
+
+function tagsToTaskType(tags = []) {
+  for (const tag of tags) {
+    if (TAG_TO_TASK_TYPE[tag]) return TAG_TO_TASK_TYPE[tag];
+  }
+  return 'general';
+}
+
+/**
+ * Compute a numeric priority value for a queue item.
+ * @param {string[]} tags     - selected tag IDs
+ * @param {boolean}  isPaid   - whether the user has an active paid license
+ * @returns {number}
+ */
+function computePriority(tags = [], isPaid = false) {
+  const weights = isPaid ? TAG_PRIORITY.paid : TAG_PRIORITY.free;
+  return tags.reduce((sum, tag) => sum + (weights[tag] || 0), 0);
+}
+
 const path = require('path');
 const { app } = require('electron');
 const { openDatabase } = require('./db');
@@ -48,6 +111,7 @@ class MultiQueueManager {
         provider        TEXT,
         routing_mode    TEXT DEFAULT 'auto',
         task_type       TEXT DEFAULT 'general',
+        tags            TEXT DEFAULT '[]',
         model           TEXT,
         max_tokens      INTEGER DEFAULT 1024,
         project_id      TEXT,
@@ -76,6 +140,11 @@ class MultiQueueManager {
         created_at  INTEGER NOT NULL
       )
     `);
+
+    // Migration: add `tags` column to existing databases that predate this feature
+    try {
+      this.db.exec("ALTER TABLE queue_items ADD COLUMN tags TEXT DEFAULT '[]'");
+    } catch (_) { /* column already exists — safe to ignore */ }
   }
 
   _resetStuck() {
@@ -87,20 +156,21 @@ class MultiQueueManager {
   // ── Queue CRUD ──────────────────────────────────────────────────────────────
 
   addItem({ prompt, label=null, systemPrompt=null, provider=null, routingMode='auto',
-            taskType='general', model=null, maxTokens=1024, projectId=null,
-            projectName=null, conversationId=null, scheduledFor=null }) {
+            taskType='general', tags=[], model=null, maxTokens=1024, projectId=null,
+            projectName=null, conversationId=null, scheduledFor=null, priority=0 }) {
     if (!prompt?.trim()) throw new Error('Prompt cannot be empty');
-    const id  = uuidv4();
-    const now = Date.now();
+    const id       = uuidv4();
+    const now      = Date.now();
+    const tagsJson = JSON.stringify(Array.isArray(tags) ? tags : []);
     const scheduledMs = scheduledFor ? new Date(scheduledFor).getTime() : null;
 
     this.db.prepare(
       `INSERT INTO queue_items
-       (id,label,prompt,system_prompt,provider,routing_mode,task_type,model,max_tokens,
+       (id,label,prompt,system_prompt,provider,routing_mode,task_type,tags,model,max_tokens,
         project_id,project_name,conversation_id,status,priority,created_at,scheduled_for)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,'pending',0,?,?)`
-    ).run(id, label, prompt, systemPrompt, provider, routingMode, taskType, model,
-          maxTokens, projectId, projectName, conversationId, now, scheduledMs);
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,'pending',?,?,?)`
+    ).run(id, label, prompt, systemPrompt, provider, routingMode, taskType, tagsJson, model,
+          maxTokens, projectId, projectName, conversationId, priority, now, scheduledMs);
 
     const item = this._getItem(id);
     this.push('queue-update', { action: 'added', item });
@@ -252,4 +322,4 @@ class MultiQueueManager {
   }
 }
 
-module.exports = { MultiQueueManager, STATUS };
+module.exports = { MultiQueueManager, STATUS, TAG_PRIORITY, TAG_TO_TASK_TYPE, tagsToTaskType, computePriority };

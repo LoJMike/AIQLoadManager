@@ -1,6 +1,6 @@
 // ─── QueuePanel ──────────────────────────────────────────────────────────────
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const STATUS_COLORS = {
   pending:    'var(--text3)',
@@ -76,10 +76,39 @@ export function QueuePanel({ queue, providers, onRefresh }) {
               <span style={{ color: STATUS_COLORS[item.status], fontWeight: 600 }}>{item.status}</span>
               {item.used_provider && <span>via {item.used_provider}</span>}
               {item.routing_mode  && item.routing_mode !== 'auto' && <span>{item.routing_mode}</span>}
-              {item.task_type     && <span>{item.task_type}</span>}
+
+              {/* Tag badges — parse JSON array stored in DB */}
+              {(() => {
+                let tags = [];
+                try { tags = JSON.parse(item.tags || '[]'); } catch (_) {}
+                if (!tags.length) return null;
+                const TAG_META = {
+                  chat: { emoji: '💬', color: '#6366f1' }, research: { emoji: '🔬', color: '#3b82f6' },
+                  code: { emoji: '💻', color: '#10b981' }, web_search: { emoji: '🌐', color: '#0ea5e9' },
+                  writing: { emoji: '✍️', color: '#8b5cf6' }, analysis: { emoji: '📊', color: '#f59e0b' },
+                  image: { emoji: '🖼️', color: '#ec4899' }, translate: { emoji: '🌍', color: '#14b8a6' },
+                  urgent: { emoji: '⚡', color: '#f97316' },
+                };
+                return tags.map(t => {
+                  const m = TAG_META[t] || { emoji: '🏷️', color: 'var(--text3)' };
+                  return (
+                    <span key={t} style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 3,
+                      padding: '1px 7px', borderRadius: 10, fontSize: 10, fontWeight: 600,
+                      background: `color-mix(in srgb, ${m.color} 12%, transparent)`,
+                      border: `1px solid color-mix(in srgb, ${m.color} 35%, transparent)`,
+                      color: m.color,
+                    }}>
+                      {m.emoji} {t.replace('_', ' ')}
+                    </span>
+                  );
+                });
+              })()}
+
               {item.project_name  && <span>📁 {item.project_name}</span>}
               {item.scheduled_for && <span>🕐 {new Date(item.scheduled_for).toLocaleString()}</span>}
               {item.cost_usd > 0  && <span>${item.cost_usd.toFixed(6)}</span>}
+              {item.priority > 0  && <span style={{ color: 'var(--warning)' }}>↑ pri {item.priority}</span>}
               <span style={{ marginLeft: 'auto', color: 'var(--text3)' }}>
                 {new Date(item.created_at).toLocaleTimeString()}
               </span>
@@ -126,8 +155,67 @@ export function QueuePanel({ queue, providers, onRefresh }) {
 
 // ─── SettingsPanel ────────────────────────────────────────────────────────────
 
+// Tier groupings — controls the section headers in the settings panel
+const PROVIDER_TIER_GROUPS = [
+  {
+    key:   'local',
+    label: 'Local AI',
+    sub:   'Runs entirely on your machine — no API key, no internet, zero cost per request',
+    color: '#a855f7',
+    icon:  '🖥️',
+    names: ['ollama', 'lmstudio'],
+  },
+  {
+    key:   'free-cloud',
+    label: 'Free Cloud Tier',
+    sub:   'Permanent free tiers — no credit card required to get started',
+    color: '#22c55e',
+    icon:  '★',
+    names: ['gemini', 'groq', 'mistral'],
+  },
+  {
+    key:   'paid-cloud',
+    label: 'Paid & Trial Cloud',
+    sub:   'Pay-as-you-go APIs — trial credits provided on signup',
+    color: '#f97316',
+    icon:  '💳',
+    names: ['anthropic', 'openai', 'deepseek', 'grok'],
+  },
+];
+
 // Per-provider setup guide: where to get key, what limits mean, links
 const PROVIDER_GUIDE = {
+  // ── Local providers (no API key required) ──────────────────────────────────
+  ollama: {
+    installLabel: 'Download Ollama',
+    installLink:  'https://ollama.com',
+    docsLink:     'https://ollama.com/library',
+    baseURL:      'http://localhost:11434',
+    quickstart:   'Run in your terminal:  ollama pull llama3.2',
+    localNote:    'Models are detected automatically when Ollama is running. Pull any model from ollama.com/library and it will appear here on next use.',
+    limits: [
+      { label: 'Cost per request', value: '$0.00',         note: 'All computation runs on your hardware' },
+      { label: 'Rate limit',       value: 'None',          note: 'Bounded only by your GPU / CPU speed' },
+      { label: 'Internet required',value: 'No',            note: 'Fully offline after model download' },
+      { label: 'Privacy',          value: 'Total',         note: 'Prompts never leave your machine' },
+    ],
+  },
+  lmstudio: {
+    installLabel: 'Download LM Studio',
+    installLink:  'https://lmstudio.ai',
+    docsLink:     'https://lmstudio.ai/docs',
+    baseURL:      'http://localhost:1234',
+    quickstart:   'In LM Studio: load a model, then open the Developer tab and start the Local Server.',
+    localNote:    'Models are detected automatically from the running LM Studio server. Load a model in LM Studio\'s model browser to get started.',
+    limits: [
+      { label: 'Cost per request', value: '$0.00',         note: 'All computation runs on your hardware' },
+      { label: 'Rate limit',       value: 'None',          note: 'Bounded only by your GPU / CPU speed' },
+      { label: 'Internet required',value: 'No',            note: 'Fully offline after model download' },
+      { label: 'Privacy',          value: 'Total',         note: 'Prompts never leave your machine' },
+    ],
+  },
+
+  // ── Free cloud tier ────────────────────────────────────────────────────────
   anthropic: {
     keyLabel:    'API Key (starts with sk-ant-...)',
     keyHelp:     'Create at: console.anthropic.com → API Keys',
@@ -162,7 +250,7 @@ const PROVIDER_GUIDE = {
     keyLink:     'https://aistudio.google.com/app/apikey',
     limitsLink:  'https://ai.google.dev/gemini-api/docs/rate-limits',
     freeTier:    'Permanent free tier: 15 requests/min, 1,500/day on Flash models.',
-    budgetTip:   'Free tier is very generous. Only set a budget if using Pro models.',
+    budgetTip:   'Free tier is very generous. Leave blank — rate limits automatically keep you within the free tier. Only set a budget if using Gemini Pro models.',
     limits: [
       { label: 'Requests / min',   value: '15 RPM',        note: 'Free tier (Flash models)' },
       { label: 'Requests / day',   value: '1,500 RPD',     note: 'Free tier hard cap — resets midnight PT' },
@@ -176,7 +264,7 @@ const PROVIDER_GUIDE = {
     keyLink:     'https://console.groq.com/keys',
     limitsLink:  'https://console.groq.com/docs/rate-limits',
     freeTier:    'Permanent free tier: 30 req/min, 14,400 req/day. No credit card needed.',
-    budgetTip:   'Free tier covers most use cases. Leave budget at $0 unless exceeding free limits.',
+    budgetTip:   'Free tier covers most use cases. Leave blank — rate limits automatically keep you within the free tier. Set 0 only if you want to completely prevent any Groq charges.',
     limits: [
       { label: 'Requests / min',   value: '30 RPM',        note: 'Free tier hard cap' },
       { label: 'Requests / day',   value: '14,400 RPD',    note: 'Free tier — resets midnight UTC' },
@@ -204,7 +292,7 @@ const PROVIDER_GUIDE = {
     keyLink:     'https://console.mistral.ai/api-keys',
     limitsLink:  'https://docs.mistral.ai/deployment/rate-limits',
     freeTier:    'Experiment tier: 1 billion tokens/month free at 2 req/min.',
-    budgetTip:   'Free tier is generous for testing. The 2 RPM limit means it processes slowly.',
+    budgetTip:   'Free Experiment tier: 1B tokens/month at no cost. Leave blank — rate limits automatically keep you within the free tier.',
     limits: [
       { label: 'Requests / min',   value: '2 RPM',         note: 'Free Experiment tier — very slow' },
       { label: 'Monthly tokens',   value: '1B tokens',     note: 'Free tier monthly cap' },
@@ -228,38 +316,63 @@ const PROVIDER_GUIDE = {
   },
 };
 
-function ProviderSettingsCard({ provider, onSaveKey, onRemoveKey, onSaveBudget, keyValue, setKeyValue, budgetValue, setBudgetValue, showToast }) {
+function ProviderSettingsCard({ provider, onSaveKey, onRemoveKey, onSaveBudget, keyValue, setKeyValue, budgetValue, setBudgetValue, savedBudget, showToast }) {
   const [expanded, setExpanded] = useState(false);
   const [showKey,  setShowKey]  = useState(false);
-  const guide = PROVIDER_GUIDE[provider.name] || {};
-  const api   = window.aiQueue;
+  const guide    = PROVIDER_GUIDE[provider.name] || {};
+  const api      = window.aiQueue;
+  const isLocal  = !!provider.local;  // Ollama, LM Studio — no API key needed
+
+  // true when budget is explicitly set to $0 (hard spend block)
+  const isSpendBlocked = !isLocal && savedBudget === 0;
+
+  // ── Tag label for header badge ─────────────────────────────────────────────
+  const tierTag = isLocal
+    ? { label: '🖥 local · free',   cls: 'tag-local'   }
+    : ['gemini','groq','mistral'].includes(provider.name)
+      ? { label: '★ free tier',     cls: 'tag-accent'  }
+      : guide.freeTier
+        ? { label: 'trial credits', cls: 'tag-accent'  }
+        : null;
 
   return (
     <div className="settings-card" style={{ borderColor: provider.configured ? `${provider.color}40` : undefined }}>
 
       {/* ── Header ── */}
       <div className="sc-header" onClick={() => setExpanded(e => !e)}>
-        <div className="sc-dot" style={{ background: provider.configured ? provider.color : '#3a3a3d' }} />
+        <div className="sc-dot" style={{ background: isLocal ? '#a855f7' : provider.configured ? provider.color : '#3a3a3d' }} />
         <div className="sc-title">
           <span className="sc-name">{provider.displayName}</span>
-          <span className={`tag ${provider.configured ? 'tag-success' : 'tag-muted'}`}>
-            {provider.configured ? '✓ configured' : 'not set up'}
+          <span className={`tag ${isLocal ? 'tag-success' : provider.configured ? 'tag-success' : 'tag-muted'}`}>
+            {isLocal ? '✓ always ready' : provider.configured ? '✓ configured' : 'not set up'}
           </span>
-          {guide.freeTier && (
-            <span className="tag tag-accent" style={{ fontSize: 10 }}>
-              {provider.name === 'gemini' || provider.name === 'groq' || provider.name === 'mistral' ? '★ free tier' : 'trial credits'}
+          {tierTag && (
+            <span className={`tag ${tierTag.cls}`} style={{ fontSize: 10 }}>{tierTag.label}</span>
+          )}
+          {isSpendBlocked && (
+            <span className="tag" style={{ fontSize: 10, background: 'rgba(248,113,113,0.12)', color: 'var(--danger)', border: '1px solid rgba(248,113,113,0.25)' }}>
+              ⛔ spend blocked
             </span>
           )}
         </div>
         <div className="sc-links">
-          <button className="ghost" style={{ fontSize: 11 }}
-            onClick={e => { e.stopPropagation(); api.openExternal(guide.keyLink); }}>
-            Get API Key ↗
-          </button>
-          <button className="ghost" style={{ fontSize: 11 }}
-            onClick={e => { e.stopPropagation(); api.openExternal(guide.limitsLink); }}>
-            View Limits ↗
-          </button>
+          {isLocal ? (
+            <button className="ghost" style={{ fontSize: 11 }}
+              onClick={e => { e.stopPropagation(); api.openExternal(guide.installLink); }}>
+              {guide.installLabel} ↗
+            </button>
+          ) : (
+            <>
+              <button className="ghost" style={{ fontSize: 11 }}
+                onClick={e => { e.stopPropagation(); api.openExternal(guide.keyLink); }}>
+                Get API Key ↗
+              </button>
+              <button className="ghost" style={{ fontSize: 11 }}
+                onClick={e => { e.stopPropagation(); api.openExternal(guide.limitsLink); }}>
+                View Limits ↗
+              </button>
+            </>
+          )}
         </div>
         <span style={{ color: 'var(--text3)', fontSize: 16, marginLeft: 8 }}>{expanded ? '▲' : '▼'}</span>
       </div>
@@ -267,115 +380,200 @@ function ProviderSettingsCard({ provider, onSaveKey, onRemoveKey, onSaveBudget, 
       {expanded && (
         <div className="sc-body">
 
-          {/* ── Free tier notice ── */}
-          {guide.freeTier && (
-            <div className="sc-notice">
-              <span style={{ color: 'var(--accent)', marginRight: 6 }}>ℹ</span>
-              {guide.freeTier}
-            </div>
-          )}
+          {isLocal ? (
+            /* ════════════════════════════════════════════
+               LOCAL PROVIDER BODY
+               ════════════════════════════════════════════ */
+            <>
+              {/* Zero-cost notice */}
+              <div className="sc-notice sc-notice-local">
+                <span style={{ marginRight: 6 }}>🖥️</span>
+                <strong>No API key required.</strong> This provider runs on your own hardware.
+                Every request costs $0.00 and your prompts never leave your machine.
+              </div>
 
-          {/* ── API Key ── */}
-          <div className="sc-section">
-            <div className="sc-section-title">API Key</div>
-            <div className="sc-help">{guide.keyHelp}</div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-              <div style={{ position: 'relative', flex: 1 }}>
-                <input
-                  type={showKey ? 'text' : 'password'}
-                  placeholder={provider.configured ? '●●●●●●●● (paste to replace)' : `Paste ${guide.keyLabel || 'API key'}…`}
-                  value={keyValue}
-                  onChange={e => setKeyValue(e.target.value)}
-                  style={{ paddingRight: 36 }}
-                />
+              {/* Setup instructions */}
+              <div className="sc-section">
+                <div className="sc-section-title">Setup</div>
+                <div className="sc-help">
+                  {provider.name === 'ollama'
+                    ? 'Download and install Ollama, then pull a model to get started.'
+                    : 'Download and install LM Studio, load a model, then start the Local Server in the Developer tab.'}
+                </div>
+                <div className="sc-quickstart">
+                  <span style={{ color: 'var(--text3)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Quick start</span>
+                  <code>{guide.quickstart}</code>
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                  <button className="primary" style={{ fontSize: 12 }}
+                    onClick={() => api.openExternal(guide.installLink)}>
+                    {guide.installLabel} ↗
+                  </button>
+                  <button className="secondary" style={{ fontSize: 12 }}
+                    onClick={() => api.openExternal(guide.docsLink)}>
+                    Browse Models ↗
+                  </button>
+                </div>
+                <div style={{ marginTop: 10, fontSize: 11, color: 'var(--text3)' }}>
+                  Server URL: <code style={{ color: 'var(--accent)' }}>{guide.baseURL}</code>
+                </div>
+              </div>
+
+              {/* Limits (hardware-bound) */}
+              <div className="sc-section">
+                <div className="sc-section-title">Limits & Cost</div>
+                <div className="sc-limits-grid">
+                  {(guide.limits || []).map(l => (
+                    <div key={l.label} className="sc-limit-row">
+                      <span className="sc-limit-label">{l.label}</span>
+                      <span className="sc-limit-value" style={{ color: '#22c55e' }}>{l.value}</span>
+                      <span className="sc-limit-note">{l.note}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Models (dynamic) */}
+              <div className="sc-section">
+                <div className="sc-section-title">Available Models</div>
+                <div className="sc-help" style={{ marginBottom: 8 }}>{guide.localNote}</div>
+                <div className="sc-models-grid">
+                  {(provider.models || []).map(m => (
+                    <div key={m.id} className="sc-model-row">
+                      <span className="sc-model-name">{m.name}</span>
+                      <span className="sc-model-tier">{m.tier}</span>
+                      <span className="sc-model-price" style={{ color: '#22c55e' }}>$0.00 / request</span>
+                      <span className="tag tag-accent" style={{ fontSize: 10 }}>free</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            /* ════════════════════════════════════════════
+               CLOUD PROVIDER BODY
+               ════════════════════════════════════════════ */
+            <>
+              {/* Free tier notice */}
+              {guide.freeTier && (
+                <div className="sc-notice">
+                  <span style={{ color: 'var(--accent)', marginRight: 6 }}>ℹ</span>
+                  {guide.freeTier}
+                </div>
+              )}
+
+              {/* API Key */}
+              <div className="sc-section">
+                <div className="sc-section-title">API Key</div>
+                <div className="sc-help">{guide.keyHelp}</div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                  <div style={{ position: 'relative', flex: 1 }}>
+                    <input
+                      type={showKey ? 'text' : 'password'}
+                      placeholder={provider.configured ? '●●●●●●●● (paste to replace)' : `Paste ${guide.keyLabel || 'API key'}…`}
+                      value={keyValue}
+                      onChange={e => setKeyValue(e.target.value)}
+                      style={{ paddingRight: 36 }}
+                    />
+                    <button
+                      className="ghost"
+                      style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', fontSize: 13, padding: '2px 4px' }}
+                      onClick={() => setShowKey(s => !s)}
+                      title={showKey ? 'Hide' : 'Show'}
+                    >{showKey ? '🙈' : '👁'}</button>
+                  </div>
+                  <button
+                    className="primary"
+                    style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+                    onClick={() => onSaveKey(provider.name)}
+                    disabled={!keyValue.trim()}
+                  >Save Key</button>
+                  {provider.configured && (
+                    <button
+                      className="secondary"
+                      style={{ whiteSpace: 'nowrap', flexShrink: 0, color: 'var(--danger)' }}
+                      onClick={() => onRemoveKey(provider.name)}
+                    >Remove</button>
+                  )}
+                </div>
+              </div>
+
+              {/* Rate limits */}
+              <div className="sc-section">
+                <div className="sc-section-title">Rate Limits Reference</div>
+                <div className="sc-help">These are the limits the queue respects automatically. No action needed — for your reference only.</div>
+                <div className="sc-limits-grid">
+                  {(guide.limits || []).map(l => (
+                    <div key={l.label} className="sc-limit-row">
+                      <span className="sc-limit-label">{l.label}</span>
+                      <span className="sc-limit-value">{l.value}</span>
+                      <span className="sc-limit-note">{l.note}</span>
+                    </div>
+                  ))}
+                </div>
                 <button
                   className="ghost"
-                  style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', fontSize: 13, padding: '2px 4px' }}
-                  onClick={() => setShowKey(s => !s)}
-                  title={showKey ? 'Hide' : 'Show'}
-                >{showKey ? '🙈' : '👁'}</button>
+                  style={{ fontSize: 11, marginTop: 6, color: 'var(--text3)' }}
+                  onClick={() => api.openExternal(guide.limitsLink)}
+                >
+                  Check your actual limits at {provider.name} console ↗
+                </button>
               </div>
-              <button
-                className="primary"
-                style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
-                onClick={() => onSaveKey(provider.name)}
-                disabled={!keyValue.trim()}
-              >Save Key</button>
-              {provider.configured && (
-                <button
-                  className="secondary"
-                  style={{ whiteSpace: 'nowrap', flexShrink: 0, color: 'var(--danger)' }}
-                  onClick={() => onRemoveKey(provider.name)}
-                >Remove</button>
-              )}
-            </div>
-          </div>
 
-          {/* ── Rate limits reference ── */}
-          <div className="sc-section">
-            <div className="sc-section-title">Rate Limits Reference</div>
-            <div className="sc-help">These are the limits the queue respects automatically. No action needed — for your reference only.</div>
-            <div className="sc-limits-grid">
-              {(guide.limits || []).map(l => (
-                <div key={l.label} className="sc-limit-row">
-                  <span className="sc-limit-label">{l.label}</span>
-                  <span className="sc-limit-value">{l.value}</span>
-                  <span className="sc-limit-note">{l.note}</span>
+              {/* Monthly budget */}
+              <div className="sc-section">
+                <div className="sc-section-title">Monthly Spend Budget</div>
+                <div className="sc-help">
+                  The queue tracks your estimated spend based on tokens used.
+                  You can set a monthly cap, block spending entirely, or leave it uncapped.
                 </div>
-              ))}
-            </div>
-            <button
-              className="ghost"
-              style={{ fontSize: 11, marginTop: 6, color: 'var(--text3)' }}
-              onClick={() => api.openExternal(guide.limitsLink)}
-            >
-              Check your actual limits at {provider.name} console ↗
-            </button>
-          </div>
-
-          {/* ── Monthly budget ── */}
-          <div className="sc-section">
-            <div className="sc-section-title">Monthly Spend Budget</div>
-            <div className="sc-help">
-              AIQLoadManager tracks your estimated spend based on tokens used.
-              Set a soft cap here — the queue will pause this provider when the limit is reached.
-              Set to <strong>0</strong> for no limit.
-            </div>
-            <div className="sc-budget-tip">💡 {guide.budgetTip}</div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
-              <span style={{ color: 'var(--text3)', fontSize: 14, flexShrink: 0 }}>$</span>
-              <input
-                type="number"
-                min={0}
-                step={1}
-                placeholder="0  (no limit)"
-                value={budgetValue ?? ''}
-                onChange={e => setBudgetValue(e.target.value)}
-                style={{ maxWidth: 140 }}
-              />
-              <span style={{ color: 'var(--text3)', fontSize: 12, flexShrink: 0 }}>USD / month</span>
-              <button
-                className="primary"
-                style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
-                onClick={() => onSaveBudget(provider.name)}
-              >Set Budget</button>
-            </div>
-          </div>
-
-          {/* ── Models & pricing ── */}
-          <div className="sc-section">
-            <div className="sc-section-title">Available Models & Pricing</div>
-            <div className="sc-models-grid">
-              {(provider.models || []).map(m => (
-                <div key={m.id} className="sc-model-row">
-                  <span className="sc-model-name">{m.name}</span>
-                  <span className="sc-model-tier">{m.tier}</span>
-                  <span className="sc-model-price">${m.inputCost}/M in · ${m.outputCost}/M out</span>
-                  {m.free && <span className="tag tag-accent" style={{ fontSize: 10 }}>free tier</span>}
+                <div style={{ marginTop: 8, marginBottom: 2, fontSize: 12, color: 'var(--text2)', lineHeight: 1.6 }}>
+                  <span style={{ color: 'var(--danger)', fontWeight: 600 }}>0</span> = block all spending (no requests sent to this provider)
+                  &nbsp;·&nbsp;
+                  <span style={{ fontWeight: 600 }}>blank</span> = no limit
+                  &nbsp;·&nbsp;
+                  <span style={{ fontWeight: 600 }}>positive number</span> = monthly cap
                 </div>
-              ))}
-            </div>
-          </div>
+                <div className="sc-budget-tip">💡 {guide.budgetTip}</div>
+                {isSpendBlocked && (
+                  <div style={{ marginTop: 8, padding: '7px 12px', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.25)', borderRadius: 6, fontSize: 12, color: 'var(--danger)' }}>
+                    ⛔ Spending is currently blocked on this provider. No requests will be sent until you change the budget.
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text3)', fontSize: 14, flexShrink: 0 }}>$</span>
+                  <input
+                    type="number" min={0} step={1}
+                    placeholder="blank = no limit  ·  0 = block"
+                    value={budgetValue ?? ''}
+                    onChange={e => setBudgetValue(e.target.value)}
+                    style={{ maxWidth: 200 }}
+                  />
+                  <span style={{ color: 'var(--text3)', fontSize: 12, flexShrink: 0 }}>USD / month</span>
+                  <button
+                    className="primary"
+                    style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+                    onClick={() => onSaveBudget(provider.name)}
+                  >Set Budget</button>
+                </div>
+              </div>
+
+              {/* Models & pricing */}
+              <div className="sc-section">
+                <div className="sc-section-title">Available Models & Pricing</div>
+                <div className="sc-models-grid">
+                  {(provider.models || []).map(m => (
+                    <div key={m.id} className="sc-model-row">
+                      <span className="sc-model-name">{m.name}</span>
+                      <span className="sc-model-tier">{m.tier}</span>
+                      <span className="sc-model-price">${m.inputCost}/M in · ${m.outputCost}/M out</span>
+                      {m.free && <span className="tag tag-accent" style={{ fontSize: 10 }}>free tier</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
         </div>
       )}
@@ -403,6 +601,11 @@ function ProviderSettingsCard({ provider, onSaveKey, onRemoveKey, onSaveBudget, 
         .sc-name { font-size: 14px; font-weight: 600; color: var(--text1); }
         .sc-links { display: flex; gap: 4px; margin-left: auto; }
         .sc-body { padding: 0 18px 18px; border-top: 1px solid var(--border); }
+        .tag-local {
+          background: rgba(168,85,247,0.12);
+          color: #a855f7;
+          border: 1px solid rgba(168,85,247,0.25);
+        }
         .sc-notice {
           margin: 14px 0 0;
           padding: 8px 12px;
@@ -412,6 +615,25 @@ function ProviderSettingsCard({ provider, onSaveKey, onRemoveKey, onSaveBudget, 
           font-size: 12px;
           color: var(--text2);
           line-height: 1.5;
+        }
+        .sc-notice-local {
+          background: rgba(168,85,247,0.07);
+          border-color: rgba(168,85,247,0.20);
+        }
+        .sc-quickstart {
+          margin-top: 10px;
+          padding: 8px 12px;
+          background: var(--bg2);
+          border-radius: 6px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .sc-quickstart code {
+          font-family: var(--mono, monospace);
+          font-size: 12px;
+          color: var(--accent);
+          letter-spacing: 0.01em;
         }
         .sc-section { margin-top: 18px; }
         .sc-section-title {
@@ -460,15 +682,54 @@ function ProviderSettingsCard({ provider, onSaveKey, onRemoveKey, onSaveBudget, 
         .sc-model-name  { color: var(--text1); font-weight: 500; }
         .sc-model-tier  { color: var(--text3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
         .sc-model-price { color: var(--text2); font-size: 11px; }
+        /* Tier section headers */
+        .tier-section { margin-bottom: 28px; }
+        .tier-section-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 0 12px;
+          margin-bottom: 8px;
+          border-bottom: 1px solid var(--border);
+        }
+        .tier-section-icon { font-size: 15px; flex-shrink: 0; }
+        .tier-section-label {
+          font-size: 12px;
+          font-weight: 700;
+          color: var(--text1);
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
+        .tier-section-sub { font-size: 11px; color: var(--text3); margin-left: 4px; }
       `}</style>
     </div>
   );
 }
 
 export function SettingsPanel({ providers, onRefresh, showToast }) {
-  const [keys,    setKeys]    = useState({});
-  const [budgets, setBudgets] = useState({});
+  const [keys,          setKeys]          = useState({});
+  const [budgets,       setBudgets]       = useState({});
+  const [savedBudgets,  setSavedBudgets]  = useState({}); // what's actually stored
   const api = window.aiQueue;
+
+  // Load saved budgets once on mount so inputs reflect current state
+  useEffect(() => {
+    api.getBudgets().then(b => {
+      const asStrings = {};
+      for (const [k, v] of Object.entries(b)) {
+        asStrings[k] = v === null ? '' : String(v);
+      }
+      setBudgets(prev => {
+        const merged = { ...asStrings };
+        // Don't overwrite anything the user is already typing
+        for (const k of Object.keys(prev)) {
+          if (prev[k] !== undefined) merged[k] = prev[k];
+        }
+        return merged;
+      });
+      setSavedBudgets(b);
+    }).catch(() => {});
+  }, []);
 
   async function onSaveKey(providerName) {
     const key = keys[providerName];
@@ -490,43 +751,78 @@ export function SettingsPanel({ providers, onRefresh, showToast }) {
   }
 
   async function onSaveBudget(providerName) {
-    const usd = parseFloat(budgets[providerName]) || 0;
-    await api.setBudget(providerName, usd);
-    showToast(`Budget set to $${usd}/mo for ${providerName}`, 'success');
+    const raw = budgets[providerName];
+    // Blank / empty → null (no limit).  '0' → 0 (hard block).  positive → cap.
+    const parsed  = (raw === '' || raw == null) ? null : parseFloat(raw);
+    const sanitized = (parsed === null || isNaN(parsed)) ? null : parsed;
+
+    await api.setBudget(providerName, sanitized);
+    setSavedBudgets(prev => ({ ...prev, [providerName]: sanitized }));
+
+    if (sanitized === null) {
+      showToast(`No spend limit set for ${providerName}`, 'info');
+    } else if (sanitized === 0) {
+      showToast(`⛔ Spending blocked for ${providerName} — no requests will be sent`, 'success');
+    } else {
+      showToast(`Budget set to $${sanitized}/mo for ${providerName}`, 'success');
+    }
   }
 
-  const configured = providers.filter(p => p.configured).length;
+  // Cloud providers that still need configuration (local providers are always ready)
+  const cloudConfigured = providers.filter(p => !p.local && p.configured).length;
+  const cloudTotal      = providers.filter(p => !p.local).length;
+
+  // Shared card renderer
+  const renderCard = p => (
+    <ProviderSettingsCard
+      key={p.name}
+      provider={p}
+      onSaveKey={onSaveKey}
+      onRemoveKey={onRemoveKey}
+      onSaveBudget={onSaveBudget}
+      keyValue={keys[p.name] || ''}
+      setKeyValue={v => setKeys(k => ({ ...k, [p.name]: v }))}
+      budgetValue={budgets[p.name]}
+      setBudgetValue={v => setBudgets(b => ({ ...b, [p.name]: v }))}
+      savedBudget={savedBudgets[p.name]}
+      showToast={showToast}
+    />
+  );
 
   return (
     <div>
-      <div className="panel-title">Settings</div>
+      <div className="panel-title">Connectors</div>
       <div className="panel-sub">
-        {configured} of {providers.length} providers configured — click any provider to expand
+        {cloudConfigured} of {cloudTotal} cloud providers configured · Local AI always available — click any provider to expand
       </div>
 
-      {/* Quick-start tip */}
-      {configured === 0 && (
-        <div style={{ marginBottom: 20, padding: '12px 16px', background: 'rgba(124,106,247,0.08)', border: '1px solid rgba(124,106,247,0.25)', borderRadius: 8, fontSize: 13, color: 'var(--text2)', lineHeight: 1.6 }}>
-          <strong style={{ color: 'var(--accent)' }}>Getting started:</strong> Groq and Gemini both have
-          permanent free tiers with no credit card required — great for testing.
-          Click either one below, get a free API key in under 2 minutes, and paste it in.
+      {/* Quick-start tip for brand-new users */}
+      {cloudConfigured === 0 && (
+        <div style={{ marginBottom: 24, padding: '12px 16px', background: 'rgba(168,85,247,0.07)', border: '1px solid rgba(168,85,247,0.22)', borderRadius: 8, fontSize: 13, color: 'var(--text2)', lineHeight: 1.6 }}>
+          <strong style={{ color: 'var(--accent)' }}>Getting started:</strong> Want zero cost right now?
+          Install <strong style={{ color: 'var(--text1)' }}>Ollama</strong> or <strong style={{ color: 'var(--text1)' }}>LM Studio</strong> below — no API key, no account needed.
+          Or grab a free cloud key from <strong style={{ color: 'var(--text1)' }}>Groq</strong> or <strong style={{ color: 'var(--text1)' }}>Gemini</strong> in under 2 minutes.
         </div>
       )}
 
-      {providers.map(p => (
-        <ProviderSettingsCard
-          key={p.name}
-          provider={p}
-          onSaveKey={onSaveKey}
-          onRemoveKey={onRemoveKey}
-          onSaveBudget={onSaveBudget}
-          keyValue={keys[p.name] || ''}
-          setKeyValue={v => setKeys(k => ({ ...k, [p.name]: v }))}
-          budgetValue={budgets[p.name]}
-          setBudgetValue={v => setBudgets(b => ({ ...b, [p.name]: v }))}
-          showToast={showToast}
-        />
-      ))}
+      {/* Render providers in tier groups */}
+      {PROVIDER_TIER_GROUPS.map(group => {
+        const groupProviders = group.names
+          .map(name => providers.find(p => p.name === name))
+          .filter(Boolean);
+        if (groupProviders.length === 0) return null;
+
+        return (
+          <div key={group.key} className="tier-section">
+            <div className="tier-section-header">
+              <span className="tier-section-icon">{group.icon}</span>
+              <span className="tier-section-label" style={{ color: group.color }}>{group.label}</span>
+              <span className="tier-section-sub">{group.sub}</span>
+            </div>
+            {groupProviders.map(renderCard)}
+          </div>
+        );
+      })}
     </div>
   );
 }

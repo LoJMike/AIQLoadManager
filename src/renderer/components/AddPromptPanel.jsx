@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 const ROUTING_MODES = [
   { value: 'auto',     label: 'Auto (scored best match)' },
@@ -9,31 +9,122 @@ const ROUTING_MODES = [
   { value: 'manual',   label: 'Manual (pick provider)' },
 ];
 
-const TASK_TYPES = [
-  { value: 'general',  label: 'General' },
-  { value: 'coding',   label: 'Coding' },
-  { value: 'research', label: 'Research' },
-  { value: 'fast',     label: 'Fast response' },
-  { value: 'graphics', label: 'Graphics / image' },
+/**
+ * Prompt tag definitions — display config only.
+ * Priority weights are computed server-side (main process) so the renderer
+ * can never inflate queue priority by spoofing these values.
+ *
+ * `taskType` is passed to the router for provider selection.
+ * `urgent` has no taskType — it is a priority modifier only.
+ */
+const PROMPT_TAGS = [
+  { id: 'chat',       label: 'Chat',       emoji: '💬', taskType: 'general',  color: '#6366f1' },
+  { id: 'research',   label: 'Research',   emoji: '🔬', taskType: 'research', color: '#3b82f6' },
+  { id: 'code',       label: 'Code',       emoji: '💻', taskType: 'coding',   color: '#10b981' },
+  { id: 'web_search', label: 'Web Search', emoji: '🌐', taskType: 'research', color: '#0ea5e9' },
+  { id: 'writing',    label: 'Writing',    emoji: '✍️',  taskType: 'general',  color: '#8b5cf6' },
+  { id: 'analysis',   label: 'Analysis',   emoji: '📊', taskType: 'research', color: '#f59e0b' },
+  { id: 'image',      label: 'Image',      emoji: '🖼️',  taskType: 'graphics', color: '#ec4899' },
+  { id: 'translate',  label: 'Translate',  emoji: '🌍', taskType: 'general',  color: '#14b8a6' },
+  { id: 'urgent',     label: 'Urgent',     emoji: '⚡', taskType: null,       color: '#f97316' },
 ];
+
+/** Derive routing task_type from selected tag IDs */
+function tagsToTaskType(tagIds = []) {
+  const TAG_TO_TASK = {
+    chat: 'general', research: 'research', code: 'coding',
+    web_search: 'research', writing: 'general', analysis: 'research',
+    image: 'graphics', translate: 'general',
+  };
+  for (const id of tagIds) {
+    if (TAG_TO_TASK[id]) return TAG_TO_TASK[id];
+  }
+  return 'general';
+}
 
 const EMPTY = {
   prompt: '', label: '', systemPrompt: '',
-  routingMode: 'auto', provider: '', taskType: 'general',
+  routingMode: 'auto', provider: '',
   model: '', maxTokens: 1024,
   projectId: '', conversationId: '',
   scheduledFor: '',
 };
 
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+/** Rough token approximation: ~4 chars per token (±15% for English prose) */
+function estimateTokens(text) {
+  return Math.max(1, Math.ceil((text || '').length / 4));
+}
+
+/** Format a USD cost value for display */
+function fmtCost(usd) {
+  if (usd === 0)      return '$0.00';
+  if (usd < 0.000001) return '< $0.000001';
+  if (usd < 0.001)    return `$${usd.toFixed(6)}`;
+  if (usd < 0.01)     return `$${usd.toFixed(5)}`;
+  if (usd < 1)        return `$${usd.toFixed(4)}`;
+  return `$${usd.toFixed(3)}`;
+}
+
+/** Format a wait time in ms as a readable string */
+function fmtWait(ms) {
+  if (!ms || ms <= 0) return null;
+  if (ms < 60_000) return `~${Math.ceil(ms / 1000)}s`;
+  return `~${Math.ceil(ms / 60_000)}m`;
+}
+
+// ── Tag chip sub-component ─────────────────────────────────────────────────
+
+function TagChips({ selectedTags, onToggle }) {
+  return (
+    <div>
+      <label style={{ marginBottom: 8, display: 'block' }}>Prompt type <span style={{ color: 'var(--text3)', fontWeight: 400 }}>(optional — helps routing &amp; prioritisation)</span></label>
+      <div className="tag-chip-grid">
+        {PROMPT_TAGS.map(tag => {
+          const active = selectedTags.includes(tag.id);
+          const isUrgent = tag.id === 'urgent';
+          return (
+            <button
+              key={tag.id}
+              type="button"
+              className={`tag-chip ${active ? 'active' : ''} ${isUrgent ? 'urgent' : ''}`}
+              style={active ? { '--chip-color': tag.color } : {}}
+              onClick={() => onToggle(tag.id)}
+              title={isUrgent ? 'Marks this prompt as high-priority in the queue' : `Routes to ${tag.taskType || 'general'} providers`}
+            >
+              <span className="chip-emoji">{tag.emoji}</span>
+              <span className="chip-label">{tag.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────────────
+
 export default function AddPromptPanel({ providers, projects, onSubmit }) {
-  const [form,        setForm]        = useState(EMPTY);
-  const [conversations, setConvs]    = useState([]);
-  const [routePreview, setPreview]   = useState(null);
-  const [submitting,  setSubmitting] = useState(false);
-  const [bulk,        setBulk]       = useState(false);
-  const [bulkText,    setBulkText]   = useState('');
+  const [form,          setForm]        = useState(EMPTY);
+  const [selectedTags,  setTags]        = useState([]);
+  const [conversations, setConvs]       = useState([]);
+  const [routePreview,  setPreview]     = useState(null);
+  const [submitting,    setSubmitting]  = useState(false);
+  const [bulk,          setBulk]        = useState(false);
+  const [bulkText,      setBulkText]    = useState('');
+
+  // Live token estimate (pure maths — no debounce needed)
+  const tokenEstimate = useMemo(() => estimateTokens(form.prompt), [form.prompt]);
+
+  // Task type is derived from selected tags (drives router provider selection)
+  const taskType = useMemo(() => tagsToTaskType(selectedTags), [selectedTags]);
 
   const api = window.aiQueue;
+
+  function toggleTag(id) {
+    setTags(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
+  }
 
   // When provider changes, load its conversations
   useEffect(() => {
@@ -44,21 +135,22 @@ export default function AddPromptPanel({ providers, projects, onSubmit }) {
     }
   }, [form.provider]);
 
-  // Live route preview when key fields change
+  // Live route preview — fires 500 ms after the user stops changing key fields
   useEffect(() => {
     if (!form.prompt.trim()) { setPreview(null); return; }
     const t = setTimeout(async () => {
       const p = await api.previewRoute({
-        prompt: form.prompt,
-        provider: form.provider || null,
+        prompt:       form.prompt,
+        provider:     form.provider || null,
         routing_mode: form.routingMode,
-        task_type: form.taskType,
-        model: form.model || null,
+        task_type:    taskType,
+        model:        form.model || null,
+        maxTokens:    parseInt(form.maxTokens) || 1024,
       });
       setPreview(p);
     }, 500);
     return () => clearTimeout(t);
-  }, [form.prompt, form.provider, form.routingMode, form.taskType, form.model]);
+  }, [form.prompt, form.provider, form.routingMode, taskType, form.model, form.maxTokens]);
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
@@ -79,7 +171,8 @@ export default function AddPromptPanel({ providers, projects, onSubmit }) {
         systemPrompt:   form.systemPrompt || null,
         provider:       form.routingMode === 'manual' ? form.provider : (form.provider || null),
         routingMode:    form.routingMode,
-        taskType:       form.taskType,
+        taskType,
+        tags:           selectedTags,
         model:          form.model || null,
         maxTokens:      parseInt(form.maxTokens) || 1024,
         projectId:      form.projectId || null,
@@ -87,7 +180,8 @@ export default function AddPromptPanel({ providers, projects, onSubmit }) {
         conversationId: form.conversationId || null,
         scheduledFor:   form.scheduledFor || null,
       });
-      setForm(f => ({ ...EMPTY, routingMode: f.routingMode, taskType: f.taskType }));
+      setForm(f => ({ ...EMPTY, routingMode: f.routingMode }));
+      setTags([]);
       setPreview(null);
     } finally {
       setSubmitting(false);
@@ -102,7 +196,8 @@ export default function AddPromptPanel({ providers, projects, onSubmit }) {
       await onSubmit({
         prompt:      line,
         routingMode: form.routingMode,
-        taskType:    form.taskType,
+        taskType,
+        tags:        selectedTags,
         provider:    form.routingMode === 'manual' ? form.provider : null,
         projectId:   form.projectId || null,
         maxTokens:   parseInt(form.maxTokens) || 1024,
@@ -111,6 +206,8 @@ export default function AddPromptPanel({ providers, projects, onSubmit }) {
     setBulkText('');
     setSubmitting(false);
   }
+
+  // ── Render ───────────────────────────────────────────────────────────────
 
   return (
     <div>
@@ -124,6 +221,7 @@ export default function AddPromptPanel({ providers, projects, onSubmit }) {
       </div>
 
       {bulk ? (
+        /* ── Bulk mode ── */
         <div className="card">
           <div className="form-group">
             <label>Prompts — one per line</label>
@@ -134,17 +232,16 @@ export default function AddPromptPanel({ providers, projects, onSubmit }) {
               onChange={e => setBulkText(e.target.value)}
             />
           </div>
+
+          <div className="form-group">
+            <TagChips selectedTags={selectedTags} onToggle={toggleTag} />
+          </div>
+
           <div className="form-row form-row-3" style={{ marginBottom: 14 }}>
             <div className="form-group">
               <label>Routing mode</label>
               <select value={form.routingMode} onChange={e => set('routingMode', e.target.value)}>
                 {ROUTING_MODES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Task type</label>
-              <select value={form.taskType} onChange={e => set('taskType', e.target.value)}>
-                {TASK_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
             <div className="form-group">
@@ -155,15 +252,27 @@ export default function AddPromptPanel({ providers, projects, onSubmit }) {
               </select>
             </div>
           </div>
+
           <button className="primary" onClick={handleBulkSubmit} disabled={submitting || !bulkText.trim()}>
             {submitting ? 'Adding…' : `Add ${bulkText.split('\n').filter(l => l.trim()).length} prompts`}
           </button>
         </div>
+
       ) : (
+        /* ── Single prompt mode ── */
         <form onSubmit={handleSubmit}>
+
+          {/* Prompt card */}
           <div className="card" style={{ marginBottom: 16 }}>
             <div className="form-group">
-              <label>Prompt *</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                <label style={{ marginBottom: 0 }}>Prompt *</label>
+                {form.prompt.trim() && (
+                  <span style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'monospace' }}>
+                    ~{tokenEstimate.toLocaleString()} tokens in · {(form.maxTokens || 1024).toLocaleString()} max out
+                  </span>
+                )}
+              </div>
               <textarea
                 placeholder="What would you like Claude / GPT / Gemini to do?"
                 value={form.prompt}
@@ -172,16 +281,25 @@ export default function AddPromptPanel({ providers, projects, onSubmit }) {
                 required
               />
             </div>
+
+            {/* Tag chip selector */}
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <TagChips selectedTags={selectedTags} onToggle={toggleTag} />
+            </div>
+          </div>
+
+          {/* Optional fields card */}
+          <div className="card" style={{ marginBottom: 16 }}>
             <div className="form-group">
-              <label>Label (optional — shown in queue)</label>
+              <label>Label <span style={{ color: 'var(--text3)', fontWeight: 400 }}>(optional — shown in queue)</span></label>
               <input
                 placeholder="e.g. Weekly summary task"
                 value={form.label}
                 onChange={e => set('label', e.target.value)}
               />
             </div>
-            <div className="form-group">
-              <label>System prompt (optional)</label>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>System prompt <span style={{ color: 'var(--text3)', fontWeight: 400 }}>(optional)</span></label>
               <textarea
                 placeholder="You are a helpful assistant specialised in…"
                 value={form.systemPrompt}
@@ -191,6 +309,7 @@ export default function AddPromptPanel({ providers, projects, onSubmit }) {
             </div>
           </div>
 
+          {/* Routing card */}
           <div className="card" style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Routing
@@ -202,11 +321,13 @@ export default function AddPromptPanel({ providers, projects, onSubmit }) {
                   {ROUTING_MODES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                 </select>
               </div>
+
+              {/* Derived task type read-out (informational only) */}
               <div className="form-group">
-                <label>Task type</label>
-                <select value={form.taskType} onChange={e => set('taskType', e.target.value)}>
-                  {TASK_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
+                <label>Task type <span style={{ color: 'var(--text3)', fontWeight: 400 }}>(derived from tags)</span></label>
+                <div style={{ padding: '6px 10px', background: 'var(--bg4)', borderRadius: 'var(--radius)', border: '1px solid var(--border-dim)', fontSize: 13, color: 'var(--text2)' }}>
+                  {taskType}
+                </div>
               </div>
 
               {form.routingMode === 'manual' && (
@@ -229,17 +350,66 @@ export default function AddPromptPanel({ providers, projects, onSubmit }) {
               )}
             </div>
 
-            {/* Route preview */}
-            {routePreview && (
-              <div className={`route-preview ${routePreview.wait ? 'wait' : 'ok'}`}>
-                {routePreview.wait
-                  ? `⏳ All providers at limit — will wait ~${Math.ceil((routePreview.waitMs || 0) / 1000)}s`
-                  : `→ Will route to ${routePreview.provider}${routePreview.model ? ` / ${routePreview.model}` : ''} — ${routePreview.reason}`
-                }
+            {/* Route preview + provider cost comparison */}
+            {routePreview && !routePreview.error && (
+              <div style={{ marginTop: 14 }}>
+                <div className={`route-preview ${routePreview.wait ? 'wait' : 'ok'}`}>
+                  {routePreview.wait
+                    ? `⏳ All providers at limit — will wait ~${Math.ceil((routePreview.waitMs || 0) / 1000)}s`
+                    : `→ Routing to ${routePreview.provider}${routePreview.model ? ` / ${routePreview.model}` : ''} — ${routePreview.reason}`
+                  }
+                </div>
+
+                {routePreview.candidates && routePreview.candidates.length > 0 && (
+                  <div style={{ marginTop: 10 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+                      Cost estimate · {routePreview.inputTokens?.toLocaleString() ?? '?'} tokens in / {routePreview.outputTokens?.toLocaleString() ?? '?'} max out
+                    </div>
+                    <table className="candidates-table">
+                      <thead>
+                        <tr>
+                          <th>Provider</th>
+                          <th>Best model</th>
+                          <th>Est. cost</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {routePreview.candidates.map(c => {
+                          const meta      = providers.find(p => p.name === c.name);
+                          const isWinner  = !routePreview.wait && c.name === routePreview.provider;
+                          const wait      = fmtWait(c.waitMs);
+                          return (
+                            <tr key={c.name} className={isWinner ? 'winner-row' : ''}>
+                              <td>
+                                {isWinner && <span style={{ color: 'var(--success)', marginRight: 5 }}>→</span>}
+                                {meta?.displayName || c.name}
+                              </td>
+                              <td style={{ color: 'var(--text2)' }}>{c.bestModelName || '—'}</td>
+                              <td style={{ fontFamily: 'monospace' }}>
+                                {c.estimatedCost === 0
+                                  ? <span style={{ color: 'var(--success)' }}>Free</span>
+                                  : fmtCost(c.estimatedCost)
+                                }
+                              </td>
+                              <td>
+                                {c.canSend
+                                  ? <span style={{ color: 'var(--success)' }}>Ready</span>
+                                  : <span style={{ color: 'var(--warning)' }}>⏳ {wait || 'limited'}</span>
+                                }
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
           </div>
 
+          {/* Destination card */}
           <div className="card" style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Destination
@@ -277,14 +447,77 @@ export default function AddPromptPanel({ providers, projects, onSubmit }) {
       )}
 
       <style>{`
+        /* ── Tag chip grid ───────────────────────────────────── */
+        .tag-chip-grid {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 7px;
+        }
+        .tag-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 5px 11px;
+          border-radius: 20px;
+          border: 1px solid var(--border-dim);
+          background: var(--bg3);
+          color: var(--text2);
+          font-size: 12px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          white-space: nowrap;
+          font-family: inherit;
+        }
+        .tag-chip:hover {
+          border-color: var(--border);
+          color: var(--text1);
+          background: var(--bg4);
+        }
+        .tag-chip.active {
+          background: color-mix(in srgb, var(--chip-color) 14%, transparent);
+          border-color: color-mix(in srgb, var(--chip-color) 55%, transparent);
+          color: var(--chip-color);
+        }
+        .tag-chip.urgent.active {
+          background: rgba(249, 115, 22, 0.12);
+          border-color: rgba(249, 115, 22, 0.55);
+          color: #f97316;
+          font-weight: 600;
+        }
+        .chip-emoji { font-size: 13px; line-height: 1; }
+        .chip-label { font-weight: 500; }
+
+        /* ── Route preview ───────────────────────────────────── */
         .route-preview {
-          margin-top: 12px;
           padding: 8px 12px;
           border-radius: 6px;
           font-size: 12px;
         }
         .route-preview.ok   { background: rgba(52,211,153,0.08); color: var(--success); border: 1px solid rgba(52,211,153,0.2); }
         .route-preview.wait { background: rgba(251,191,36,0.08);  color: var(--warning); border: 1px solid rgba(251,191,36,0.2); }
+
+        /* ── Provider comparison table ───────────────────────── */
+        .candidates-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 11.5px;
+        }
+        .candidates-table th {
+          text-align: left;
+          padding: 4px 8px;
+          color: var(--text3);
+          font-weight: 600;
+          border-bottom: 1px solid var(--border);
+          white-space: nowrap;
+        }
+        .candidates-table td {
+          padding: 5px 8px;
+          border-bottom: 1px solid rgba(255,255,255,0.04);
+          white-space: nowrap;
+        }
+        .candidates-table tr:last-child td { border-bottom: none; }
+        .candidates-table .winner-row td   { background: rgba(52,211,153,0.06); }
+        .candidates-table .winner-row td:first-child { border-left: 2px solid var(--success); }
       `}</style>
     </div>
   );

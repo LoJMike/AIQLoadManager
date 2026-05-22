@@ -29,3 +29,6 @@ Thumbs.db
 # These live in %APPDATA% anyway, not in the project folder
 ai-queue.db
 ai-queue-config.json
+CLAUDE.md
+DESIGN.md
+WORKLOG.md

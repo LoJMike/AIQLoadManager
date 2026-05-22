@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-# AIQLoadManager — Claude Code Instructions
+# AI Queue Load Manager — Claude Code Instructions
 
 This file tells Claude Code how this project works, what to do, and what never to touch.
 Claude reads this file automatically on every session.
@@ -15,18 +15,20 @@ These three values must always match each other. When one changes, update all th
 
 | Field | Current value |
 |---|---|
-| **Project name (display)** | `AIQLoadManager` |
-| **`package.json` → `"name"`** | `aiqloadmanager` |
-| **`package.json` → `"productName"`** (build section) | `AI Queue Manager` |
-| **`package.json` → `"version"`** | `0.1.40` |
+| **Project name (display — full)** | `AI Queue Load Manager` |
+| **Project name (display — short)** | `AIQ Load Manager` |
+| **`package.json` → `"name"`** | `aiq-load-manager` |
+| **`package.json` → `"productName"`** (build section) | `AI Queue Load Manager` |
+| **`package.json` → `"version"`** | `0.3.1` |
 | **GitHub repo** | https://github.com/LoJMike/AIQLoadManager |
 | **Local path (Windows)** | `C:\Users\mikel\Desktop\AIQLoadManager Project` |
 
 ### Rules for keeping names in sync
 
-- `"name"` in package.json must be **lowercase, no spaces** (npm requirement) → `aiqloadmanager`
-- `"productName"` in the `"build"` section is the **human-readable installer name** → `AI Queue Manager`
-- **When the user renames the project**, update ALL of: `package.json` `name`, `package.json` `productName`, `package.json` `description`, `CLAUDE.md` project identity table, and `README.md` title
+- `"name"` in package.json must be **lowercase, hyphens allowed, no spaces** (npm requirement) → `aiq-load-manager`
+- `"productName"` in the `"build"` section is the **human-readable installer name** → `AI Queue Load Manager`
+- **Short name** for space-constrained contexts (tooltips, badges, nav) → `AIQ Load Manager`
+- **When the user renames the project**, update ALL of: `package.json` `name`, `package.json` `productName`, `package.json` `description`, `CLAUDE.md` project identity table, `DESIGN.md` brand identity table, and `README.md` title
 - **Bump `"version"`** in `package.json` with every meaningful change: `major.minor.patch`
   - `patch` (0.1.40 → 0.1.41): bug fixes
   - `minor` (0.1.40 → 0.2.0): new features
@@ -138,8 +140,8 @@ Electron loads from `http://localhost:3000` in dev mode and opens DevTools autom
 ## How to build installers
 
 ```powershell
-npm run build:win      # → dist-app\AI Queue Manager Setup.exe
-npm run build:mac      # → dist-app/AI Queue Manager.dmg
+npm run build:win      # → dist-app\AI Queue Load Manager Setup.exe
+npm run build:mac      # → dist-app/AI Queue Load Manager.dmg
 ```
 
 ---
