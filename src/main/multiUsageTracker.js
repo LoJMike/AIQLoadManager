@@ -21,6 +21,9 @@ const COST_TABLE = {
   // Local providers — all models are $0.00 (any unrecognised model falls back to [0,0])
   ollama:    {},
   lmstudio:  {},
+  jan:       {},
+  localai:   {},
+  llamacpp:  {},
 };
 
 const RATE_LIMITS = {
@@ -34,6 +37,9 @@ const RATE_LIMITS = {
   // Local providers — effectively unlimited (hardware-bound, not policy-bound)
   ollama:    { rpm: 9999, rpd: null,   tpm: null       },
   lmstudio:  { rpm: 9999, rpd: null,   tpm: null       },
+  jan:       { rpm: 9999, rpd: null,   tpm: null       },
+  localai:   { rpm: 9999, rpd: null,   tpm: null       },
+  llamacpp:  { rpm: 9999, rpd: null,   tpm: null       },
 };
 
 class MultiUsageTracker {

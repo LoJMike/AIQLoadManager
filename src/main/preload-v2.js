@@ -45,6 +45,17 @@ contextBridge.exposeInMainWorld('aiQueue', {
   setLicenseKey:      (key)           => ipcRenderer.invoke('set-license-key', key),
   removeLicenseKey:   ()              => ipcRenderer.invoke('remove-license-key'),
 
+  // Local provider port configuration
+  getLocalPorts:      ()                    => ipcRenderer.invoke('get-local-ports'),
+  setLocalPort:       (provider, port)      => ipcRenderer.invoke('set-local-port', { provider, port }),
+
+  // Web search configuration
+  getSearchConfig:    ()                    => ipcRenderer.invoke('get-search-config'),
+  setSearchBackend:   (backend)             => ipcRenderer.invoke('set-search-backend', backend),
+  setSearchKey:       (key)                 => ipcRenderer.invoke('set-search-key', key),
+  removeSearchKey:    ()                    => ipcRenderer.invoke('remove-search-key'),
+  setSearxngUrl:      (url)                 => ipcRenderer.invoke('set-searxng-url', url),
+
   // Misc
   openExternal:       (url)           => ipcRenderer.invoke('open-external', url),
 

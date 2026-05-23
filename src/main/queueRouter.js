@@ -9,10 +9,10 @@
  *   'balance'  — round-robins across all configured providers with capacity
  *   'cheapest' — always picks lowest estimated cost per token
  *   'fastest'  — always picks lowest latency provider (Groq wins here)
- *   'freeTier' — local providers first (Ollama/LM Studio), then Gemini/Groq/Mistral
+ *   'freeTier' — local providers first (Ollama/LM Studio/Jan.ai/LocalAI/llama.cpp), then Gemini/Groq/Mistral
  *
  * Scoring (auto mode) — higher is better:
- *   +50  local provider (Ollama / LM Studio) — $0, no rate limits, fully offline
+ *   +50  local provider (Ollama / LM Studio / Jan.ai / LocalAI / llama.cpp) — $0, no rate limits, fully offline
  *   +30  cloud provider with a permanent free tier (Gemini, Groq, Mistral)
  *   +20  provider has the most remaining RPM headroom
  *   +15  task type matches provider strength (coding → Anthropic/OpenAI, speed → Groq)
@@ -20,18 +20,18 @@
  *   -100 provider at rate limit right now (canSend = false)
  */
 
-const FREE_TIER_PROVIDERS = new Set(['ollama', 'lmstudio', 'gemini', 'groq', 'mistral']);
+const FREE_TIER_PROVIDERS = new Set(['ollama', 'lmstudio', 'jan', 'localai', 'llamacpp', 'gemini', 'groq', 'mistral']);
 
 // Local providers run entirely offline — no API key, no cost, no rate limits
-const LOCAL_PROVIDERS = new Set(['ollama', 'lmstudio']);
+const LOCAL_PROVIDERS = new Set(['ollama', 'lmstudio', 'jan', 'localai', 'llamacpp']);
 
 // Provider strengths for task-type routing
 const TASK_STRENGTHS = {
-  coding:    ['anthropic', 'openai', 'mistral', 'deepseek', 'groq', 'ollama', 'lmstudio'],
-  research:  ['anthropic', 'openai', 'gemini',  'grok',    'ollama', 'lmstudio'],
-  fast:      ['groq',      'deepseek', 'mistral', 'ollama', 'lmstudio'],
+  coding:    ['anthropic', 'openai', 'mistral', 'deepseek', 'groq', 'ollama', 'lmstudio', 'jan', 'localai', 'llamacpp'],
+  research:  ['anthropic', 'openai', 'gemini',  'grok',     'ollama', 'lmstudio', 'jan', 'localai', 'llamacpp'],
+  fast:      ['groq',      'deepseek', 'mistral', 'ollama', 'lmstudio', 'jan', 'localai', 'llamacpp'],
   graphics:  ['openai',    'gemini'],    // DALL-E / Gemini image gen (no local support)
-  general:   ['openai',    'anthropic', 'gemini', 'grok', 'deepseek', 'mistral', 'groq', 'ollama', 'lmstudio'],
+  general:   ['openai',    'anthropic', 'gemini', 'grok', 'deepseek', 'mistral', 'groq', 'ollama', 'lmstudio', 'jan', 'localai', 'llamacpp'],
 };
 
 class QueueRouter {
@@ -95,7 +95,7 @@ class QueueRouter {
       chosen = candidates.sort((a, b) => a.costScore - b.costScore)[0];
     } else if (mode === 'fastest') {
       // Local models are hardware-bound — put them after cloud fast-tier providers
-      const order = ['groq', 'deepseek', 'mistral', 'gemini', 'openai', 'anthropic', 'grok', 'ollama', 'lmstudio'];
+      const order = ['groq', 'deepseek', 'mistral', 'gemini', 'openai', 'anthropic', 'grok', 'ollama', 'lmstudio', 'jan', 'localai', 'llamacpp'];
       candidates.sort((a, b) => {
         const ai = order.indexOf(a.name); const bi = order.indexOf(b.name);
         return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);

@@ -1,48 +1,108 @@
 <!DOCTYPE html>
+<!--
+  ═══════════════════════════════════════════════════════════════════════════
+  AI Queue Load Manager — Landing Page
+  ═══════════════════════════════════════════════════════════════════════════
+
+  LEMON SQUEEZY INTEGRATION
+  ─────────────────────────
+  Payment vendor: Lemon Squeezy (https://www.lemonsqueezy.com)
+  Checkout method: Overlay popup via Lemon.js (no page navigation on purchase)
+
+  What was added:
+    1. Lemon.js script tag in <head> — loads the overlay checkout library
+    2. class="lemonsqueezy-button" on Starter and Pro buy buttons — tells
+       Lemon.js to intercept those clicks and open checkout as a popup
+    3. id="starter-cta" and id="pro-cta" on the buy buttons — referenced by
+       the billing toggle script to swap href when Monthly ↔ Lifetime changes
+    4. CHECKOUT_URLS object in the <script> block at the bottom — holds all
+       4 product checkout URLs; swap the href values automatically on toggle
+
+  ⚠ ACTION REQUIRED — paste your real Lemon Squeezy checkout URLs:
+    Open the <script> block at the bottom of this file and replace all
+    four 'PASTE_..._CHECKOUT_URL_HERE' placeholders with the real URLs.
+    Get them from: LS Dashboard → Product → Share → Checkout URL
+
+    Products needed (create these in Lemon Squeezy first):
+      • AIQ Load Manager — Starter          $6/mo  subscription
+      • AIQ Load Manager — Starter Lifetime $39    one-time
+      • AIQ Load Manager — Pro              $14/mo subscription
+      • AIQ Load Manager — Pro Lifetime     $79    one-time
+
+  Free tier:
+    The "Download Free" buttons link to GitHub Releases — no checkout needed.
+    Update those hrefs if the installer is hosted elsewhere.
+
+  Newsletter opt-in:
+    Configured server-side in Lemon Squeezy:
+    Dashboard → Store Settings → Checkout → "Show newsletter opt-in checkbox"
+    No changes needed in this file.
+
+  Testing:
+    Create a 100% discount code in LS Dashboard → Discounts → New.
+    Give testers the code — they go through real checkout but pay $0 and
+    receive a real license key.
+  ═══════════════════════════════════════════════════════════════════════════
+-->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI Queue Load Manager — Route smarter. Spend less. Stay in flow.</title>
+  <!-- Lemon Squeezy checkout overlay script -->
+  <script src="https://assets.lemonsqueezy.com/lemon.js" defer></script>
   <style>
     /* ─── Reset ─── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
 
-    /* ─── Design tokens (DESIGN.md) ─── */
+    /* ─── Design tokens (Teamify-style) ─── */
     :root {
-      --purple:       #a855f7;
-      --purple-dim:   rgba(168,85,247,0.10);
-      --purple-mid:   rgba(168,85,247,0.25);
-      --purple-glow:  rgba(168,85,247,0.40);
+      /* Primary accent — electric purple */
+      --purple:        #7c5cff;
+      --purple-bright: #9b7dff;
+      --purple-dim:    rgba(124,92,255,0.14);
+      --purple-mid:    rgba(124,92,255,0.28);
+      --purple-glow:   rgba(124,92,255,0.35);
+
+      /* Semantic / supporting */
       --green:        #22c55e;
       --green-dim:    rgba(34,197,94,0.10);
       --blue:         #60a5fa;
       --cyan:         #22d3ee;
       --orange:       #f97316;
       --danger:       #f87171;
-      --gradient:     linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
 
-      /* Dark surfaces */
-      --bg0:          #08080f;
-      --bg1:          #0d0d1c;
-      --bg2:          #111122;
-      --bg3:          #181830;
-      --bg4:          #1e1e3a;
-      --text1:        #eaeaf5;
-      --text2:        #7878a0;
-      --text3:        #44445a;
-      --border:       rgba(139,92,246,0.15);
-      --border-dim:   rgba(255,255,255,0.05);
+      /* CTA gradient */
+      --gradient: linear-gradient(135deg, #8b6dff 0%, #6c4dff 55%, #5a3fe8 100%);
+
+      /* Data visualisation (semantic, not brand) */
+      --data-teal:    #2dd4bf;
+      --data-orange:  #fb923c;
+      --data-coral:   #f87171;
+
+      /* Dark surfaces — charcoal layering */
+      --bg0:          #14151c;
+      --bg1:          #1c1d26;
+      --bg2:          #23242f;
+      --bg3:          #2a2b38;
+      --bg4:          #32334a;
+      --text1:        #f4f4f8;
+      --text2:        #9b9cb8;
+      --text3:        #5c5d78;
+      --border:       rgba(255,255,255,0.06);
+      --border-dim:   rgba(255,255,255,0.03);
 
       /* Shape */
-      --radius:       8px;
-      --radius-lg:    12px;
-      --radius-xl:    16px;
+      --radius:       10px;
+      --radius-lg:    16px;
+      --radius-xl:    20px;
+      --shadow-card:  0 4px 24px rgba(0,0,0,0.35);
+      --shadow-float: 0 8px 32px rgba(0,0,0,0.45);
 
       /* Fonts */
-      --mono: 'SF Mono','JetBrains Mono','Fira Code','Cascadia Code',monospace;
-      --sans: -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+      --mono: 'SF Mono','JetBrains Mono','Fira Code','Cascadia Code',Consolas,monospace;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     }
 
     /* Light-mode overrides for .light sections */
@@ -71,30 +131,27 @@
     section { padding: 96px 0; }
 
     /* ─── Type ─── */
-    h1,h2,h3,h4 { font-family: var(--mono); }
-
     .sec-label {
       display: block;
-      font-family: var(--mono); font-size: 10px; font-weight: 600;
+      font-size: 11px; font-weight: 600;
       letter-spacing: 0.10em; text-transform: uppercase;
       color: var(--purple); margin-bottom: 14px;
     }
     .sec-title {
-      font-family: var(--mono);
       font-size: clamp(1.8rem,3.5vw,2.4rem);
       font-weight: 700; letter-spacing: -0.02em;
       color: var(--text1); margin-bottom: 14px;
     }
     .sec-sub {
       font-size: 1rem; color: var(--text2);
-      max-width: 560px; line-height: 1.7;
+      max-width: 560px; line-height: 1.65;
     }
     .sec-header { margin-bottom: 48px; }
 
     /* ─── Buttons ─── */
     .btn {
       display: inline-flex; align-items: center; justify-content: center;
-      font-family: var(--mono); font-size: .85rem; font-weight: 600;
+      font-size: .88rem; font-weight: 600;
       padding: 10px 22px; border-radius: var(--radius);
       border: none; cursor: pointer; transition: all 150ms ease;
       white-space: nowrap;
@@ -116,14 +173,14 @@
     ───────────────────────────────────────── */
     nav {
       position: sticky; top: 0; z-index: 100;
-      background: rgba(8,8,15,0.90); backdrop-filter: blur(16px);
+      background: rgba(20,21,28,0.92); backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--border);
     }
     .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 60px; }
     .nav-logo {
       display: flex; align-items: center; gap: 10px;
-      font-family: var(--mono); font-size: .82rem; font-weight: 700;
-      letter-spacing: 0.12em; text-transform: uppercase; color: var(--text1);
+      font-size: .82rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase; color: var(--text1);
     }
     /* Logo mark: 3 bars of decreasing width */
     .logo-mark { display: flex; flex-direction: column; gap: 3px; width: 26px; }
@@ -133,7 +190,7 @@
     .logo-bar:nth-child(3) { width: 42%; }
     .nav-links { display: flex; gap: 26px; align-items: center; }
     .nav-links a {
-      font-family: var(--mono); font-size: .78rem; color: var(--text2);
+      font-size: .82rem; color: var(--text2);
       transition: color 150ms;
     }
     .nav-links a:hover { color: var(--purple); }
@@ -153,27 +210,26 @@
     }
     .hero-badge {
       display: inline-flex; align-items: center; gap: 8px;
-      background: var(--purple-dim); border: 1px solid rgba(168,85,247,0.22);
+      background: var(--purple-dim); border: 1px solid rgba(124,92,255,0.28);
       border-radius: 100px; padding: 5px 14px;
-      font-family: var(--mono); font-size: .72rem; font-weight: 600;
-      color: var(--purple); letter-spacing: 0.04em; margin-bottom: 28px;
+      font-size: .75rem; font-weight: 600;
+      color: var(--purple); letter-spacing: 0.02em; margin-bottom: 28px;
     }
     .hero h1 {
-      font-family: var(--mono);
       font-size: clamp(2.4rem,5.5vw,4rem);
       font-weight: 700; letter-spacing: -0.02em; line-height: 1.1;
       color: var(--text1); max-width: 820px; margin-bottom: 20px;
     }
     .hero h1 .hi { color: var(--purple); }
     .hero-tagline {
-      font-family: var(--mono); font-size: 1rem; color: var(--text2);
-      margin-bottom: 40px; letter-spacing: 0.01em;
+      font-size: 1.05rem; color: var(--text2);
+      margin-bottom: 40px; letter-spacing: 0;
     }
     .hero-tagline .sep { color: var(--text3); margin: 0 8px; }
     .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 56px; }
     .hero-providers { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
     .hero-providers .lbl {
-      font-family: var(--mono); font-size: .70rem; color: var(--text3);
+      font-size: .72rem; color: var(--text3);
       text-transform: uppercase; letter-spacing: 0.08em; margin-right: 4px;
     }
     .p-pill {
@@ -209,21 +265,22 @@
     }
     .fcard {
       background: rgba(240,240,250,0.80);
-      border: 1px solid rgba(139,92,246,0.22);
+      border: 2px solid rgba(124,92,255,0.18);
       border-radius: var(--radius-lg); padding: 28px;
       backdrop-filter: blur(10px);
+      box-shadow: var(--shadow-card);
       transition: border-color 200ms, box-shadow 200ms;
     }
-    .fcard:hover { border-color: rgba(168,85,247,0.40); box-shadow: 0 0 24px rgba(139,92,246,0.07); }
+    .fcard:hover { border-color: rgba(124,92,255,0.40); box-shadow: var(--shadow-float); }
     .fcard-icon {
       width: 40px; height: 40px; border-radius: var(--radius);
       background: var(--purple-dim); border: 1px solid rgba(168,85,247,0.20);
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.1rem; margin-bottom: 16px;
+      font-size: 1.1rem; margin-bottom: 20px;
     }
     .fcard h3 {
-      font-family: var(--mono); font-size: .88rem; font-weight: 600;
-      letter-spacing: 0.02em; color: #0d0d1c; margin-bottom: 10px;
+      font-size: .95rem; font-weight: 600;
+      color: #0d0d1c; margin-bottom: 10px;
     }
     .fcard p { font-size: .88rem; color: #4a4a78; line-height: 1.7; }
 
@@ -237,14 +294,14 @@
     }
     @media(max-width:768px){ .mobile-grid{ grid-template-columns:1fr; gap:32px; } }
     .platform-card {
-      background: var(--bg2); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); padding: 22px 24px;
-      margin-bottom: 14px;
+      background: var(--bg2); border: 2px solid var(--border);
+      border-radius: var(--radius-lg); padding: 24px 28px;
+      margin-bottom: 16px;
       transition: border-color 200ms;
     }
     .platform-card:hover { border-color: var(--purple-mid); }
     .platform-card h4 {
-      font-family: var(--mono); font-size: .88rem; font-weight: 600;
+      font-size: .92rem; font-weight: 600;
       color: var(--text1); margin-bottom: 8px;
       display: flex; align-items: center; gap: 10px;
     }
@@ -273,19 +330,20 @@
     ───────────────────────────────────────── */
     .roadmap-grid {
       display: grid; grid-template-columns: repeat(auto-fit,minmax(280px,1fr));
-      gap: 18px;
+      gap: 20px;
     }
     .rcard {
       background: rgba(240,240,250,0.80);
-      border: 1px solid rgba(139,92,246,0.22);
-      border-radius: var(--radius-lg); padding: 22px 24px;
+      border: 2px solid rgba(124,92,255,0.18);
+      border-radius: var(--radius-lg); padding: 24px 28px;
+      box-shadow: var(--shadow-card);
       transition: border-color 200ms, box-shadow 200ms;
     }
-    .rcard:hover { border-color: rgba(168,85,247,0.40); box-shadow: 0 0 24px rgba(139,92,246,0.07); }
+    .rcard:hover { border-color: rgba(124,92,255,0.40); box-shadow: var(--shadow-float); }
     .rcard-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-    .rcard h4 { font-family: var(--mono); font-size: .85rem; font-weight: 600; color: #0d0d1c; }
+    .rcard h4 { font-size: .92rem; font-weight: 600; color: #0d0d1c; }
     .tier-tag {
-      font-family: var(--mono); font-size: .65rem; font-weight: 600;
+      font-size: .68rem; font-weight: 600;
       padding: 2px 8px; border-radius: 4px; letter-spacing: 0.04em;
       text-transform: uppercase; white-space: nowrap;
     }
@@ -304,7 +362,7 @@
       gap: 14px; margin-bottom: 56px;
     }
     .billing-toggle span {
-      font-family: var(--mono); font-size: .82rem; font-weight: 600;
+      font-size: .88rem; font-weight: 600;
       color: var(--text3); cursor: pointer; transition: color 150ms;
     }
     .billing-toggle span.active { color: var(--purple); }
@@ -323,19 +381,19 @@
     .save-badge {
       background: var(--green-dim); border: 1px solid rgba(34,197,94,0.22);
       color: var(--green); border-radius: 100px; padding: 3px 10px;
-      font-family: var(--mono); font-size: .70rem; font-weight: 600;
+      font-size: .75rem; font-weight: 600;
     }
     .pricing-cards {
       display: grid; grid-template-columns: repeat(auto-fit,minmax(300px,1fr));
       gap: 20px; align-items: start;
     }
     .pcard {
-      background: rgba(13,13,28,0.75); border: 1px solid var(--border);
+      background: var(--bg2); border: 2px solid var(--border);
       border-radius: var(--radius-lg); padding: 32px 28px;
-      backdrop-filter: blur(10px); position: relative;
+      box-shadow: var(--shadow-card); position: relative;
       transition: border-color 200ms, box-shadow 200ms;
     }
-    .pcard:hover { border-color: var(--purple-mid); }
+    .pcard:hover { border-color: var(--purple-mid); box-shadow: var(--shadow-float); }
     .pcard.popular {
       border-color: var(--purple);
       box-shadow: 0 0 32px rgba(168,85,247,0.20);
@@ -343,13 +401,13 @@
     .popular-badge {
       position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
       background: var(--gradient); color: white; border-radius: 100px;
-      padding: 3px 14px; font-family: var(--mono);
-      font-size: .68rem; font-weight: 700; letter-spacing: 0.06em;
-      white-space: nowrap; box-shadow: 0 0 14px rgba(168,85,247,0.40);
+      padding: 3px 14px;
+      font-size: .72rem; font-weight: 700; letter-spacing: 0.04em;
+      white-space: nowrap; box-shadow: 0 0 14px var(--purple-glow);
     }
     .tier-lbl {
-      font-family: var(--mono); font-size: .70rem; font-weight: 600;
-      color: var(--purple); letter-spacing: 0.10em; text-transform: uppercase;
+      font-size: .72rem; font-weight: 700;
+      color: var(--purple); letter-spacing: 0.08em; text-transform: uppercase;
       margin-bottom: 6px;
     }
     .tier-desc { font-size: .86rem; color: var(--text2); margin-bottom: 24px; line-height: 1.6; }
@@ -377,15 +435,15 @@
       font-size: .86rem; min-width: 620px;
     }
     .compare-table thead th {
-      font-family: var(--mono); font-size: .72rem; font-weight: 700;
-      letter-spacing: 0.04em; padding: 14px 18px; text-align: center;
-      border-bottom: 2px solid rgba(139,92,246,0.22); color: #4a4a78;
+      font-size: .75rem; font-weight: 700;
+      letter-spacing: 0.03em; padding: 14px 18px; text-align: center;
+      border-bottom: 2px solid rgba(124,92,255,0.22); color: #4a4a78;
     }
     .compare-table thead th:first-child { text-align: left; }
     .compare-table thead .th-pro { color: #a855f7; }
     .compare-table .cat-row td {
-      font-family: var(--mono); font-size: .68rem; font-weight: 600;
-      letter-spacing: 0.10em; text-transform: uppercase;
+      font-size: .70rem; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
       color: #9898b8; padding: 16px 18px 6px;
       background: #f0f0fa;
       border-top: 1px solid rgba(139,92,246,0.12);
@@ -419,8 +477,8 @@
       font-size: .84rem; min-width: 900px;
     }
     .comp-table thead th {
-      font-family: var(--mono); font-size: .68rem; font-weight: 600;
-      letter-spacing: 0.08em; text-transform: uppercase;
+      font-size: .72rem; font-weight: 600;
+      letter-spacing: 0.07em; text-transform: uppercase;
       color: var(--text3); padding: 12px 16px;
       border-bottom: 1px solid var(--border); text-align: left;
     }
@@ -428,7 +486,7 @@
     .comp-table tbody tr:hover { background: var(--bg2); }
     .comp-table td { padding: 14px 16px; color: var(--text2); vertical-align: top; line-height: 1.6; }
     .comp-table td:first-child {
-      font-family: var(--mono); font-size: .82rem;
+      font-size: .88rem;
       font-weight: 600; color: var(--text1);
       white-space: nowrap;
     }
@@ -450,14 +508,15 @@
     ───────────────────────────────────────── */
     .faq-grid {
       display: grid; grid-template-columns: repeat(auto-fit,minmax(420px,1fr));
-      gap: 18px;
+      gap: 20px;
     }
     .faq-item {
       background: rgba(240,240,250,0.80);
-      border: 1px solid rgba(139,92,246,0.22);
+      border: 2px solid rgba(124,92,255,0.18);
       border-radius: var(--radius-lg); padding: 24px 28px;
+      box-shadow: var(--shadow-card);
     }
-    .faq-item h4 { font-family: var(--mono); font-size: .88rem; font-weight: 600; color: #0d0d1c; margin-bottom: 10px; }
+    .faq-item h4 { font-size: .95rem; font-weight: 600; color: #0d0d1c; margin-bottom: 10px; }
     .faq-item p  { font-size: .87rem; color: #4a4a78; line-height: 1.70; }
 
     /* ─────────────────────────────────────────
@@ -476,14 +535,14 @@
       pointer-events: none;
     }
     .cta-band h2 {
-      font-family: var(--mono); font-size: clamp(1.8rem,3.5vw,2.6rem);
+      font-size: clamp(1.8rem,3.5vw,2.6rem);
       font-weight: 700; color: var(--text1); margin-bottom: 14px; position: relative;
     }
     .cta-band p {
       font-size: 1rem; color: var(--text2);
       max-width: 440px; margin: 0 auto 36px; position: relative;
     }
-    .btn-white { background: white; color: #7c3aed; font-family: var(--mono); font-weight: 700; }
+    .btn-white { background: white; color: #6c4dff; font-weight: 700; }
     .btn-white:hover { background: #f0e8ff; transform: translateY(-1px); box-shadow: 0 4px 24px rgba(0,0,0,0.25); }
 
     /* ─────────────────────────────────────────
@@ -493,7 +552,7 @@
       background: var(--bg1); border-top: 1px solid rgba(139,92,246,0.12);
       padding: 36px 28px; text-align: center;
     }
-    footer p { font-family: var(--mono); font-size: .76rem; color: var(--text3); line-height: 1.9; }
+    footer p { font-size: .82rem; color: var(--text3); line-height: 1.9; }
     footer strong { color: var(--text2); }
     footer a { color: var(--purple); }
     footer a:hover { text-decoration: underline; }
@@ -546,13 +605,13 @@
 <section class="hero dot-dark">
   <div class="hero-glow"></div>
   <div class="container" style="position:relative;">
-    <div class="hero-badge">✦ Desktop app · Windows &amp; macOS · 9 AI providers · Mobile coming soon</div>
+    <div class="hero-badge">✦ Desktop app · Windows &amp; macOS · 12 AI providers · Mobile coming soon</div>
     <h1>Route <span class="hi">smarter.</span><br>Every AI. One queue.</h1>
     <div class="hero-tagline">
       Route smarter<span class="sep">·</span>Spend less<span class="sep">·</span>Stay in flow.
     </div>
     <div class="hero-actions">
-      <a href="#pricing" class="btn btn-primary btn-lg">Download Free</a>
+      <a href="https://github.com/LoJMike/AIQLoadManager/releases/latest" class="btn btn-primary btn-lg" target="_blank">Download Free</a>
       <a href="#compare" class="btn btn-ghost btn-lg">See all features →</a>
     </div>
     <div class="hero-providers">
@@ -568,6 +627,9 @@
       <span class="lbl">Local</span>
       <span class="p-pill-local">🖥 Ollama</span>
       <span class="p-pill-local">🖥 LM Studio</span>
+      <span class="p-pill-local">🖥 Jan.ai</span>
+      <span class="p-pill-local">🖥 LocalAI</span>
+      <span class="p-pill-local">🖥 llama.cpp</span>
     </div>
   </div>
 </section>
@@ -606,7 +668,7 @@
       <div class="fcard">
         <div class="fcard-icon">🏷️</div>
         <h3>Prompt type tags</h3>
-        <p>Label each prompt with one or more visual tag chips — Chat, Research, Code, Web Search, Writing, Analysis, Image, Translate, or ⚡ Urgent. Tags drive provider selection automatically and, on Pro, lift your prompt's place in the queue.</p>
+        <p>Label each prompt with visual chip tags — Chat, Research, Code, Writing, Analysis, Image, Translate, or ⚡ Urgent. Tags drive provider selection automatically and, on Pro, lift your prompt's place in the queue. The special 🌐 Web Search tag also triggers live result injection before the AI call.</p>
       </div>
       <div class="fcard">
         <div class="fcard-icon">💡</div>
@@ -617,6 +679,11 @@
         <div class="fcard-icon">⚖️</div>
         <h3>Compare mode <span style="font-size:.72rem;font-weight:600;background:rgba(168,85,247,0.12);color:#a855f7;border:1px solid rgba(168,85,247,0.3);padding:1px 7px;border-radius:5px;margin-left:4px;">Pro</span></h3>
         <p>Send the same prompt to multiple providers simultaneously. Responses arrive in parallel and display as side-by-side columns — provider name, model, full text, copy button, token count. Instantly see whether Claude, GPT-4o, or Gemini does better on your task.</p>
+      </div>
+      <div class="fcard">
+        <div class="fcard-icon">🌐</div>
+        <h3>Real-time web search</h3>
+        <p>Tag any prompt <strong>🌐 Web Search</strong> and AIQ fetches live results before sending — then injects them into the system prompt. Works with every model, including fully local ones. No tool-calling support needed. Choose Tavily (1,000 free searches/month) or self-hosted SearXNG.</p>
       </div>
       <div class="fcard">
         <div class="fcard-icon">🔒</div>
@@ -759,10 +826,10 @@
       </div>
       <div class="rcard" style="border-color:rgba(34,197,94,0.30);">
         <div class="rcard-header">
-          <h4>Local AI — Ollama &amp; LM Studio <span style="color:#22c55e;font-size:.75rem;">✓ Live</span></h4>
+          <h4>Local AI — 5 providers <span style="color:#22c55e;font-size:.75rem;">✓ Live</span></h4>
           <span class="tier-tag tt-free">Free</span>
         </div>
-        <p>Run any model locally via Ollama or LM Studio. Zero API cost, complete privacy, fully offline. Models are discovered automatically — Llama, Mistral, Phi, Gemma, Qwen, DeepSeek-R1 and more.</p>
+        <p>Run any model locally via Ollama, LM Studio, Jan.ai, LocalAI, or llama.cpp. Zero API cost, complete privacy, fully offline. Models are discovered automatically — Llama, Mistral, Phi, Gemma, Qwen, DeepSeek-R1 and more. All server ports are configurable.</p>
       </div>
       <div class="rcard">
         <div class="rcard-header">
@@ -810,7 +877,7 @@
         <div class="tier-desc">For anyone who wants to try AIQ with local or free-tier AI providers. No credit card, no API key needed to start.</div>
         <div class="price"><span class="price-amt">$0</span><span class="price-per">/ forever</span></div>
         <div class="price-alt">&nbsp;</div>
-        <a href="#" class="btn btn-ghost tier-cta">Download Free</a>
+        <a href="https://github.com/LoJMike/AIQLoadManager/releases/latest" class="btn btn-ghost tier-cta" target="_blank">Download Free</a>
         <ul class="pf-list">
           <li><span class="chk">✓</span><span>Up to <strong>2 AI providers</strong></span></li>
           <li><span class="chk">✓</span><span><strong>Manual &amp; Free Tier</strong> routing modes</span></li>
@@ -838,7 +905,7 @@
           <span class="price-per" id="starter-period">/ month</span>
         </div>
         <div class="price-alt" id="starter-alt">Or <strong>$39 one-time</strong> — save 46%</div>
-        <a href="#" class="btn btn-primary tier-cta">Get Starter</a>
+        <a id="starter-cta" href="PASTE_STARTER_MONTHLY_CHECKOUT_URL_HERE" class="btn btn-primary tier-cta lemonsqueezy-button">Get Starter</a>
         <ul class="pf-list">
           <li><span class="chk">✓</span><span>Up to <strong>4 AI providers</strong></span></li>
           <li><span class="chk">✓</span><span><strong>Auto &amp; Balance</strong> routing + all Free modes</span></li>
@@ -866,9 +933,9 @@
           <span class="price-per" id="pro-period">/ month</span>
         </div>
         <div class="price-alt" id="pro-alt">Or <strong>$79 one-time</strong> — save 53%</div>
-        <a href="#" class="btn btn-primary tier-cta">Get Pro</a>
+        <a id="pro-cta" href="PASTE_PRO_MONTHLY_CHECKOUT_URL_HERE" class="btn btn-primary tier-cta lemonsqueezy-button">Get Pro</a>
         <ul class="pf-list">
-          <li><span class="chk">✓</span><span><strong>All 9 providers</strong> unlocked (7 cloud + Ollama + LM Studio)</span></li>
+          <li><span class="chk">✓</span><span><strong>All 12 providers</strong> unlocked (7 cloud + 5 local: Ollama, LM Studio, Jan.ai, LocalAI, llama.cpp)</span></li>
           <li><span class="chk">✓</span><span><strong>All 6 routing modes</strong> incl. Cheapest &amp; Fastest</span></li>
           <li><span class="chk">✓</span><span><strong>Unlimited</strong> queue depth</span></li>
           <li><span class="chk">✓</span><span>Budget caps &amp; overage alerts per provider</span></li>
@@ -926,13 +993,9 @@
 
           <!-- PROVIDERS -->
           <tr class="cat-row"><td colspan="4">AI Providers</td></tr>
-          <tr class="feat-row"><td class="fn">Cloud providers configurable at once</td><td>2</td><td>4</td><td><strong>All 7</strong></td></tr>
+          <tr class="feat-row"><td class="fn">AI providers (total)<small>7 cloud + 5 local (Ollama, LM Studio, Jan.ai, LocalAI, llama.cpp)</small></td><td>5</td><td>7</td><td><strong>All 12</strong></td></tr>
           <tr class="feat-row"><td class="fn">Claude, OpenAI, Gemini, Groq, Mistral</td><td><span class="chk-ic">✓</span></td><td><span class="chk-ic">✓</span></td><td><span class="chk-ic">✓</span></td></tr>
           <tr class="feat-row"><td class="fn">DeepSeek &amp; xAI Grok</td><td><span class="dsh-ic">–</span></td><td><span class="chk-ic">✓</span></td><td><span class="chk-ic">✓</span></td></tr>
-          <tr class="feat-row">
-            <td class="fn">Local AI — Ollama &amp; LM Studio<small>No API key · $0 · fully offline</small></td>
-            <td><span class="chk-ic">✓</span></td><td><span class="chk-ic">✓</span></td><td><span class="chk-ic">✓</span></td>
-          </tr>
 
           <!-- MEDIA GENERATION -->
           <tr class="cat-row"><td colspan="4">Media Generation</td></tr>
@@ -973,7 +1036,7 @@
           <!-- ROUTING -->
           <tr class="cat-row"><td colspan="4">Routing Modes</td></tr>
           <tr class="feat-row"><td class="fn">Manual routing</td><td><span class="chk-ic">✓</span></td><td><span class="chk-ic">✓</span></td><td><span class="chk-ic">✓</span></td></tr>
-          <tr class="feat-row"><td class="fn">Free Tier routing<small>Prefers Ollama/LM Studio, then Gemini, Groq, Mistral</small></td><td><span class="chk-ic">✓</span></td><td><span class="chk-ic">✓</span></td><td><span class="chk-ic">✓</span></td></tr>
+          <tr class="feat-row"><td class="fn">Free Tier routing<small>Prefers local providers first, then Gemini, Groq, Mistral</small></td><td><span class="chk-ic">✓</span></td><td><span class="chk-ic">✓</span></td><td><span class="chk-ic">✓</span></td></tr>
           <tr class="feat-row"><td class="fn">Auto routing<small>Scores all providers dynamically</small></td><td><span class="dsh-ic">–</span></td><td><span class="chk-ic">✓</span></td><td><span class="chk-ic">✓</span></td></tr>
           <tr class="feat-row"><td class="fn">Balance routing<small>Round-robins across providers</small></td><td><span class="dsh-ic">–</span></td><td><span class="chk-ic">✓</span></td><td><span class="chk-ic">✓</span></td></tr>
           <tr class="feat-row"><td class="fn">Cheapest routing<small>Lowest cost per token, real-time</small></td><td><span class="dsh-ic">–</span></td><td><span class="dsh-ic">–</span></td><td><span class="chk-ic">✓</span></td></tr>
@@ -993,6 +1056,10 @@
           <tr class="feat-row"><td class="fn">Projects</td><td>1</td><td>5</td><td>Unlimited</td></tr>
           <tr class="feat-row">
             <td class="fn">Prompt type tags<small>Chat · Research · Code · Web Search · Writing · Analysis · Image · Translate · ⚡ Urgent</small></td>
+            <td><span class="chk-ic">✓</span></td><td><span class="chk-ic">✓</span></td><td><span class="chk-ic">✓</span></td>
+          </tr>
+          <tr class="feat-row">
+            <td class="fn">🌐 Real-time web search<small>Tavily or SearXNG — injected as system-prompt context. Works with all models incl. local</small></td>
             <td><span class="chk-ic">✓</span></td><td><span class="chk-ic">✓</span></td><td><span class="chk-ic">✓</span></td>
           </tr>
           <tr class="feat-row">
@@ -1230,7 +1297,7 @@
       </div>
       <div class="faq-item">
         <h4>Is the Free tier genuinely usable?</h4>
-        <p>Yes, and there are two ways to use it at zero cost. First, install <strong>Ollama</strong> or <strong>LM Studio</strong> — both run AI models locally on your machine with no API key and no internet required. Second, use cloud free tiers from Gemini, Groq, or Mistral — all offer permanent free access without a credit card. The Free tier is not a trial, it's a permanent plan.</p>
+        <p>Yes, and there are two ways to use it at zero cost. First, install a local AI server — <strong>Ollama</strong>, <strong>LM Studio</strong>, or <strong>Jan.ai</strong> are the easiest. All run AI models on your own machine with no API key and no internet required. Second, use cloud free tiers from Gemini, Groq, or Mistral — all offer permanent free access without a credit card. The Free tier is not a trial, it's a permanent plan.</p>
       </div>
       <div class="faq-item">
         <h4>Is my data safe? Does anything leave my computer?</h4>
@@ -1251,6 +1318,10 @@
       <div class="faq-item">
         <h4>How accurate is the cost estimate shown before queuing?</h4>
         <p>It uses the formula <code>(inputTokens / 1M × inputRate) + (maxTokens / 1M × outputRate)</code> with a rough token approximation of one token per four characters (±15% for English text). It shows the cheapest available model per provider so you see the best-case cost. The estimate is for orientation — actual charges from providers may vary slightly depending on system prompts and conversation history.</p>
+      </div>
+      <div class="faq-item">
+        <h4>How does the 🌐 Web Search tag work?</h4>
+        <p>Tag any prompt with <strong>Web Search</strong> before queuing. Just before the AI call, AIQ runs a live search using either <strong>Tavily</strong> (cloud, 1,000 free searches/month — sign up at app.tavily.com) or <strong>SearXNG</strong> (self-hosted Docker, completely free and private). The top 5 results are formatted into a context block and prepended to the system prompt, so the AI sees up-to-date information without needing tool-calling or function support. This works with every provider, including fully local models like Ollama and LM Studio.</p>
       </div>
       <div class="faq-item">
         <h4>Can I upgrade or downgrade later?</h4>
@@ -1286,9 +1357,26 @@
   </div>
 </footer>
 
-<!-- ─── Billing toggle script ─── -->
+<!-- ─── Billing toggle + Lemon Squeezy checkout URL script ─── -->
 <script>
+  // ─────────────────────────────────────────────────────────────────────────
+  // LEMON SQUEEZY CHECKOUT URLS
+  // After creating your products in Lemon Squeezy, paste each checkout URL
+  // here. Go to: Dashboard → Product → Share → Checkout URL
+  // ─────────────────────────────────────────────────────────────────────────
+  const CHECKOUT_URLS = {
+    starter: {
+      monthly:  'PASTE_STARTER_MONTHLY_CHECKOUT_URL_HERE',   // $6/mo subscription
+      lifetime: 'PASTE_STARTER_LIFETIME_CHECKOUT_URL_HERE',  // $39 one-time
+    },
+    pro: {
+      monthly:  'PASTE_PRO_MONTHLY_CHECKOUT_URL_HERE',        // $14/mo subscription
+      lifetime: 'PASTE_PRO_LIFETIME_CHECKOUT_URL_HERE',       // $79 one-time
+    }
+  };
+
   let billing = 'monthly';
+
   const prices = {
     starter: {
       monthly:  { amt: '$6',  per: '/ month', alt: 'Or <strong>$39 one-time</strong> — save 46%' },
@@ -1299,18 +1387,24 @@
       lifetime: { amt: '$79', per: 'one-time', alt: 'Equivalent to ~6 months of monthly' }
     }
   };
+
   function renderPrices() {
     ['starter','pro'].forEach(t => {
       const p = prices[t][billing];
       document.getElementById(`${t}-price`).textContent  = p.amt;
       document.getElementById(`${t}-period`).textContent = p.per;
       document.getElementById(`${t}-alt`).innerHTML      = p.alt;
+
+      // Swap checkout URL so the button always goes to the right product
+      const cta = document.getElementById(`${t}-cta`);
+      if (cta) cta.href = CHECKOUT_URLS[t][billing];
     });
     document.getElementById('lbl-monthly').classList.toggle('active', billing === 'monthly');
     document.getElementById('lbl-lifetime').classList.toggle('active', billing === 'lifetime');
     const tr = document.getElementById('billing-track');
     billing === 'lifetime' ? tr.classList.add('lifetime') : tr.classList.remove('lifetime');
   }
+
   function toggleBilling() { billing = billing === 'monthly' ? 'lifetime' : 'monthly'; renderPrices(); }
   function setBilling(v)   { billing = v; renderPrices(); }
 </script>

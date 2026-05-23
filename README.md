@@ -1,31 +1,63 @@
 # AI Queue Load Manager
 
 Cross-platform desktop app (Windows 10/11 + macOS) for queuing, routing, and tracking
-prompts across 9 AI providers — 7 cloud APIs plus Ollama and LM Studio for fully local, offline AI.
+prompts across 12 AI providers — 7 cloud APIs plus Ollama, LM Studio, Jan.ai, LocalAI, and llama.cpp for fully local, offline AI.
 
 **GitHub:** https://github.com/LoJMike/AIQLoadManager  
 **Local path:** `C:\Users\mikel\Desktop\AIQLoadManager Project`
 
 ---
 
+## Pricing Tiers
+
+| | Free | Starter | Pro |
+|---|---|---|---|
+| **Price** | $0 forever | $6/mo · **$39 one-time** | $14/mo · **$79 one-time** |
+| **AI providers (total)** | 5 | 7 | All 12 |
+| **Max queue depth** | 10 items | 100 items | Unlimited |
+| **Projects** | 1 | 5 | Unlimited |
+| **Routing modes** | Manual, Free Tier | + Auto, Balance | + Cheapest, Fastest, Custom |
+| **Cost tracking** | — | ✓ | ✓ |
+| **Budget caps & alerts** | — | — | ✓ |
+| **⚡ Urgent priority boost** | ✓ | ✓ | ✓ |
+| **Tag-based smart priority (all tags)** | — | — | ✓ |
+| **Batch CSV import** | — | ✓ | ✓ |
+| **Usage export** | — | CSV | CSV + JSON |
+| **Prompt template library** | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
+| **Compare mode (A/B providers)** | — | — | ✓ |
+| **Prompt chaining** | — | — | ✓ *(Roadmap)* |
+| **Image generation** | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
+| **Video generation** | — | — | ✓ *(Roadmap)* |
+| **Webhook output delivery** | — | — | ✓ *(Roadmap)* |
+| **Cost forecasting** | — | — | ✓ *(Roadmap)* |
+| **iOS & Android companion** | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
+| **100% local — no cloud sync** | ✓ | ✓ | ✓ |
+
+One-time / lifetime pricing saves 46% (Starter) and 53% (Pro) vs monthly. No usage meters on top of your API costs — you pay your providers directly.
+
+---
+
 ## Features
 
-| Feature | Detail |
-|---|---|
-| **Multi-provider GUI** | Dark industrial dashboard with per-provider usage cards |
-| **Usage tracking** | Token in/out, requests/min, requests/day, cost estimate per provider |
-| **Rate limit awareness** | Knows each provider's RPM/RPD/TPM limits; waits automatically |
-| **Prompt queue** | Priority ordering, scheduling, retry on error |
-| **Smart routing** | 6 modes: auto, balance, cheapest, fastest, freeTier, manual |
-| **Prompt type tags** | 9 visual chip tags (Chat, Research, Code, Web Search, Writing, Analysis, Image, Translate, ⚡ Urgent) — drive routing and queue priority |
-| **Live cost estimation** | Token count and per-provider cost estimate shown as you type, before queuing |
-| **Provider comparison** | Ranked table of all configured providers with estimated cost and availability shown live in the Add Prompt panel |
-| **Tag-based priority** | ⚡ Urgent bumps queue position on all plans; paid tier extends priority boosts to all tag types |
-| **Projects & chats** | Named projects; continue existing conversation threads |
-| **Persistent history** | Conversation history survives app restarts — stored in local SQLite, not memory |
-| **Compare mode** | Pro — send the same prompt to multiple providers simultaneously; responses shown side-by-side |
-| **Budget alerts** | Monthly USD cap per provider with visual progress |
-| **Bulk input** | Paste many prompts (one per line) for batch queuing |
+| Feature | Tier | Detail |
+|---|---|---|
+| **Multi-provider GUI** | All | Dark industrial dashboard with per-provider usage cards |
+| **Usage tracking** | All | Token in/out, requests/min, requests/day, cost estimate per provider |
+| **Rate limit awareness** | All | Knows each provider's RPM/RPD/TPM limits; waits automatically |
+| **Prompt queue** | All | Priority ordering, scheduling, retry on error |
+| **Prompt type tags** | All | 9 visual chip tags (Chat, Research, Code, Web Search, Writing, Analysis, Image, Translate, ⚡ Urgent) — drive routing and queue priority |
+| **Live cost estimation** | All | Token count and per-provider cost estimate shown as you type, before queuing |
+| **Provider comparison table** | All | Ranked table of all configured providers with estimated cost and availability shown live in the Add Prompt panel |
+| **⚡ Urgent priority boost** | All | Jumps the queue on any plan |
+| **Projects & chats** | All | Named projects; continue existing conversation threads |
+| **Persistent history** | All | Conversation history survives app restarts — stored in local SQLite |
+| **Smart routing** | Starter+ | 4 modes on Starter (Manual, Free Tier, Auto, Balance); all 6 on Pro |
+| **Cost tracking** | Starter+ | Detailed cost per provider & model |
+| **Tag-based smart priority** | Pro | All 9 tag types boost queue position |
+| **🌐 Web search** | All | Tag a prompt Web Search — live results from Tavily or SearXNG are injected into the system prompt before the AI call. Works with every model including local ones. |
+| **Compare mode** | Pro | Send the same prompt to multiple providers simultaneously; responses shown side-by-side |
+| **Budget caps & alerts** | Pro | Monthly USD cap per provider with visual progress |
+| **Batch CSV import** | Starter+ | Upload a CSV of prompts and queue them all at once |
 
 ---
 
@@ -35,10 +67,18 @@ Providers are grouped into three tiers in the app's Connectors settings panel.
 
 ### 🖥️ Local AI — no API key, no internet, $0 per request
 
-| Provider    | How to use                                    | Server URL                  |
-|-------------|-----------------------------------------------|-----------------------------|
-| Ollama      | `ollama pull llama3.2` then run Ollama        | `http://localhost:11434`    |
-| LM Studio   | Load model → Developer tab → Start server     | `http://localhost:1234`     |
+All ports are configurable in Settings → Connectors.
+
+| Provider    | How to use                                              | Default port |
+|-------------|---------------------------------------------------------|--------------|
+| Ollama      | `ollama pull llama3.2` then run Ollama                  | `11434`      |
+| LM Studio   | Load model → Developer tab → Start server               | `1234`       |
+| Jan.ai      | Download model → Settings → Start Local API             | `1337`       |
+| LocalAI     | `docker run -p 8080:8080 localai/localai:latest`        | `8080`       |
+| llama.cpp   | `llama-server -m model.gguf --port 8181 --ctx-size 4096`| `8181`       |
+
+> **Note:** LocalAI and llama.cpp both default near port 8080 — llama.cpp ships with default 8181 here to avoid conflict.
+> Change either port in Settings → Connectors if you need them to coexist.
 
 ### ★ Free Cloud Tier — permanent free access, no credit card required
 
@@ -120,7 +160,8 @@ src/
       openaiProvider.js      ← GPT SDK
       geminiProvider.js      ← Gemini SDK
       openaiCompatProviders.js ← Groq, DeepSeek, Mistral, xAI Grok
-      localProviders.js        ← Ollama, LM Studio (local/offline)
+      localProviders.js        ← Ollama, LM Studio, Jan.ai, LocalAI, llama.cpp (local/offline)
+    webSearch.js              ← Tavily + SearXNG web search service
   renderer/
     App.jsx                  ← Shell with sidebar nav
     App.css                  ← Dark monospace theme
@@ -173,7 +214,7 @@ Cost formula: `(inputTokens / 1_000_000 × inputRate) + (maxTokens / 1_000_000 �
 
 Each prompt can carry one or more tags. Tags do two things: they tell the router what *kind* of task the prompt is, and on paid tier they lift the prompt's queue priority.
 
-| Tag | Emoji | Drives routing to… | Free priority boost | Paid priority boost |
+| Tag | Emoji | Drives routing to… | Free / Starter boost | Pro boost |
 |---|---|---|---|---|
 | Chat | 💬 | General providers | — | +2 |
 | Research | 🔬 | Anthropic, OpenAI, Gemini, Grok | — | +8 |
@@ -185,29 +226,58 @@ Each prompt can carry one or more tags. Tags do two things: they tell the router
 | Translate | 🌍 | General providers | — | +2 |
 | **Urgent** | ⚡ | *(modifier — no routing effect)* | **+10** | **+20** |
 
-Tags are multi-select. The first non-Urgent tag sets the routing `task_type`; Urgent stacks on top as a pure priority modifier. Priority weights are computed server-side — the UI only sends a tag ID array.
+All-tag priority boosts (the non-Urgent column) require a **Pro** license. On Free and Starter, only ⚡ Urgent boosts queue position. Tags are multi-select — the first non-Urgent tag sets the routing `task_type`; Urgent stacks on top as a pure priority modifier.
+
+---
+
+## Web search
+
+Tag any prompt with 🌐 **Web Search** and the queue will fetch live results before sending — no tool-calling support required. Search context is injected as a system prompt prefix, so it works with every model, including fully local ones.
+
+### Backends
+
+| Backend | Cost | Setup |
+|---|---|---|
+| **Tavily** | 1,000 free searches/month, no credit card | Sign up at [app.tavily.com](https://app.tavily.com) → copy your `tvly-…` key → paste in Settings → Web Search |
+| **SearXNG** | Free, completely self-hosted | `docker run -p 8888:8080 -e SEARXNG_SEARCH_FORMATS="html,json" searxng/searxng` |
+
+> **Port note:** SearXNG's container port is 8080; it's mapped to host port 8888 to avoid conflict with LocalAI (which also defaults to 8080).
+
+### How it works
+
+1. A prompt tagged 🌐 Web Search enters the queue normally.
+2. Before the AI call, `WebSearchService.search(prompt)` fires against the configured backend and returns up to 5 results (title, URL, snippet).
+3. Results are formatted into a structured context block and prepended to the system prompt.
+4. The enriched prompt is sent to whichever provider the router selects — no model-side changes needed.
+5. If the search fails (network error, bad key, SearXNG offline), the queue item proceeds without context and logs a warning. Nothing is lost.
+
+Configure the backend and keys in **Settings → Connectors → 🌐 Web Search**.
 
 ---
 
 ## Routing modes
 
-| Mode       | Behaviour |
-|------------|-----------|
-| `auto`     | Scores all providers on capacity, cost, and task type — local AI gets +50 bonus. Task type is now derived from prompt tags. |
-| `balance`  | Round-robins across configured providers |
-| `cheapest` | Always picks lowest input-token cost (local = $0, always wins) |
-| `fastest`  | Groq → DeepSeek → Mistral → Gemini → OpenAI → Anthropic → local |
-| `freeTier` | Ollama / LM Studio first, then Gemini, Groq, Mistral |
-| `manual`   | You explicitly pick provider + model per prompt |
+| Mode       | Tier    | Behaviour |
+|------------|---------|-----------|
+| `manual`   | All     | You explicitly pick provider + model per prompt |
+| `freeTier` | All     | Local providers first (Ollama / LM Studio / Jan.ai / LocalAI / llama.cpp), then Gemini, Groq, Mistral |
+| `auto`     | Starter+| Scores all providers on capacity, cost, and task type — all local AI providers get a +50 bonus ($0 cost, no rate limits). Task type derived from prompt tags. |
+| `balance`  | Starter+| Round-robins across configured providers |
+| `cheapest` | Pro     | Always picks lowest input-token cost (local = $0, always wins) |
+| `fastest`  | Pro     | Groq → DeepSeek → Mistral → Gemini → OpenAI → Anthropic → local |
 
 ---
 
 ## Version
 
-Current version: **0.3.2**
+Current version: **0.3.6**
 
 | What changed | Version |
 |---|---|
+| Web search (Tavily + SearXNG); RAG injection for all models; configurable in Settings | 0.3.6 |
+| LocalAI + llama.cpp added; configurable ports for all 5 local providers; provider count 10→12 | 0.3.5 |
+| Jan.ai added as third local provider; Free tier now includes 3 local + 3 cloud free providers | 0.3.4 |
+| Pricing tiers aligned — Free/Starter/Pro; STARTER_FLAGS added; LicensePanel 3-column UI | 0.3.3 |
 | Compare mode (Pro) — multi-provider fan-out, side-by-side results | 0.3.2 |
 | Persistent conversation history (SQLite write-through) | 0.3.1 |
 | Prompt type tags + tag-driven queue priority | 0.3.0 |
@@ -244,7 +314,63 @@ Compare mode requires a Pro license. No conversation history is injected — eac
 | Batch CSV import | Starter | Upload CSV of prompts, queue all at once |
 | Webhook output delivery | Pro | POST results to any URL on completion |
 | Cost forecasting | Pro | Predict monthly spend from usage trends |
-| iOS & Android companion | Starter+ | Monitor queue, add prompts, push notifications |
+| iOS & Android companion | Starter | Monitor queue, add prompts, push notifications. Included at no extra charge. |
+
+---
+
+## Purchasing & Licensing
+
+AIQ Load Manager uses **[Lemon Squeezy](https://www.lemonsqueezy.com)** as its payment and subscription vendor (Merchant of Record). Lemon Squeezy handles checkout, global tax compliance (VAT/GST/sales tax), subscriptions, and license key issuance — no separate tax setup required.
+
+### Products to create in Lemon Squeezy
+
+| Product | Type | Price | Lemon Squeezy product name |
+|---|---|---|---|
+| Starter Monthly | Subscription | $6.00/mo | `AIQ Load Manager — Starter` |
+| Starter Lifetime | One-time | $39.00 | `AIQ Load Manager — Starter Lifetime` |
+| Pro Monthly | Subscription | $14.00/mo | `AIQ Load Manager — Pro` |
+| Pro Lifetime | One-time | $79.00 | `AIQ Load Manager — Pro Lifetime` |
+
+Enable **License Keys** on every product (1 key per order). Free tier users download directly from GitHub Releases — no checkout needed.
+
+### Newsletter opt-in
+
+In Lemon Squeezy dashboard → **Store Settings → Checkout**, enable "Show newsletter opt-in checkbox". Buyers can opt in at checkout; their emails appear in the Customers tab and are exportable to your mailing list tool.
+
+### Landing page checkout integration
+
+`landing-page.html` uses **Lemon.js** (Lemon Squeezy's mini JS library) to open checkout as an overlay popup. The `CHECKOUT_URLS` block near the bottom of the file holds the four product checkout URLs — replace the placeholder strings with your real URLs after creating products in Lemon Squeezy:
+
+```js
+const CHECKOUT_URLS = {
+  starter: {
+    monthly:  'https://your-store.lemonsqueezy.com/checkout/buy/xxxx',
+    lifetime: 'https://your-store.lemonsqueezy.com/checkout/buy/xxxx',
+  },
+  pro: {
+    monthly:  'https://your-store.lemonsqueezy.com/checkout/buy/xxxx',
+    lifetime: 'https://your-store.lemonsqueezy.com/checkout/buy/xxxx',
+  }
+};
+```
+
+The billing toggle (Monthly ↔ Lifetime) automatically swaps both the displayed price and the button's checkout URL.
+
+### License key validation (TODO)
+
+`src/main/licenseChecker.js` currently stubs license validation (any stored key = pro). When ready to enforce licensing, replace the stub with a real call to the [Lemon Squeezy License API](https://docs.lemonsqueezy.com/api/license-api):
+
+```
+POST https://api.lemonsqueezy.com/v1/licenses/validate
+Content-Type: application/x-www-form-urlencoded
+license_key=XXXX&instance_id=YYYY
+```
+
+The API does not require a Bearer token. Validate that the returned `store_id`, `product_id`, and `variant_id` match your products (hard-code these values in `licenseChecker.js`). Store the `instance_id` locally so activation/deactivation can be tracked per machine.
+
+### Testing without real money
+
+Create a 100% discount code in Lemon Squeezy (Dashboard → Discounts → New) with a limited number of uses and a short expiry. Testers go through the normal checkout flow, enter the code, and receive a real license key — no payment required.
 
 ---
 

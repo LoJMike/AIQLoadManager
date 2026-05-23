@@ -1,13 +1,70 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 
+// requiredPlan: null = available on all tiers; 'starter' = Starter+; 'pro' = Pro only
 const ROUTING_MODES = [
-  { value: 'auto',     label: 'Auto (scored best match)' },
-  { value: 'balance',  label: 'Balance (round-robin)' },
-  { value: 'cheapest', label: 'Cheapest provider' },
-  { value: 'fastest',  label: 'Fastest (Groq first)' },
-  { value: 'freeTier', label: 'Free tier only' },
-  { value: 'manual',   label: 'Manual (pick provider)' },
+  { value: 'auto',     label: 'Auto (scored best match)',  requiredPlan: 'starter' },
+  { value: 'balance',  label: 'Balance (round-robin)',     requiredPlan: 'starter' },
+  { value: 'cheapest', label: 'Cheapest provider',         requiredPlan: 'pro'     },
+  { value: 'fastest',  label: 'Fastest (Groq first)',      requiredPlan: 'pro'     },
+  { value: 'freeTier', label: 'Free tier only',            requiredPlan: null      },
+  { value: 'manual',   label: 'Manual (pick provider)',    requiredPlan: null      },
 ];
+
+const TIER_LABEL = { starter: 'Starter', pro: 'Pro' };
+
+// ── RoutingModeSelector ────────────────────────────────────────────────────────
+// Custom dropdown that shows all 6 modes. Locked modes are dimmed, unclickable,
+// and display a tooltip naming the tier that unlocks them.
+function RoutingModeSelector({ value, onChange, availableModes }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  // Close when clicking outside
+  useEffect(() => {
+    function handler(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const current = ROUTING_MODES.find(m => m.value === value) ?? ROUTING_MODES[5]; // default: manual
+
+  return (
+    <div ref={ref} className="routing-select-wrap">
+      <button
+        type="button"
+        className="routing-select-trigger"
+        onClick={() => setOpen(o => !o)}
+      >
+        {current.label}
+        <span className="routing-select-caret">▾</span>
+      </button>
+
+      {open && (
+        <div className="routing-select-menu">
+          {ROUTING_MODES.map(m => {
+            const locked = !availableModes.includes(m.value);
+            const tierName = locked ? (TIER_LABEL[m.requiredPlan] ?? '') : null;
+            const isSelected = m.value === value;
+            const tierClass = tierName === 'Pro' ? 'pro' : 'starter';
+            return (
+              <div
+                key={m.value}
+                className={`routing-select-option ${locked ? 'locked' : ''} ${isSelected ? 'selected' : ''}`}
+                title={locked ? `Requires ${tierName} — upgrade to unlock` : undefined}
+                onClick={() => { if (!locked) { onChange(m.value); setOpen(false); } }}
+              >
+                <span>{m.label}</span>
+                {locked && (
+                  <span className={`tier-lock-badge ${tierClass}`}>🔒 {tierName}</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /**
  * Prompt tag definitions — display config only.
@@ -79,7 +136,7 @@ function fmtWait(ms) {
 function TagChips({ selectedTags, onToggle }) {
   return (
     <div>
-      <label style={{ marginBottom: 8, display: 'block' }}>Prompt type <span style={{ color: 'var(--text3)', fontWeight: 400 }}>(optional — helps routing &amp; prioritisation)</span></label>
+      <label>Prompt type <span className="label-hint">(optional — helps routing &amp; prioritisation)</span></label>
       <div className="tag-chip-grid">
         {PROMPT_TAGS.map(tag => {
           const active = selectedTags.includes(tag.id);
@@ -116,7 +173,17 @@ export default function AddPromptPanel({ providers, projects, onSubmit, license 
   const [compareMode,      setCompareMode]  = useState(false);
   const [compareSel,       setCompareSel]   = useState([]); // selected provider names
 
-  const isPro = license?.plan === 'pro';
+  // Feature flags — default true while the app is in skeleton/preview mode
+  const canCompare      = license?.flags?.compareMode  ?? true;
+  const canBatch        = license?.flags?.batchImport  ?? true;
+  const availableModes  = license?.flags?.routingModes ?? ROUTING_MODES.map(m => m.value);
+
+  // If the currently selected routing mode is not available on this tier, reset to 'manual'
+  useEffect(() => {
+    if (availableModes.length && !availableModes.includes(form.routingMode)) {
+      set('routingMode', 'manual');
+    }
+  }, [availableModes]);
 
   // Live token estimate (pure maths — no debounce needed)
   const tokenEstimate = useMemo(() => estimateTokens(form.prompt), [form.prompt]);
@@ -244,11 +311,10 @@ export default function AddPromptPanel({ providers, projects, onSubmit, license 
       <div className="panel-title">Add to Queue</div>
       <div className="panel-sub">Schedule one or more prompts across your AI providers</div>
 
-      {/* Mode toggle: Single / Compare / Bulk */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+      <div className="mode-toggle">
         <button className={!bulk && !compareMode ? 'primary' : 'secondary'} onClick={() => setMode('single')}>Single prompt</button>
         <button className={compareMode ? 'primary' : 'secondary'} onClick={() => setMode('compare')} title="Pro — send same prompt to multiple providers, see responses side by side">
-          ⚖ Compare <span style={{ fontSize: 10, opacity: 0.7, marginLeft: 3 }}>Pro</span>
+          ⚖ Compare <span className="tier-badge">Pro</span>
         </button>
         <button className={bulk ? 'primary' : 'secondary'} onClick={() => setMode('bulk')}>Bulk (one per line)</button>
       </div>
@@ -256,13 +322,12 @@ export default function AddPromptPanel({ providers, projects, onSubmit, license 
       {compareMode ? (
         /* ── Compare mode ── */
         <form onSubmit={handleSubmit}>
-          {/* Prompt card */}
-          <div className="card" style={{ marginBottom: 16 }}>
+          <div className="card card-spaced">
             <div className="form-group">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-                <label style={{ marginBottom: 0 }}>Prompt *</label>
+              <div className="label-row">
+                <label>Prompt *</label>
                 {form.prompt.trim() && (
-                  <span style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'monospace' }}>
+                  <span className="token-hint">
                     ~{tokenEstimate.toLocaleString()} tokens in · {(form.maxTokens || 1024).toLocaleString()} max out
                   </span>
                 )}
@@ -281,30 +346,27 @@ export default function AddPromptPanel({ providers, projects, onSubmit, license 
           </div>
 
           {/* Provider selection card */}
-          <div className="card" style={{ marginBottom: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                Providers to compare
-              </div>
+          <div className="card card-spaced">
+            <div className="compare-provider-header">
+              <div className="card-section-title" style={{ marginBottom: 0 }}>Providers to compare</div>
               {compareSel.length > 0 && (
-                <span style={{ fontSize: 11, color: 'var(--text3)' }}>{compareSel.length} selected</span>
+                <span className="compare-sel-count">{compareSel.length} selected</span>
               )}
             </div>
 
-            {!isPro ? (
-              /* Pro gate */
-              <div style={{ padding: '14px 16px', background: 'rgba(168,85,247,0.07)', border: '1px solid rgba(168,85,247,0.25)', borderRadius: 8 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', marginBottom: 6 }}>⚖ Compare mode is a Pro feature</div>
-                <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.6 }}>
+            {!canCompare ? (
+              <div className="feature-gate feature-gate-pro">
+                <div className="feature-gate-title">⚖ Compare mode is a Pro feature</div>
+                <div className="feature-gate-body">
                   Upgrade to Pro to send the same prompt to multiple providers simultaneously and view responses side by side.
                 </div>
-                <button type="button" className="primary" style={{ marginTop: 12, fontSize: 12 }}
+                <button type="button" className="primary"
                   onClick={() => window.aiQueue.openExternal('https://example.com/upgrade')}>
                   Upgrade to Pro →
                 </button>
               </div>
             ) : configuredProviders.length < 2 ? (
-              <div style={{ fontSize: 12, color: 'var(--text3)', padding: '10px 0' }}>
+              <div className="empty-state" style={{ padding: '10px 0' }}>
                 You need at least 2 configured providers to use Compare mode. Add API keys in Settings.
               </div>
             ) : (
@@ -328,20 +390,18 @@ export default function AddPromptPanel({ providers, projects, onSubmit, license 
                   })}
                 </div>
                 {compareSel.length === 1 && (
-                  <div style={{ marginTop: 10, fontSize: 11, color: 'var(--warning)' }}>Select at least 2 providers to compare.</div>
+                  <div className="compare-hint">Select at least 2 providers to compare.</div>
                 )}
               </>
             )}
           </div>
 
           {/* Options card */}
-          <div className="card" style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Options
-            </div>
+          <div className="card card-spaced">
+            <div className="card-section-title">Options</div>
             <div className="form-row form-row-2">
               <div className="form-group">
-                <label>Label <span style={{ color: 'var(--text3)', fontWeight: 400 }}>(optional)</span></label>
+                <label>Label <span className="label-hint">(optional)</span></label>
                 <input placeholder="e.g. Compare coding task" value={form.label} onChange={e => set('label', e.target.value)} />
               </div>
               <div className="form-group">
@@ -350,16 +410,16 @@ export default function AddPromptPanel({ providers, projects, onSubmit, license 
               </div>
             </div>
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label>System prompt <span style={{ color: 'var(--text3)', fontWeight: 400 }}>(optional — same for all providers)</span></label>
+              <label>System prompt <span className="label-hint">(optional — same for all providers)</span></label>
               <textarea placeholder="You are a helpful assistant…" value={form.systemPrompt} onChange={e => set('systemPrompt', e.target.value)} rows={2} />
             </div>
           </div>
 
           <button type="submit" className="primary"
-            disabled={submitting || !form.prompt.trim() || !isPro || compareSel.length < 2}>
+            disabled={submitting || !form.prompt.trim() || !canCompare || compareSel.length < 2}>
             {submitting ? 'Queuing compare…' : `⚖ Compare across ${compareSel.length || '?'} providers`}
           </button>
-          <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text3)' }}>
+          <div className="compare-footer">
             Responses run in parallel. Results appear in the Queue tab when all providers reply.
           </div>
         </form>
@@ -367,52 +427,69 @@ export default function AddPromptPanel({ providers, projects, onSubmit, license 
       ) : bulk ? (
         /* ── Bulk mode ── */
         <div className="card">
-          <div className="form-group">
-            <label>Prompts — one per line</label>
-            <textarea
-              rows={10}
-              placeholder={"Summarise this week's news\nWrite a unit test for the login function\nExplain quantum entanglement simply"}
-              value={bulkText}
-              onChange={e => setBulkText(e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <TagChips selectedTags={selectedTags} onToggle={toggleTag} />
-          </div>
-
-          <div className="form-row form-row-3" style={{ marginBottom: 14 }}>
-            <div className="form-group">
-              <label>Routing mode</label>
-              <select value={form.routingMode} onChange={e => set('routingMode', e.target.value)}>
-                {ROUTING_MODES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-              </select>
+          {!canBatch ? (
+            /* Starter gate */
+            <div className="feature-gate feature-gate-starter">
+              <div className="feature-gate-title">⊞ Batch import is a Starter feature</div>
+              <div className="feature-gate-body">
+                Upgrade to Starter to queue multiple prompts at once — paste one per line and send them all in a single click.
+              </div>
+              <button type="button" className="primary btn-starter-gradient"
+                onClick={() => window.aiQueue.openExternal('https://example.com/upgrade')}>
+                Upgrade to Starter →
+              </button>
             </div>
-            <div className="form-group">
-              <label>Project (optional)</label>
-              <select value={form.projectId} onChange={e => set('projectId', e.target.value)}>
-                <option value="">— none —</option>
-                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </div>
-          </div>
+          ) : (
+            <>
+              <div className="form-group">
+                <label>Prompts — one per line</label>
+                <textarea
+                  rows={10}
+                  placeholder={"Summarise this week's news\nWrite a unit test for the login function\nExplain quantum entanglement simply"}
+                  value={bulkText}
+                  onChange={e => setBulkText(e.target.value)}
+                />
+              </div>
 
-          <button className="primary" onClick={handleBulkSubmit} disabled={submitting || !bulkText.trim()}>
-            {submitting ? 'Adding…' : `Add ${bulkText.split('\n').filter(l => l.trim()).length} prompts`}
-          </button>
+              <div className="form-group">
+                <TagChips selectedTags={selectedTags} onToggle={toggleTag} />
+              </div>
+
+              <div className="form-row form-row-3" style={{ marginBottom: 14 }}>
+                <div className="form-group">
+                  <label>Routing mode</label>
+                  <RoutingModeSelector
+                    value={form.routingMode}
+                    onChange={v => set('routingMode', v)}
+                    availableModes={availableModes}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Project (optional)</label>
+                  <select value={form.projectId} onChange={e => set('projectId', e.target.value)}>
+                    <option value="">— none —</option>
+                    {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <button className="primary" onClick={handleBulkSubmit} disabled={submitting || !bulkText.trim()}>
+                {submitting ? 'Adding…' : `Add ${bulkText.split('\n').filter(l => l.trim()).length} prompts`}
+              </button>
+            </>
+          )}
         </div>
 
       ) : (
         /* ── Single prompt mode ── */
         <form onSubmit={handleSubmit}>
 
-          {/* Prompt card */}
-          <div className="card" style={{ marginBottom: 16 }}>
+          <div className="card card-spaced">
             <div className="form-group">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-                <label style={{ marginBottom: 0 }}>Prompt *</label>
+              <div className="label-row">
+                <label>Prompt *</label>
                 {form.prompt.trim() && (
-                  <span style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'monospace' }}>
+                  <span className="token-hint">
                     ~{tokenEstimate.toLocaleString()} tokens in · {(form.maxTokens || 1024).toLocaleString()} max out
                   </span>
                 )}
@@ -432,10 +509,9 @@ export default function AddPromptPanel({ providers, projects, onSubmit, license 
             </div>
           </div>
 
-          {/* Optional fields card */}
-          <div className="card" style={{ marginBottom: 16 }}>
+          <div className="card card-spaced">
             <div className="form-group">
-              <label>Label <span style={{ color: 'var(--text3)', fontWeight: 400 }}>(optional — shown in queue)</span></label>
+              <label>Label <span className="label-hint">(optional — shown in queue)</span></label>
               <input
                 placeholder="e.g. Weekly summary task"
                 value={form.label}
@@ -443,7 +519,7 @@ export default function AddPromptPanel({ providers, projects, onSubmit, license 
               />
             </div>
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label>System prompt <span style={{ color: 'var(--text3)', fontWeight: 400 }}>(optional)</span></label>
+              <label>System prompt <span className="label-hint">(optional)</span></label>
               <textarea
                 placeholder="You are a helpful assistant specialised in…"
                 value={form.systemPrompt}
@@ -453,25 +529,22 @@ export default function AddPromptPanel({ providers, projects, onSubmit, license 
             </div>
           </div>
 
-          {/* Routing card */}
-          <div className="card" style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Routing
-            </div>
+          <div className="card card-spaced">
+            <div className="card-section-title">Routing</div>
             <div className="form-row form-row-2" style={{ marginBottom: 0 }}>
               <div className="form-group">
                 <label>Routing mode</label>
-                <select value={form.routingMode} onChange={e => set('routingMode', e.target.value)}>
-                  {ROUTING_MODES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                </select>
+                <RoutingModeSelector
+                  value={form.routingMode}
+                  onChange={v => set('routingMode', v)}
+                  availableModes={availableModes}
+                />
               </div>
 
               {/* Derived task type read-out (informational only) */}
               <div className="form-group">
-                <label>Task type <span style={{ color: 'var(--text3)', fontWeight: 400 }}>(derived from tags)</span></label>
-                <div style={{ padding: '6px 10px', background: 'var(--bg4)', borderRadius: 'var(--radius)', border: '1px solid var(--border-dim)', fontSize: 13, color: 'var(--text2)' }}>
-                  {taskType}
-                </div>
+                <label>Task type <span className="label-hint">(derived from tags)</span></label>
+                <div className="readonly-field">{taskType}</div>
               </div>
 
               {form.routingMode === 'manual' && (
@@ -553,11 +626,8 @@ export default function AddPromptPanel({ providers, projects, onSubmit, license 
             )}
           </div>
 
-          {/* Destination card */}
-          <div className="card" style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Destination
-            </div>
+          <div className="card card-spaced">
+            <div className="card-section-title">Destination</div>
             <div className="form-row form-row-2">
               <div className="form-group">
                 <label>Project (optional)</label>
@@ -589,85 +659,6 @@ export default function AddPromptPanel({ providers, projects, onSubmit, license 
           </button>
         </form>
       )}
-
-      <style>{`
-        /* ── Compare provider chips ──────────────────────────── */
-        .compare-provider-grid {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-        .compare-provider-chip {
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          padding: 7px 13px;
-          border-radius: 8px;
-          border: 1px solid var(--border-dim);
-          background: var(--bg3);
-          color: var(--text2);
-          font-size: 12px;
-          cursor: pointer;
-          transition: all 0.15s ease;
-          font-family: inherit;
-        }
-        .compare-provider-chip:hover {
-          border-color: var(--border);
-          background: var(--bg4);
-          color: var(--text1);
-        }
-        .compare-provider-chip.selected {
-          background: color-mix(in srgb, var(--chip-accent) 12%, transparent);
-          border-color: color-mix(in srgb, var(--chip-accent) 55%, transparent);
-          color: var(--text1);
-          font-weight: 500;
-        }
-        .cpc-dot {
-          width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-        }
-        .cpc-check {
-          font-size: 11px;
-          color: var(--success);
-          font-weight: 700;
-        }
-        /* ── Tag chip grid ───────────────────────────────────── */
-        .tag-chip-grid { display: flex; flex-wrap: wrap; gap: 7px; }
-        .tag-chip {
-          display: inline-flex; align-items: center; gap: 5px;
-          padding: 5px 11px; border-radius: 20px;
-          border: 1px solid var(--border-dim); background: var(--bg3);
-          color: var(--text2); font-size: 12px; cursor: pointer;
-          transition: all 0.15s ease; white-space: nowrap; font-family: inherit;
-        }
-        .tag-chip:hover { border-color: var(--border); color: var(--text1); background: var(--bg4); }
-        .tag-chip.active {
-          background: color-mix(in srgb, var(--chip-color) 14%, transparent);
-          border-color: color-mix(in srgb, var(--chip-color) 55%, transparent);
-          color: var(--chip-color);
-        }
-        .tag-chip.urgent.active {
-          background: rgba(249,115,22,0.12); border-color: rgba(249,115,22,0.55);
-          color: #f97316; font-weight: 600;
-        }
-        .chip-emoji { font-size: 13px; line-height: 1; }
-        .chip-label { font-weight: 500; }
-
-        /* ── Route preview ───────────────────────────────────── */
-        .route-preview { padding: 8px 12px; border-radius: 6px; font-size: 12px; }
-        .route-preview.ok   { background: rgba(52,211,153,0.08); color: var(--success); border: 1px solid rgba(52,211,153,0.2); }
-        .route-preview.wait { background: rgba(251,191,36,0.08);  color: var(--warning); border: 1px solid rgba(251,191,36,0.2); }
-
-        /* ── Provider comparison table ───────────────────────── */
-        .candidates-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
-        .candidates-table th {
-          text-align: left; padding: 4px 8px; color: var(--text3);
-          font-weight: 600; border-bottom: 1px solid var(--border); white-space: nowrap;
-        }
-        .candidates-table td { padding: 5px 8px; border-bottom: 1px solid rgba(255,255,255,0.04); white-space: nowrap; }
-        .candidates-table tr:last-child td { border-bottom: none; }
-        .candidates-table .winner-row td   { background: rgba(52,211,153,0.06); }
-        .candidates-table .winner-row td:first-child { border-left: 2px solid var(--success); }
-      `}</style>
     </div>
   );
 }

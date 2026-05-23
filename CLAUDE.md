@@ -19,7 +19,7 @@ These three values must always match each other. When one changes, update all th
 | **Project name (display — short)** | `AIQ Load Manager` |
 | **`package.json` → `"name"`** | `aiq-load-manager` |
 | **`package.json` → `"productName"`** (build section) | `AI Queue Load Manager` |
-| **`package.json` → `"version"`** | `0.3.2` |
+| **`package.json` → `"version"`** | `0.3.6` |
 | **GitHub repo** | https://github.com/LoJMike/AIQLoadManager |
 | **Local path (Windows)** | `C:\Users\mikel\Desktop\AIQLoadManager Project` |
 
@@ -227,6 +227,9 @@ All renderer ↔ main communication goes through:
 - Test in dev mode before building installers
 - Use PowerShell syntax for any Windows commands (not CMD)
 - When bumping the version: update `package.json` `"version"` AND the identity table in this file
+- **Always check `WORKLOG.md` for the current version number before making any changes**
+- **Always ask for user approval before changing the version number**
+- **Always record every version change in `WORKLOG.md`**
 
 ### Database pattern
 `db.js` exposes a synchronous API mirroring `better-sqlite3`:

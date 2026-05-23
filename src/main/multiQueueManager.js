@@ -79,15 +79,19 @@ const STATUS = {
 
 class MultiQueueManager {
   constructor(providerRegistry, multiUsageTracker, queueRouter, pushEvent) {
-    this.registry   = providerRegistry;
-    this.tracker    = multiUsageTracker;
-    this.router     = queueRouter;
-    this.push       = pushEvent;
-    this.paused     = false;
-    this.processing = false;
-    this._timer     = null;
-    this.db         = null;
+    this.registry    = providerRegistry;
+    this.tracker     = multiUsageTracker;
+    this.router      = queueRouter;
+    this.push        = pushEvent;
+    this.webSearch   = null;   // set via setWebSearch() after construction
+    this.paused      = false;
+    this.processing  = false;
+    this._timer      = null;
+    this.db          = null;
   }
+
+  /** Attach the WebSearchService. Called from index-v2.js after both are constructed. */
+  setWebSearch(service) { this.webSearch = service; }
 
   /** Synchronous open — call before using */
   open(dbPath) {
@@ -278,15 +282,49 @@ class MultiQueueManager {
     this._timer = setTimeout(() => this._tick(), 1500);
   }
 
+  /**
+   * If the item has the web_search tag and a search backend is configured,
+   * run a search and prepend the results to the system prompt.
+   * Fails silently on search errors — the prompt still goes through unchanged.
+   *
+   * @param {object} item  — raw DB row
+   * @returns {{ prompt: string, systemPrompt: string|null }}
+   */
+  async _enrichWithWebSearch(item) {
+    let prompt       = item.prompt;
+    let systemPrompt = item.system_prompt || null;
+
+    if (!this.webSearch?.isConfigured()) return { prompt, systemPrompt };
+
+    let tags = [];
+    try { tags = JSON.parse(item.tags || '[]'); } catch (_) {}
+    if (!tags.includes('web_search')) return { prompt, systemPrompt };
+
+    try {
+      const results = await this.webSearch.search(prompt);
+      if (results && results.length > 0) {
+        const context = this.webSearch.formatContext(results, prompt.slice(0, 150));
+        systemPrompt  = systemPrompt ? `${context}\n\n${systemPrompt}` : context;
+      }
+    } catch (err) {
+      // Log but don't fail the queue item — degraded gracefully
+      console.warn('[WebSearch] search failed, proceeding without context:', err.message);
+    }
+
+    return { prompt, systemPrompt };
+  }
+
   async _processItem(item, decision) {
     this.processing = true;
     this._set(item.id, { status: STATUS.PROCESSING, started_at: Date.now() });
     this.push('queue-update', { action: 'processing', id: item.id, provider: decision.provider });
 
     try {
+      const { prompt, systemPrompt } = await this._enrichWithWebSearch(item);
+
       const result = await this.registry.sendMessage(decision.provider, {
-        prompt:         item.prompt,
-        systemPrompt:   item.system_prompt,
+        prompt,
+        systemPrompt,
         model:          decision.model || item.model,
         maxTokens:      item.max_tokens || 1024,
         conversationId: item.conversation_id,
@@ -335,11 +373,14 @@ class MultiQueueManager {
     this._set(item.id, { status: STATUS.PROCESSING, started_at: Date.now() });
     this.push('queue-update', { action: 'processing', id: item.id, provider: 'compare' });
 
+    // Enrich with web search context once — all providers get the same context block
+    const { prompt, systemPrompt } = await this._enrichWithWebSearch(item);
+
     const settled = await Promise.allSettled(
       providers.map(providerName =>
         this.registry.sendMessage(providerName, {
-          prompt:      item.prompt,
-          systemPrompt: item.system_prompt,
+          prompt,
+          systemPrompt,
           model:       null,                // each provider uses its own default
           maxTokens:   item.max_tokens || 1024,
           queueItemId: item.id,

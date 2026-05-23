@@ -10,10 +10,18 @@ const STATUS_COLORS = {
   cancelled:  'var(--text3)',
 };
 
-export function QueuePanel({ queue, providers, onRefresh }) {
+export function QueuePanel({ queue, providers, onRefresh, highlightId }) {
   const [filter, setFilter] = useState('all');
   const [expanded, setExpanded] = useState(null);
   const api = window.aiQueue;
+
+  useEffect(() => {
+    if (highlightId) {
+      setExpanded(highlightId);
+      const el = document.getElementById('queue-item-' + highlightId);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [highlightId]);
 
   const counts = {
     all:     queue.length,
@@ -31,7 +39,7 @@ export function QueuePanel({ queue, providers, onRefresh }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+      <div className="panel-header-row">
         <div>
           <div className="panel-title">Prompt Queue</div>
           <div className="panel-sub">{counts.pending} pending · {counts.complete} complete · {counts.error} errors</div>
@@ -39,22 +47,20 @@ export function QueuePanel({ queue, providers, onRefresh }) {
         <button className="secondary" onClick={clearDone}>Clear completed</button>
       </div>
 
-      {/* Filter tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+      <div className="segmented-tabs">
         {['all','pending','complete','error'].map(s => (
           <button
             key={s}
-            className={filter === s ? 'primary' : 'secondary'}
-            style={{ fontSize: 12, padding: '5px 12px' }}
+            className={filter === s ? 'active' : ''}
             onClick={() => setFilter(s)}
           >
-            {s} <span style={{ opacity: 0.7 }}>({counts[s]})</span>
+            {s} <span className="tab-count">({counts[s]})</span>
           </button>
         ))}
       </div>
 
       {visible.length === 0 && (
-        <div style={{ textAlign: 'center', color: 'var(--text3)', padding: '60px 0', fontSize: 13 }}>
+        <div className="empty-state">
           {filter === 'all' ? 'Queue is empty — add prompts in the Add tab.' : `No ${filter} items.`}
         </div>
       )}
@@ -62,7 +68,8 @@ export function QueuePanel({ queue, providers, onRefresh }) {
       {visible.map(item => (
         <div
           key={item.id}
-          className={`queue-item ${item.status}`}
+          id={'queue-item-' + item.id}
+          className={'queue-item ' + item.status + (highlightId === item.id ? ' highlighted' : '')}
         >
           <div>
             <div className="qi-prompt">
@@ -122,30 +129,22 @@ export function QueuePanel({ queue, providers, onRefresh }) {
               const isCompare = !!item.compare_providers;
               if (!isCompare) {
                 return (
-                  <div style={{ marginTop: 10, padding: '10px 14px', background: 'var(--bg2)', borderRadius: 6, fontSize: 12, color: 'var(--text2)', lineHeight: 1.6, whiteSpace: 'pre-wrap', maxHeight: 300, overflowY: 'auto' }}>
-                    {item.response}
-                  </div>
+                  <div className="qi-response">{item.response}</div>
                 );
               }
               let results = [];
               try { results = JSON.parse(item.response); } catch (_) {}
               return (
-                <div style={{ marginTop: 12, overflowX: 'auto' }}>
-                  <div style={{ display: 'flex', gap: 10, minWidth: `${results.length * 280}px` }}>
+                <div className="compare-results-scroll">
+                  <div className="compare-results-row" style={{ minWidth: `${results.length * 280}px` }}>
                     {results.map((r, i) => (
-                      <div key={i} style={{
-                        flex: '1 1 260px', minWidth: 240,
-                        background: 'var(--bg2)', border: '1px solid var(--border-dim)',
-                        borderRadius: 8, padding: '12px 14px',
-                        borderTop: r.error ? '2px solid var(--danger)' : '2px solid var(--success)',
-                      }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{
-                              display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
+                      <div key={i} className={`compare-result-col ${r.error ? 'err' : 'ok'}`}>
+                        <div className="compare-col-header">
+                          <div className="compare-col-provider">
+                            <span className="cpc-dot" style={{
                               background: providers.find(p => p.name === r.provider)?.color || 'var(--text3)',
                             }} />
-                            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text1)' }}>
+                            <span>
                               {providers.find(p => p.name === r.provider)?.displayName || r.provider}
                             </span>
                           </div>
@@ -156,15 +155,15 @@ export function QueuePanel({ queue, providers, onRefresh }) {
                           )}
                         </div>
                         {r.model && (
-                          <div style={{ fontSize: 10, color: 'var(--text3)', fontFamily: 'monospace', marginBottom: 8 }}>{r.model}</div>
+                          <div className="compare-col-model">{r.model}</div>
                         )}
                         {r.error ? (
-                          <div style={{ fontSize: 11, color: 'var(--danger)', lineHeight: 1.5 }}>✗ {r.error}</div>
+                          <div className="qi-error" style={{ marginTop: 0 }}>✗ {r.error}</div>
                         ) : (
-                          <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.6, whiteSpace: 'pre-wrap', maxHeight: 260, overflowY: 'auto' }}>{r.response}</div>
+                          <div className="compare-col-body">{r.response}</div>
                         )}
                         {r.usage && (
-                          <div style={{ marginTop: 8, fontSize: 10, color: 'var(--text3)', fontFamily: 'monospace' }}>
+                          <div className="compare-col-tokens">
                             {r.usage.inputTokens ?? '?'}↑ · {r.usage.outputTokens ?? '?'}↓ tokens
                           </div>
                         )}
@@ -176,9 +175,7 @@ export function QueuePanel({ queue, providers, onRefresh }) {
             })()}
 
             {item.error && (
-              <div style={{ marginTop: 8, fontSize: 12, color: 'var(--danger)', background: 'rgba(248,113,113,0.07)', padding: '6px 10px', borderRadius: 5 }}>
-                {item.error}
-              </div>
+              <div className="qi-error">{item.error}</div>
             )}
           </div>
 
@@ -217,7 +214,7 @@ const PROVIDER_TIER_GROUPS = [
     sub:   'Runs entirely on your machine — no API key, no internet, zero cost per request',
     color: '#a855f7',
     icon:  '🖥️',
-    names: ['ollama', 'lmstudio'],
+    names: ['ollama', 'lmstudio', 'jan', 'localai', 'llamacpp'],
   },
   {
     key:   'free-cloud',
@@ -244,28 +241,70 @@ const PROVIDER_GUIDE = {
     installLabel: 'Download Ollama',
     installLink:  'https://ollama.com',
     docsLink:     'https://ollama.com/library',
-    baseURL:      'http://localhost:11434',
+    setupText:    'Download and install Ollama, then pull a model to get started.',
     quickstart:   'Run in your terminal:  ollama pull llama3.2',
     localNote:    'Models are detected automatically when Ollama is running. Pull any model from ollama.com/library and it will appear here on next use.',
     limits: [
-      { label: 'Cost per request', value: '$0.00',         note: 'All computation runs on your hardware' },
-      { label: 'Rate limit',       value: 'None',          note: 'Bounded only by your GPU / CPU speed' },
-      { label: 'Internet required',value: 'No',            note: 'Fully offline after model download' },
-      { label: 'Privacy',          value: 'Total',         note: 'Prompts never leave your machine' },
+      { label: 'Cost per request', value: '$0.00',  note: 'All computation runs on your hardware' },
+      { label: 'Rate limit',       value: 'None',   note: 'Bounded only by your GPU / CPU speed'  },
+      { label: 'Internet required',value: 'No',     note: 'Fully offline after model download'    },
+      { label: 'Privacy',          value: 'Total',  note: 'Prompts never leave your machine'      },
     ],
   },
   lmstudio: {
     installLabel: 'Download LM Studio',
     installLink:  'https://lmstudio.ai',
     docsLink:     'https://lmstudio.ai/docs',
-    baseURL:      'http://localhost:1234',
-    quickstart:   'In LM Studio: load a model, then open the Developer tab and start the Local Server.',
+    setupText:    'Download and install LM Studio, load a model, then open the Developer tab and start the Local Server.',
+    quickstart:   'In LM Studio: load a model → Developer tab → Start Server.',
     localNote:    'Models are detected automatically from the running LM Studio server. Load a model in LM Studio\'s model browser to get started.',
     limits: [
-      { label: 'Cost per request', value: '$0.00',         note: 'All computation runs on your hardware' },
-      { label: 'Rate limit',       value: 'None',          note: 'Bounded only by your GPU / CPU speed' },
-      { label: 'Internet required',value: 'No',            note: 'Fully offline after model download' },
-      { label: 'Privacy',          value: 'Total',         note: 'Prompts never leave your machine' },
+      { label: 'Cost per request', value: '$0.00',  note: 'All computation runs on your hardware' },
+      { label: 'Rate limit',       value: 'None',   note: 'Bounded only by your GPU / CPU speed'  },
+      { label: 'Internet required',value: 'No',     note: 'Fully offline after model download'    },
+      { label: 'Privacy',          value: 'Total',  note: 'Prompts never leave your machine'      },
+    ],
+  },
+  jan: {
+    installLabel: 'Download Jan.ai',
+    installLink:  'https://jan.ai',
+    docsLink:     'https://jan.ai/docs',
+    setupText:    'Download and install Jan.ai, download a model from the Hub, then go to Settings → Local API Server → Start.',
+    quickstart:   'Jan app → Settings → Local API Server → Start Server.',
+    localNote:    'Models are detected automatically from the running Jan.ai server. Download models from Jan\'s Hub to add them to your library.',
+    limits: [
+      { label: 'Cost per request', value: '$0.00',  note: 'All computation runs on your hardware' },
+      { label: 'Rate limit',       value: 'None',   note: 'Bounded only by your GPU / CPU speed'  },
+      { label: 'Internet required',value: 'No',     note: 'Fully offline after model download'    },
+      { label: 'Privacy',          value: 'Total',  note: 'Prompts never leave your machine'      },
+    ],
+  },
+  localai: {
+    installLabel: 'LocalAI Setup Guide',
+    installLink:  'https://localai.io/basics/getting_started/',
+    docsLink:     'https://localai.io/models/',
+    setupText:    'Install LocalAI (Docker or binary), add model files to its models/ directory, then start the server. It exposes an OpenAI-compatible API automatically.',
+    quickstart:   'docker run -p 8080:8080 localai/localai:latest',
+    localNote:    'Models are detected automatically from the running LocalAI server. Model IDs match the filenames in your models/ directory. Multiple models can run simultaneously.',
+    limits: [
+      { label: 'Cost per request', value: '$0.00',  note: 'All computation runs on your hardware' },
+      { label: 'Rate limit',       value: 'None',   note: 'Bounded only by your GPU / CPU speed'  },
+      { label: 'Internet required',value: 'No',     note: 'Fully offline after model download'    },
+      { label: 'Privacy',          value: 'Total',  note: 'Prompts never leave your machine'      },
+    ],
+  },
+  llamacpp: {
+    installLabel: 'llama.cpp Releases',
+    installLink:  'https://github.com/ggerganov/llama.cpp/releases',
+    docsLink:     'https://github.com/ggerganov/llama.cpp/blob/master/examples/server/README.md',
+    setupText:    'Download a llama.cpp release binary (or build from source), then launch llama-server with your .gguf model file. One model loads at a time — restart the server to change models.',
+    quickstart:   'llama-server -m model.gguf --port 8181 --ctx-size 4096',
+    localNote:    'llama.cpp loads one model at a time. The active model is detected automatically. To switch models, stop the server and restart it with a different .gguf file.',
+    limits: [
+      { label: 'Cost per request', value: '$0.00',  note: 'All computation runs on your hardware'   },
+      { label: 'Rate limit',       value: 'None',   note: 'Bounded only by your GPU / CPU speed'    },
+      { label: 'Active models',    value: '1 at a time', note: 'Restart server to swap models'      },
+      { label: 'Privacy',          value: 'Total',  note: 'Prompts never leave your machine'        },
     ],
   },
 
@@ -370,12 +409,13 @@ const PROVIDER_GUIDE = {
   },
 };
 
-function ProviderSettingsCard({ provider, onSaveKey, onRemoveKey, onSaveBudget, keyValue, setKeyValue, budgetValue, setBudgetValue, savedBudget, showToast }) {
-  const [expanded, setExpanded] = useState(false);
-  const [showKey,  setShowKey]  = useState(false);
+function ProviderSettingsCard({ provider, onSaveKey, onRemoveKey, onSaveBudget, onSavePort, keyValue, setKeyValue, budgetValue, setBudgetValue, savedBudget, showToast }) {
+  const [expanded,  setExpanded]  = useState(false);
+  const [showKey,   setShowKey]   = useState(false);
+  const [portValue, setPortValue] = useState('');
   const guide    = PROVIDER_GUIDE[provider.name] || {};
   const api      = window.aiQueue;
-  const isLocal  = !!provider.local;  // Ollama, LM Studio — no API key needed
+  const isLocal  = !!provider.local;  // local providers — no API key needed
 
   // true when budget is explicitly set to $0 (hard spend block)
   const isSpendBlocked = !isLocal && savedBudget === 0;
@@ -449,11 +489,7 @@ function ProviderSettingsCard({ provider, onSaveKey, onRemoveKey, onSaveBudget, 
               {/* Setup instructions */}
               <div className="sc-section">
                 <div className="sc-section-title">Setup</div>
-                <div className="sc-help">
-                  {provider.name === 'ollama'
-                    ? 'Download and install Ollama, then pull a model to get started.'
-                    : 'Download and install LM Studio, load a model, then start the Local Server in the Developer tab.'}
-                </div>
+                <div className="sc-help">{guide.setupText}</div>
                 <div className="sc-quickstart">
                   <span style={{ color: 'var(--text3)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Quick start</span>
                   <code>{guide.quickstart}</code>
@@ -468,8 +504,44 @@ function ProviderSettingsCard({ provider, onSaveKey, onRemoveKey, onSaveBudget, 
                     Browse Models ↗
                   </button>
                 </div>
-                <div style={{ marginTop: 10, fontSize: 11, color: 'var(--text3)' }}>
-                  Server URL: <code style={{ color: 'var(--accent)' }}>{guide.baseURL}</code>
+              </div>
+
+              {/* Port configuration */}
+              <div className="sc-section">
+                <div className="sc-section-title">Server Port</div>
+                <div className="sc-help">
+                  The port your local server listens on.
+                  {provider.currentPort !== provider.defaultPort && (
+                    <span style={{ color: 'var(--accent)', marginLeft: 4 }}>
+                      (custom — default is {provider.defaultPort})
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 6, alignItems: 'center' }}>
+                  <code style={{ color: 'var(--text3)', fontSize: 13, flexShrink: 0 }}>localhost:</code>
+                  <input
+                    type="number" min={1} max={65535} step={1}
+                    placeholder={String(provider.currentPort || provider.defaultPort)}
+                    value={portValue}
+                    onChange={e => setPortValue(e.target.value)}
+                    style={{ maxWidth: 110 }}
+                  />
+                  <button
+                    className="primary"
+                    style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+                    onClick={() => { onSavePort(provider.name, portValue); setPortValue(''); }}
+                    disabled={!portValue || parseInt(portValue, 10) === provider.currentPort}
+                  >Save</button>
+                  {provider.currentPort !== provider.defaultPort && (
+                    <button
+                      className="secondary"
+                      style={{ fontSize: 11, flexShrink: 0 }}
+                      onClick={() => { setPortValue(''); onSavePort(provider.name, provider.defaultPort); }}
+                    >Reset to {provider.defaultPort}</button>
+                  )}
+                </div>
+                <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text3)' }}>
+                  Active URL: <code style={{ color: 'var(--accent)' }}>http://localhost:{provider.currentPort || provider.defaultPort}</code>
                 </div>
               </div>
 
@@ -632,130 +704,6 @@ function ProviderSettingsCard({ provider, onSaveKey, onRemoveKey, onSaveBudget, 
         </div>
       )}
 
-      <style>{`
-        .settings-card {
-          background: var(--bg1);
-          border: 1px solid var(--border);
-          border-radius: var(--radius-lg);
-          margin-bottom: 10px;
-          overflow: hidden;
-          transition: border-color 0.15s;
-        }
-        .sc-header {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 14px 18px;
-          cursor: pointer;
-          user-select: none;
-        }
-        .sc-header:hover { background: var(--bg2); }
-        .sc-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-        .sc-title { display: flex; align-items: center; gap: 8px; flex: 1; flex-wrap: wrap; }
-        .sc-name { font-size: 14px; font-weight: 600; color: var(--text1); }
-        .sc-links { display: flex; gap: 4px; margin-left: auto; }
-        .sc-body { padding: 0 18px 18px; border-top: 1px solid var(--border); }
-        .tag-local {
-          background: rgba(168,85,247,0.12);
-          color: #a855f7;
-          border: 1px solid rgba(168,85,247,0.25);
-        }
-        .sc-notice {
-          margin: 14px 0 0;
-          padding: 8px 12px;
-          background: rgba(124,106,247,0.08);
-          border: 1px solid rgba(124,106,247,0.2);
-          border-radius: 6px;
-          font-size: 12px;
-          color: var(--text2);
-          line-height: 1.5;
-        }
-        .sc-notice-local {
-          background: rgba(168,85,247,0.07);
-          border-color: rgba(168,85,247,0.20);
-        }
-        .sc-quickstart {
-          margin-top: 10px;
-          padding: 8px 12px;
-          background: var(--bg2);
-          border-radius: 6px;
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-        .sc-quickstart code {
-          font-family: var(--mono, monospace);
-          font-size: 12px;
-          color: var(--accent);
-          letter-spacing: 0.01em;
-        }
-        .sc-section { margin-top: 18px; }
-        .sc-section-title {
-          font-size: 11px;
-          font-weight: 600;
-          color: var(--text3);
-          text-transform: uppercase;
-          letter-spacing: 0.07em;
-          margin-bottom: 6px;
-        }
-        .sc-help { font-size: 12px; color: var(--text3); line-height: 1.5; }
-        .sc-budget-tip {
-          font-size: 12px;
-          color: var(--warning);
-          background: rgba(251,191,36,0.07);
-          border-radius: 5px;
-          padding: 7px 10px;
-          margin-top: 8px;
-          line-height: 1.5;
-        }
-        .sc-limits-grid { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
-        .sc-limit-row {
-          display: grid;
-          grid-template-columns: 140px 110px 1fr;
-          gap: 8px;
-          align-items: center;
-          font-size: 12px;
-          padding: 5px 10px;
-          background: var(--bg2);
-          border-radius: 5px;
-        }
-        .sc-limit-label { color: var(--text3); }
-        .sc-limit-value { color: var(--text1); font-weight: 600; }
-        .sc-limit-note  { color: var(--text3); font-size: 11px; }
-        .sc-models-grid { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
-        .sc-model-row {
-          display: grid;
-          grid-template-columns: 160px 80px 1fr auto;
-          gap: 8px;
-          align-items: center;
-          font-size: 12px;
-          padding: 5px 10px;
-          background: var(--bg2);
-          border-radius: 5px;
-        }
-        .sc-model-name  { color: var(--text1); font-weight: 500; }
-        .sc-model-tier  { color: var(--text3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
-        .sc-model-price { color: var(--text2); font-size: 11px; }
-        /* Tier section headers */
-        .tier-section { margin-bottom: 28px; }
-        .tier-section-header {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 10px 0 12px;
-          margin-bottom: 8px;
-          border-bottom: 1px solid var(--border);
-        }
-        .tier-section-icon { font-size: 15px; flex-shrink: 0; }
-        .tier-section-label {
-          font-size: 12px;
-          font-weight: 700;
-          color: var(--text1);
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-        }
-        .tier-section-sub { font-size: 11px; color: var(--text3); margin-left: 4px; }
-      `}</style>
     </div>
   );
 }
@@ -763,7 +711,13 @@ function ProviderSettingsCard({ provider, onSaveKey, onRemoveKey, onSaveBudget, 
 export function SettingsPanel({ providers, onRefresh, showToast }) {
   const [keys,          setKeys]          = useState({});
   const [budgets,       setBudgets]       = useState({});
-  const [savedBudgets,  setSavedBudgets]  = useState({}); // what's actually stored
+  const [savedBudgets,  setSavedBudgets]  = useState({});
+  // Web search state
+  const [searchConfig,    setSearchConfig]    = useState({ backend: 'none', tavilyConfigured: false, searxngUrl: 'http://localhost:8888', configured: false });
+  const [searchKeyInput,  setSearchKeyInput]  = useState('');
+  const [showSearchKey,   setShowSearchKey]   = useState(false);
+  const [searxngUrlInput, setSearxngUrlInput] = useState('');
+
   const api = window.aiQueue;
 
   // Load saved budgets once on mount so inputs reflect current state
@@ -775,13 +729,17 @@ export function SettingsPanel({ providers, onRefresh, showToast }) {
       }
       setBudgets(prev => {
         const merged = { ...asStrings };
-        // Don't overwrite anything the user is already typing
         for (const k of Object.keys(prev)) {
           if (prev[k] !== undefined) merged[k] = prev[k];
         }
         return merged;
       });
       setSavedBudgets(b);
+    }).catch(() => {});
+
+    // Load web search config
+    api.getSearchConfig?.().then(cfg => {
+      if (cfg) setSearchConfig(cfg);
     }).catch(() => {});
   }, []);
 
@@ -802,6 +760,55 @@ export function SettingsPanel({ providers, onRefresh, showToast }) {
     await api.removeApiKey(providerName);
     showToast(`Removed key for ${providerName}`, 'info');
     onRefresh();
+  }
+
+  async function onSetSearchBackend(backend) {
+    try {
+      await api.setSearchBackend(backend);
+      setSearchConfig(c => ({ ...c, backend }));
+      showToast(backend === 'none' ? 'Web search disabled' : `Web search backend set to ${backend}`, 'success');
+    } catch (e) { showToast(e.message, 'error'); }
+  }
+
+  async function onSaveSearchKey() {
+    if (!searchKeyInput.trim()) return;
+    try {
+      await api.setSearchKey(searchKeyInput.trim());
+      setSearchKeyInput('');
+      setSearchConfig(c => ({ ...c, tavilyConfigured: true, configured: true }));
+      showToast('✓ Tavily API key saved', 'success');
+    } catch (e) { showToast(e.message, 'error'); }
+  }
+
+  async function onRemoveSearchKey() {
+    await api.removeSearchKey();
+    setSearchConfig(c => ({ ...c, tavilyConfigured: false, configured: false }));
+    showToast('Tavily key removed', 'info');
+  }
+
+  async function onSaveSearxngUrl() {
+    const url = searxngUrlInput.trim() || 'http://localhost:8888';
+    try {
+      await api.setSearxngUrl(url);
+      setSearxngUrlInput('');
+      setSearchConfig(c => ({ ...c, searxngUrl: url }));
+      showToast(`✓ SearXNG URL saved: ${url}`, 'success');
+    } catch (e) { showToast(e.message, 'error'); }
+  }
+
+  async function onSavePort(providerName, port) {
+    const p = parseInt(port, 10);
+    if (!p || p < 1 || p > 65535) {
+      showToast('Invalid port — must be a number between 1 and 65535', 'error');
+      return;
+    }
+    try {
+      await api.setLocalPort(providerName, p);
+      showToast(`✓ Port for ${providerName} set to ${p}`, 'success');
+      onRefresh();
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
   }
 
   async function onSaveBudget(providerName) {
@@ -834,6 +841,7 @@ export function SettingsPanel({ providers, onRefresh, showToast }) {
       onSaveKey={onSaveKey}
       onRemoveKey={onRemoveKey}
       onSaveBudget={onSaveBudget}
+      onSavePort={onSavePort}
       keyValue={keys[p.name] || ''}
       setKeyValue={v => setKeys(k => ({ ...k, [p.name]: v }))}
       budgetValue={budgets[p.name]}
@@ -852,9 +860,9 @@ export function SettingsPanel({ providers, onRefresh, showToast }) {
 
       {/* Quick-start tip for brand-new users */}
       {cloudConfigured === 0 && (
-        <div style={{ marginBottom: 24, padding: '12px 16px', background: 'rgba(168,85,247,0.07)', border: '1px solid rgba(168,85,247,0.22)', borderRadius: 8, fontSize: 13, color: 'var(--text2)', lineHeight: 1.6 }}>
-          <strong style={{ color: 'var(--accent)' }}>Getting started:</strong> Want zero cost right now?
-          Install <strong style={{ color: 'var(--text1)' }}>Ollama</strong> or <strong style={{ color: 'var(--text1)' }}>LM Studio</strong> below — no API key, no account needed.
+        <div className="tip-banner">
+          <strong>Getting started:</strong> Want zero cost right now?
+          Install <strong style={{ color: 'var(--text1)' }}>Ollama</strong>, <strong style={{ color: 'var(--text1)' }}>LM Studio</strong>, or <strong style={{ color: 'var(--text1)' }}>Jan.ai</strong> below — no API key, no account needed.
           Or grab a free cloud key from <strong style={{ color: 'var(--text1)' }}>Groq</strong> or <strong style={{ color: 'var(--text1)' }}>Gemini</strong> in under 2 minutes.
         </div>
       )}
@@ -877,6 +885,179 @@ export function SettingsPanel({ providers, onRefresh, showToast }) {
           </div>
         );
       })}
+
+      {/* ── Web Search ─────────────────────────────────────────────────────── */}
+      <div className="tier-section">
+        <div className="tier-section-header">
+          <span className="tier-section-icon">🌐</span>
+          <span className="tier-section-label" style={{ color: '#0ea5e9' }}>Web Search</span>
+          <span className="tier-section-sub">
+            Real-time search context injected into prompts tagged 🌐 Web Search — works with any local or cloud model
+          </span>
+        </div>
+
+        <div className="settings-card">
+          <div className="sc-body" style={{ paddingTop: 12 }}>
+
+            {/* Status notice */}
+            <div className="sc-notice" style={{
+              background: searchConfig.configured ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.04)',
+              borderColor: searchConfig.configured ? 'rgba(34,197,94,0.25)' : undefined,
+            }}>
+              <span style={{ marginRight: 6 }}>{searchConfig.configured ? '✓' : 'ℹ'}</span>
+              {searchConfig.configured
+                ? `Web search active · backend: ${searchConfig.backend}`
+                : 'Web search is disabled. Choose a backend below to enable it.'}
+            </div>
+
+            {/* Backend picker */}
+            <div className="sc-section">
+              <div className="sc-section-title">Search backend</div>
+              <div className="sc-help">
+                Tag a prompt with 🌐 Web Search and results are fetched before the prompt reaches the model —
+                so any local LLM gets current information without needing tool-calling support.
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                {[
+                  { id: 'none',    label: 'None (disabled)',  note: '' },
+                  { id: 'tavily',  label: '☁ Tavily',         note: '1,000 free searches/mo · cloud API' },
+                  { id: 'searxng', label: '🖥 SearXNG',        note: 'self-hosted · fully private' },
+                ].map(opt => (
+                  <button
+                    key={opt.id}
+                    className={searchConfig.backend === opt.id ? 'primary' : 'secondary'}
+                    style={{ fontSize: 12 }}
+                    onClick={() => onSetSearchBackend(opt.id)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tavily config */}
+            {searchConfig.backend === 'tavily' && (
+              <div className="sc-section">
+                <div className="sc-section-title">Tavily API key</div>
+                <div className="sc-help">
+                  Free tier gives 1,000 searches/month — no credit card required.
+                  Keys start with <code>tvly-</code>.
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                  <div style={{ position: 'relative', flex: 1 }}>
+                    <input
+                      type={showSearchKey ? 'text' : 'password'}
+                      placeholder={searchConfig.tavilyConfigured ? '●●●●●●●● (paste to replace)' : 'tvly-xxxxxxxxxxxxxxxx'}
+                      value={searchKeyInput}
+                      onChange={e => setSearchKeyInput(e.target.value)}
+                      style={{ paddingRight: 36 }}
+                    />
+                    <button
+                      className="ghost"
+                      style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', fontSize: 13, padding: '2px 4px' }}
+                      onClick={() => setShowSearchKey(s => !s)}
+                    >{showSearchKey ? '🙈' : '👁'}</button>
+                  </div>
+                  <button
+                    className="primary"
+                    style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+                    onClick={onSaveSearchKey}
+                    disabled={!searchKeyInput.trim()}
+                  >Save Key</button>
+                  {searchConfig.tavilyConfigured && (
+                    <button
+                      className="secondary"
+                      style={{ whiteSpace: 'nowrap', flexShrink: 0, color: 'var(--danger)' }}
+                      onClick={onRemoveSearchKey}
+                    >Remove</button>
+                  )}
+                </div>
+                <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+                  <button className="ghost" style={{ fontSize: 11 }}
+                    onClick={() => api.openExternal('https://app.tavily.com')}>
+                    Get free Tavily key ↗
+                  </button>
+                  <button className="ghost" style={{ fontSize: 11 }}
+                    onClick={() => api.openExternal('https://docs.tavily.com')}>
+                    Tavily docs ↗
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* SearXNG config */}
+            {searchConfig.backend === 'searxng' && (
+              <div className="sc-section">
+                <div className="sc-section-title">SearXNG server URL</div>
+                <div className="sc-help">
+                  Run SearXNG locally with Docker. It aggregates results from Google, Bing, DuckDuckGo
+                  and more — completely private, zero API cost.
+                </div>
+                <div className="sc-quickstart" style={{ marginTop: 8 }}>
+                  <span style={{ color: 'var(--text3)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Quick start</span>
+                  <code>docker run -p 8888:8080 -e SEARXNG_SEARCH_FORMATS="html,json" searxng/searxng</code>
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    placeholder={searchConfig.searxngUrl || 'http://localhost:8888'}
+                    value={searxngUrlInput}
+                    onChange={e => setSearxngUrlInput(e.target.value)}
+                    style={{ flex: 1, maxWidth: 280 }}
+                  />
+                  <button
+                    className="primary"
+                    style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+                    onClick={onSaveSearxngUrl}
+                  >Save URL</button>
+                </div>
+                <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text3)' }}>
+                  Active URL: <code style={{ color: 'var(--accent)' }}>{searchConfig.searxngUrl}</code>
+                </div>
+                <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+                  <button className="ghost" style={{ fontSize: 11 }}
+                    onClick={() => api.openExternal('https://docs.searxng.org')}>
+                    SearXNG docs ↗
+                  </button>
+                  <button className="ghost" style={{ fontSize: 11 }}
+                    onClick={() => api.openExternal('https://hub.docker.com/r/searxng/searxng')}>
+                    Docker Hub ↗
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* How it works */}
+            <div className="sc-section">
+              <div className="sc-section-title">How it works</div>
+              <div className="sc-limits-grid">
+                <div className="sc-limit-row">
+                  <span className="sc-limit-label">Trigger</span>
+                  <span className="sc-limit-value" style={{ color: '#0ea5e9' }}>🌐 Web Search tag</span>
+                  <span className="sc-limit-note">Add this tag to any prompt to activate search</span>
+                </div>
+                <div className="sc-limit-row">
+                  <span className="sc-limit-label">Model support</span>
+                  <span className="sc-limit-value" style={{ color: '#22c55e' }}>Any model</span>
+                  <span className="sc-limit-note">No tool-calling required — results injected as context</span>
+                </div>
+                <div className="sc-limit-row">
+                  <span className="sc-limit-label">Results</span>
+                  <span className="sc-limit-value">Top 5</span>
+                  <span className="sc-limit-note">Title, source URL, and excerpt per result</span>
+                </div>
+                <div className="sc-limit-row">
+                  <span className="sc-limit-label">On search error</span>
+                  <span className="sc-limit-value" style={{ color: '#f59e0b' }}>Graceful fallback</span>
+                  <span className="sc-limit-note">Prompt still goes through without search context</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }
@@ -909,7 +1090,7 @@ export function ProjectsPanel({ projects, providers, onRefresh }) {
       <div className="panel-title">Projects</div>
       <div className="panel-sub">Organise prompts into named projects. Each project keeps its conversation history.</div>
 
-      <form onSubmit={add} className="card" style={{ marginBottom: 20 }}>
+      <form onSubmit={add} className="card card-spaced">
         <div className="form-row form-row-3">
           <div className="form-group">
             <label>Project name</label>
@@ -921,11 +1102,12 @@ export function ProjectsPanel({ projects, providers, onRefresh }) {
           </div>
           <div className="form-group">
             <label>Colour</label>
-            <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
+            <div className="color-swatch-row">
               {COLORS.map(c => (
                 <button
                   key={c} type="button"
-                  style={{ width: 24, height: 24, borderRadius: '50%', background: c, border: color === c ? '2px solid #fff' : '2px solid transparent', cursor: 'pointer' }}
+                  className={`color-swatch ${color === c ? 'selected' : ''}`}
+                  style={{ background: c }}
                   onClick={() => setColor(c)}
                 />
               ))}
@@ -936,20 +1118,18 @@ export function ProjectsPanel({ projects, providers, onRefresh }) {
       </form>
 
       {projects.length === 0 && (
-        <div style={{ textAlign: 'center', color: 'var(--text3)', padding: '40px 0', fontSize: 13 }}>
-          No projects yet. Create one above to organise your prompts.
-        </div>
+        <div className="empty-state">No projects yet. Create one above to organise your prompts.</div>
       )}
 
       <div className="grid-2">
         {projects.map(p => (
-          <div key={p.id} className="card" style={{ borderLeft: `3px solid ${p.color}`, padding: '14px 16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <span style={{ fontWeight: 600, fontSize: 14 }}>{p.name}</span>
+          <div key={p.id} className="card project-card" style={{ borderLeftColor: p.color }}>
+            <div className="project-card-header">
+              <span className="project-card-name">{p.name}</span>
               <button className="ghost" style={{ color: 'var(--danger)' }} onClick={() => del(p.id)}>✕</button>
             </div>
-            {p.description && <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 8 }}>{p.description}</div>}
-            <div style={{ fontSize: 11, color: 'var(--text3)' }}>
+            {p.description && <div className="project-card-desc">{p.description}</div>}
+            <div className="project-card-date">
               Created {new Date(p.created_at).toLocaleDateString()}
             </div>
           </div>

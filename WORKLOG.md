@@ -1,5 +1,150 @@
 # Work Log — AI Queue Load Manager
 
+## Session 13 — 2026-05-23
+**Goal:** Select a purchase/subscription vendor, document the setup process, and integrate Lemon Squeezy checkout into the landing page.
+**Completed:**
+- [x] Researched and compared 4 vendors: Gumroad, Lemon Squeezy, Paddle, Stripe — fees, tax handling, subscription support, email/newsletter capability, and integration ease
+- [x] Selected **Lemon Squeezy** as the vendor: 5% + $0.50 fee (half of Gumroad), full Merchant of Record tax handling, first-class subscription support, built-in newsletter opt-in up to 500 subscribers free
+- [x] Documented full Lemon Squeezy account setup guide: store creation, 4 products to create (Starter Monthly/Lifetime, Pro Monthly/Lifetime), license key settings, newsletter opt-in config, API key for future license validation, test mode usage, and going live
+- [x] Documented tester workflow: create 100% discount code with limited uses + expiry → testers go through real checkout, pay $0, receive a real license key
+- [x] Integrated Lemon Squeezy into `landing-page.html`:
+  - Added `<script src="https://assets.lemonsqueezy.com/lemon.js" defer>` to `<head>`
+  - Added `class="lemonsqueezy-button"` to Starter and Pro buy buttons (triggers overlay checkout popup)
+  - Added `id="starter-cta"` and `id="pro-cta"` to buy buttons
+  - Updated Free tier "Download Free" buttons to link to GitHub Releases (`/releases/latest`)
+  - Extended billing toggle script with `CHECKOUT_URLS` object — swaps button `href` automatically when Monthly ↔ Lifetime toggle changes
+  - Added `PASTE_..._CHECKOUT_URL_HERE` placeholder strings marking the 4 URLs that need replacing once products are created in LS
+  - Added developer comment block at the top of `landing-page.html` documenting all integration points, action items, and testing approach
+- [x] Updated `README.md` — added `## Purchasing & Licensing` section: vendor rationale, products table, newsletter opt-in setup, checkout URL integration instructions, license key validation TODO (Lemon Squeezy License API endpoint + validation logic), and tester discount code workflow
+**Decisions Made:**
+- Lemon Squeezy chosen over Gumroad (10% fee too high), Paddle (more complex, better for scale), and Stripe (no Merchant of Record — tax burden falls on us)
+- Checkout overlay approach chosen over redirect — visitors stay on the landing page; popup closes after purchase
+- Billing toggle already existed for display — extended it to also swap `href` on the buy buttons, so the correct product variant always gets purchased regardless of which billing period is selected
+- Free tier uses GitHub Releases as the download source — no checkout, no license key needed for free installs
+- Newsletter opt-in configured on the Lemon Squeezy side (no landing page code needed) — opt-in checkbox is shown at checkout, unchecked by default (GDPR compliant)
+**Next Steps:**
+- [ ] Create a Lemon Squeezy account at lemonsqueezy.com
+- [ ] Create the 4 products (Starter Monthly/Lifetime, Pro Monthly/Lifetime) with License Keys enabled
+- [ ] Copy the 4 checkout URLs and paste them into the `CHECKOUT_URLS` block in `landing-page.html`
+- [ ] Enable newsletter opt-in checkbox in LS Store Settings → Checkout
+- [ ] Get the LS API key (Settings → API) and replace the stub in `src/main/licenseChecker.js` with a real Lemon Squeezy License API validation call
+- [ ] Create a 100% discount code for beta testers
+- [ ] Test the full checkout flow in LS Test Mode before going live
+**Files Changed:**
+- `landing-page.html`
+- `README.md`
+- `WORKLOG.md`
+
+---
+
+## Session 12 — 2026-05-23
+**Goal:** Implement Tavily + SearXNG web search backends; update README and landing page with web search documentation; bump version to 0.3.6.
+**Completed:**
+- [x] Created `src/main/webSearch.js` — `WebSearchService` class with Tavily (cloud, POST to api.tavily.com/search) and SearXNG (self-hosted Docker, GET /search?format=json) backends
+- [x] Tavily key validation: must start with `tvly-`; stored in electron-store as `searchKey.tavily`
+- [x] SearXNG URL stored as `searchUrl.searxng`; defaults to `http://localhost:8888` (port 8888 avoids conflict with LocalAI's default 8080); handles `ECONNREFUSED` and HTTP 400 with specific error messages
+- [x] `isConfigured()`, `getConfig()` (IPC-safe — never exposes raw key), `formatContext()` (formats up to 5 results into a system-prompt block)
+- [x] Updated `MultiQueueManager` — added `this.webSearch = null`, `setWebSearch(service)`, and `_enrichWithWebSearch(item)` async helper; enrichment runs before the AI call in both `_processItem()` and `_processCompareItem()`; fails silently with a `console.warn` if search errors out
+- [x] Updated `index-v2.js` — imported `WebSearchService`, instantiated after store, called `queue.setWebSearch(webSearch)` after `queue.open()`; added 5 IPC handlers: `get-search-config`, `set-search-backend`, `set-search-key`, `remove-search-key`, `set-searxng-url`
+- [x] Updated `preload-v2.js` — exposed `getSearchConfig`, `setSearchBackend`, `setSearchKey`, `removeSearchKey`, `setSearxngUrl`
+- [x] Updated `QueueSettingsProjects.jsx` — added full Web Search settings section below provider tier groups: backend picker (None / Tavily / SearXNG), Tavily API key input (show/hide toggle, Save/Remove buttons, links), SearXNG URL + Docker quickstart command, "How it works" limits grid
+- [x] Updated `README.md` — added `## Web Search` section with backend table, RAG injection explanation, port note, failure behaviour; added web search row to Features table; updated project structure with `webSearch.js` and corrected `localProviders.js` comment; version bump 0.3.5 → 0.3.6
+- [x] Updated `landing-page.html` — new "Real-time web search" feature card; web search row in full compare table; new FAQ item "How does the 🌐 Web Search tag work?"; updated Prompt type tags card description
+- [x] Bumped version 0.3.5 → 0.3.6 in `package.json`, `CLAUDE.md`
+**Decisions Made:**
+- RAG injection approach (not tool-calling): search results are prepended to the system prompt as a formatted context block. Works with every model including fully local ones — no model-side function-calling support needed.
+- Search enrichment runs once per item in `_enrichWithWebSearch()` before the AI call. For compare items, the same context block is sent to all providers — keeps the comparison fair.
+- Silent failure: if the search backend errors (network down, bad key, SearXNG offline), the prompt is sent unchanged. Nothing is lost — the queue item proceeds normally.
+- SearXNG host port 8888 (not 8080) — avoids conflict with LocalAI's default port.
+- `getConfig()` never returns the raw Tavily key over IPC — returns `tavilyConfigured: bool` only.
+**Files Changed:**
+- `src/main/webSearch.js` (new)
+- `src/main/multiQueueManager.js`
+- `src/main/index-v2.js`
+- `src/main/preload-v2.js`
+- `src/renderer/components/QueueSettingsProjects.jsx`
+- `package.json`
+- `README.md`
+- `CLAUDE.md`
+- `landing-page.html`
+- `WORKLOG.md`
+
+---
+
+## Session 11 — 2026-05-23
+**Goal:** Integrate LocalAI and llama.cpp as full providers; add configurable port fields for all 5 local providers; update README and landing page with accurate counts and model info.
+**Completed:**
+- [x] Refactored `LocalBaseProvider` constructor to take `defaultPort` (number) instead of `baseURL` (string); port now loaded from store at startup via `localPort.{name}` key
+- [x] Added `setLocalPort(port)` method to `LocalBaseProvider` — validates, saves to store, re-initialises OpenAI client, resets model discovery
+- [x] Added `getCurrentPort()` and `getDefaultPort()` accessors
+- [x] Updated all existing local providers (Ollama, LM Studio, Jan) to pass port number rather than URL string
+- [x] Added `LocalAIProvider` class — port 8080, `/v1/models` discovery, display-name cleans GGUF extension/quantisation suffix from model IDs
+- [x] Added `LlamaCppProvider` class — port 8181 (avoids conflict with LocalAI 8080), `/v1/models` + `/props` for accurate `n_ctx` context window, basenames file paths for display
+- [x] Updated `providerRegistry.js` — imported both new providers, registered in PROVIDER_CLASSES + PROVIDER_META, added `setLocalPort(name, port)` and `getLocalPorts()` registry methods, included `currentPort`/`defaultPort` in `getProviderSummaries()` output
+- [x] Updated `queueRouter.js` — added `localai` + `llamacpp` to LOCAL_PROVIDERS, FREE_TIER_PROVIDERS, all TASK_STRENGTHS categories, and the `fastest` provider order
+- [x] Updated `multiUsageTracker.js` — added `localai: {}` and `llamacpp: {}` to COST_TABLE, added rate limits (rpm: 9999) to RATE_LIMITS
+- [x] Added IPC handlers in `index-v2.js`: `get-local-ports` and `set-local-port`
+- [x] Exposed `getLocalPorts()` and `setLocalPort()` in `preload-v2.js`
+- [x] Updated `QueueSettingsProjects.jsx`:
+  - PROVIDER_TIER_GROUPS local group now includes jan, localai, llamacpp
+  - Added PROVIDER_GUIDE entries for jan, localai, llamacpp (setupText, quickstart, installLabel/Link, docsLink, localNote, limits)
+  - Added `setupText` field to ollama and lmstudio guide entries; removed hardcoded provider.name switch
+  - Added `portValue` / `setPortValue` state to `ProviderSettingsCard`
+  - Replaced static "Server URL" display with a live port input field (shows current port, Save button, Reset to default button)
+  - Added `onSavePort` prop to `ProviderSettingsCard`
+  - Added `onSavePort(providerName, port)` handler to `SettingsPanel`
+  - Passed `onSavePort` through `renderCard` to each card
+  - Updated "Getting started" banner to mention Jan.ai alongside Ollama and LM Studio
+- [x] Updated `README.md`: provider count 10→12, local provider table with 5 providers + port conflict note, routing descriptions, version 0.3.4→0.3.5
+- [x] Updated `landing-page.html`: hero badge 9→12, added 3 new local provider pills, fixed "All 9"→"All 12" in pricing table, updated roadmap card, Free Tier routing description, FAQ answer
+- [x] Bumped version 0.3.4→0.3.5 in package.json, README.md, CLAUDE.md
+**Decisions Made:**
+- llama.cpp default port set to 8181 (not 8080) to avoid conflicting with LocalAI's 8080 default out of the box
+- Configurable port stored as `localPort.{providerName}` in electron-store; reuses existing store pattern used for API keys
+- `currentPort` and `defaultPort` now included in every local provider's IPC summary so the UI can read them without a separate call
+**Files Changed:**
+- `src/main/providers/localProviders.js`
+- `src/main/providers/providerRegistry.js`
+- `src/main/queueRouter.js`
+- `src/main/multiUsageTracker.js`
+- `src/main/index-v2.js`
+- `src/main/preload-v2.js`
+- `src/renderer/components/QueueSettingsProjects.jsx`
+- `package.json`
+- `README.md`
+- `CLAUDE.md`
+- `landing-page.html`
+- `WORKLOG.md`
+
+---
+
+## Session 10 — 2026-05-23
+**Goal:** Add Jan.ai as a third local provider in the free tier. Display integration sketches for LocalAI and llama.cpp (not yet integrated).
+**Completed:**
+- [x] Added `JanProvider` class to `src/main/providers/localProviders.js` — extends `LocalBaseProvider`, port 1337, dynamic model discovery via `/v1/models`
+- [x] Added Jan default model list (8 popular models matching Jan's typical model ID format)
+- [x] Registered `jan: JanProvider` in `providerRegistry.js` — PROVIDER_CLASSES and PROVIDER_META (indigo colour, ti-device-desktop icon)
+- [x] Added `'jan'` to `LOCAL_PROVIDERS` and `FREE_TIER_PROVIDERS` in `queueRouter.js`
+- [x] Added `'jan'` to all four `TASK_STRENGTHS` categories (coding, research, fast, general) in `queueRouter.js`
+- [x] Added `'jan'` to the `fastest` mode provider order (last, same as other local providers)
+- [x] Added `jan: {}` to `COST_TABLE` in `multiUsageTracker.js` (all models $0.00)
+- [x] Added `jan: { rpm: 9999, rpd: null, tpm: null }` to `RATE_LIMITS` in `multiUsageTracker.js`
+- [x] Updated `README.md`: provider count 9→10, Free tier 2→3 providers, Local AI table, freeTier and auto routing descriptions, version history
+- [x] Bumped version `0.3.3` → `0.3.4` in `package.json`, `README.md`, and `CLAUDE.md`
+**Decisions Made:**
+- Jan.ai placed last in the `fastest` order (same as Ollama/LM Studio) — local inference speed is hardware-dependent, not predictably "fast"
+- Jan model IDs use Jan's native format (e.g. `mistral-ins-7b-q4`) rather than generic names, since that's what Jan's API returns
+**Files Changed:**
+- `src/main/providers/localProviders.js`
+- `src/main/providers/providerRegistry.js`
+- `src/main/queueRouter.js`
+- `src/main/multiUsageTracker.js`
+- `package.json`
+- `README.md`
+- `WORKLOG.md`
+
+---
+
 ## Session 9 — 2026-05-22
 **Goal:** Documentation accuracy cleanup pass — fix stale version numbers, remove shipped features from roadmap, add missing files to project structure, verify landing page.
 **Completed:**

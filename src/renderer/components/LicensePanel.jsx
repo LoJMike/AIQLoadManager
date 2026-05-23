@@ -1,19 +1,82 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 
 // ─── Plan metadata ─────────────────────────────────────────────────────────────
 
 const PLAN_META = {
-  free: { label: 'Free',  color: 'var(--text3)',  glow: 'none' },
-  pro:  { label: 'Pro',   color: 'var(--accent)',  glow: '0 0 12px var(--accent)' },
+  free:    { label: 'Free',    color: 'var(--text3)',   glow: 'none' },
+  starter: { label: 'Starter', color: '#a78bfa',        glow: '0 0 12px rgba(167,139,250,0.4)' },
+  pro:     { label: 'Pro',     color: 'var(--accent)',  glow: '0 0 12px var(--accent)' },
 };
 
+// Feature rows for the comparison table
+// Each entry: { label, free, starter, pro }
+// Values can be strings, '✓', or '–'
 const FEATURE_ROWS = [
-  { key: 'allProviders',       free: '2 providers',     pro: 'All 7 providers'   },
-  { key: 'unlimitedQueue',     free: 'Up to 10 items',  pro: 'Unlimited queue'   },
-  { key: 'advancedRouting',    free: 'Manual only',     pro: 'Auto / balance / cheapest / fastest' },
-  { key: 'fullUsageDashboard', free: 'Basic stats',     pro: 'Full cost history' },
-  { key: 'multipleProjects',   free: '1 project',       pro: 'Unlimited projects' },
+  {
+    category: 'AI Providers',
+    rows: [
+      { label: 'AI providers (total)',      free: '2',         starter: '4',          pro: 'All 9'           },
+    ],
+  },
+  {
+    category: 'Queue',
+    rows: [
+      { label: 'Max queue depth',          free: '10 items',  starter: '100 items',  pro: 'Unlimited'       },
+      { label: '⚡ Urgent priority boost', free: '✓',         starter: '✓',          pro: '✓'               },
+      { label: 'Tag-based smart priority', free: '–',         starter: '–',          pro: '✓'               },
+      { label: 'Batch CSV import',         free: '–',         starter: '✓',          pro: '✓'               },
+    ],
+  },
+  {
+    category: 'Routing',
+    rows: [
+      { label: 'Manual routing',           free: '✓',         starter: '✓',          pro: '✓'               },
+      { label: 'Free Tier routing',        free: '✓',         starter: '✓',          pro: '✓'               },
+      { label: 'Auto & Balance routing',   free: '–',         starter: '✓',          pro: '✓'               },
+      { label: 'Cheapest & Fastest routing', free: '–',       starter: '–',          pro: '✓'               },
+      { label: 'Custom routing rules',     free: '–',         starter: '–',          pro: '✓'               },
+    ],
+  },
+  {
+    category: 'Cost & Analytics',
+    rows: [
+      { label: 'Basic usage dashboard',    free: '✓',         starter: '✓',          pro: '✓'               },
+      { label: 'Cost tracking per provider', free: '–',       starter: '✓',          pro: '✓'               },
+      { label: 'Budget caps & alerts',     free: '–',         starter: '–',          pro: '✓'               },
+      { label: 'Usage history export',     free: '–',         starter: 'CSV',        pro: 'CSV + JSON'      },
+      { label: 'Cost forecasting',         free: '–',         starter: '–',          pro: '✓ Roadmap'       },
+    ],
+  },
+  {
+    category: 'Productivity',
+    rows: [
+      { label: 'Projects',                 free: '1',         starter: '5',          pro: 'Unlimited'       },
+      { label: 'Prompt template library',  free: '–',         starter: '✓ Roadmap',  pro: '✓ Roadmap'       },
+      { label: 'Compare mode (A/B)',       free: '–',         starter: '–',          pro: '✓'               },
+      { label: 'Prompt chaining',          free: '–',         starter: '–',          pro: '✓ Roadmap'       },
+      { label: 'Webhook output delivery',  free: '–',         starter: '–',          pro: '✓ Roadmap'       },
+    ],
+  },
+  {
+    category: 'Media Generation',
+    rows: [
+      { label: 'Image generation',         free: '–',         starter: '✓ Roadmap',  pro: '✓ Roadmap'       },
+      { label: 'Video generation',         free: '–',         starter: '–',          pro: '✓ Roadmap'       },
+    ],
+  },
+  {
+    category: 'Mobile',
+    rows: [
+      { label: 'iOS & Android companion',  free: '–',         starter: '✓ Roadmap',  pro: '✓ Roadmap'       },
+    ],
+  },
 ];
+
+const PRICING = {
+  free:    { monthly: '$0',  lifetime: 'Free forever'     },
+  starter: { monthly: '$6 / mo',  lifetime: '$39 one-time — save 46%' },
+  pro:     { monthly: '$14 / mo', lifetime: '$79 one-time — save 53%' },
+};
 
 // ─── LicensePanel ─────────────────────────────────────────────────────────────
 
@@ -42,7 +105,9 @@ export function LicensePanel({ showToast }) {
       if (result.success) {
         setLicense(result.license);
         setKeyInput('');
-        showToast?.('License activated — welcome to Pro!', 'success');
+        const newPlan = result.license?.plan ?? 'pro';
+        const planLabel = PLAN_META[newPlan]?.label ?? 'Pro';
+        showToast?.(`License activated — welcome to ${planLabel}!`, 'success');
       } else {
         showToast?.(`License error: ${result.error}`, 'error');
       }
@@ -68,120 +133,118 @@ export function LicensePanel({ showToast }) {
 
   // ── Render ────────────────────────────────────────────────────────────────
 
+  const planColClass = (tier) => {
+    if (plan !== tier) return '';
+    if (tier === 'starter') return 'plan-col-starter';
+    if (tier === 'pro') return 'plan-col-pro';
+    return 'plan-col-active';
+  };
+
   return (
     <div>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+      <div className="panel-header-row">
         <div>
           <div className="panel-title">License</div>
           <div className="panel-sub">Manage your AIQ Load Manager plan</div>
         </div>
-
-        {/* Plan badge */}
-        <div style={{
-          padding: '6px 18px',
-          borderRadius: 20,
-          border: `1px solid ${meta.color}`,
-          color: meta.color,
-          boxShadow: meta.glow,
-          fontSize: 13,
-          fontWeight: 700,
-          letterSpacing: '0.08em',
-          fontFamily: 'var(--font-mono)',
-        }}>
+        <div
+          className="plan-badge"
+          style={{ borderColor: meta.color, color: meta.color, boxShadow: meta.glow }}
+        >
           {meta.label.toUpperCase()}
         </div>
       </div>
 
-      {/* Feature comparison table */}
-      <div className="glass-card" style={{ marginBottom: 24, padding: '0' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+      <div className="plan-cards-row">
+        {['free', 'starter', 'pro'].map(p => {
+          const m = PLAN_META[p];
+          const pr = PRICING[p];
+          const isActive = plan === p;
+          return (
+            <div
+              key={p}
+              className={`plan-card ${isActive ? 'active' : 'inactive'}`}
+              style={{
+                borderColor: isActive ? m.color : undefined,
+                boxShadow: isActive ? m.glow : undefined,
+              }}
+            >
+              <div className="plan-card-tier" style={{ color: m.color }}>{m.label.toUpperCase()}</div>
+              <div className="plan-card-price">{pr.monthly}</div>
+              <div className="plan-card-sub">{pr.lifetime}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="glass-card card-spaced" style={{ padding: 0, overflow: 'hidden' }}>
+        <table className="license-table">
           <thead>
             <tr>
-              <th style={thStyle('left')}>Feature</th>
-              <th style={thStyle('center')}>Free</th>
-              <th style={{ ...thStyle('center'), color: 'var(--accent)' }}>Pro</th>
+              <th>Feature</th>
+              <th className={`center ${planColClass('free')}`}>Free</th>
+              <th className={`center ${planColClass('starter')}`}>Starter</th>
+              <th className={`center ${planColClass('pro')}`}>Pro</th>
             </tr>
           </thead>
           <tbody>
-            {FEATURE_ROWS.map(row => (
-              <tr key={row.key}>
-                <td style={tdStyle('left', true)}>{getLabelFor(row.key)}</td>
-                <td style={tdStyle('center', true, plan === 'free')}>{row.free}</td>
-                <td style={{ ...tdStyle('center', true, plan === 'pro'), color: 'var(--accent)' }}>{row.pro}</td>
-              </tr>
+            {FEATURE_ROWS.map(section => (
+              <Fragment key={section.category}>
+                <tr className="category-row">
+                  <td colSpan={4}>{section.category}</td>
+                </tr>
+                {section.rows.map(row => (
+                  <tr key={row.label}>
+                    <td>{row.label}</td>
+                    <td className={cellClass(row.free, plan === 'free')}>{row.free}</td>
+                    <td className={cellClass(row.starter, plan === 'starter')}>{row.starter}</td>
+                    <td className={cellClass(row.pro, plan === 'pro')}>{row.pro}</td>
+                  </tr>
+                ))}
+              </Fragment>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* License key section */}
       {plan === 'free' ? (
         <div className="glass-card" style={{ padding: 20 }}>
-          <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 14 }}>
-            Have a license key? Enter it below to unlock Pro features.
+          <div className="feature-gate-body" style={{ marginBottom: 14 }}>
+            Have a license key? Enter it below to unlock Starter or Pro features.
           </div>
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div className="license-key-row">
             <input
-              className="key-input"
+              className="license-key-input"
               type="text"
               placeholder="XXXX-XXXX-XXXX-XXXX"
               value={keyInput}
               onChange={e => setKeyInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleActivate()}
               disabled={busy}
-              style={{
-                flex: 1,
-                background: 'var(--surface2)',
-                border: '1px solid var(--border)',
-                borderRadius: 6,
-                color: 'var(--text1)',
-                fontFamily: 'var(--font-mono)',
-                fontSize: 13,
-                padding: '8px 12px',
-                outline: 'none',
-              }}
             />
-            <button
-              className="primary"
-              onClick={handleActivate}
-              disabled={busy || !keyInput.trim()}
-            >
+            <button className="primary" onClick={handleActivate} disabled={busy || !keyInput.trim()}>
               {busy ? 'Activating…' : 'Activate'}
             </button>
           </div>
 
-          {/* Upgrade CTA */}
-          <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-            <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 10 }}>
-              Don't have a key yet?
+          <div className="license-cta-row">
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <div className="feature-gate-body" style={{ marginBottom: 6 }}>Don't have a key yet?</div>
+              <div className="plan-card-sub">Store coming soon — pricing TBD</div>
             </div>
-            <button
-              className="primary"
-              style={{ background: 'linear-gradient(90deg, var(--accent), var(--success))', border: 'none' }}
-              onClick={() => api.openExternal('https://example.com/upgrade')}
-            >
-              ✦ Upgrade to Pro
+            <button className="primary btn-starter-gradient" onClick={() => api.openExternal('https://example.com/upgrade')}>
+              ✦ Get Starter — $6/mo
             </button>
-            <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8 }}>
-              Store coming soon — pricing TBD
-            </div>
+            <button className="primary btn-pro-gradient" onClick={() => api.openExternal('https://example.com/upgrade-pro')}>
+              ✦ Get Pro — $14/mo
+            </button>
           </div>
         </div>
       ) : (
         <div className="glass-card" style={{ padding: 20 }}>
-          <div style={{ fontSize: 13, color: 'var(--success)', marginBottom: 14 }}>
-            ✓ Pro license is active
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 16 }}>
-            License key: ••••••••••••••••
-          </div>
-          <button
-            className="secondary"
-            onClick={handleRemove}
-            disabled={busy}
-            style={{ fontSize: 12 }}
-          >
+          <div className="license-active-msg">✓ {PLAN_META[plan]?.label} license is active</div>
+          <div className="license-key-mask">License key: ••••••••••••••••</div>
+          <button className="secondary" onClick={handleRemove} disabled={busy} style={{ fontSize: 12 }}>
             {busy ? 'Removing…' : 'Remove license'}
           </button>
         </div>
@@ -190,39 +253,11 @@ export function LicensePanel({ showToast }) {
   );
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getLabelFor(key) {
-  const labels = {
-    allProviders:       'AI providers',
-    unlimitedQueue:     'Queue size',
-    advancedRouting:    'Routing modes',
-    fullUsageDashboard: 'Usage dashboard',
-    multipleProjects:   'Projects',
-  };
-  return labels[key] ?? key;
-}
-
-function thStyle(align) {
-  return {
-    textAlign: align,
-    padding: '10px 16px',
-    fontSize: 11,
-    fontWeight: 700,
-    letterSpacing: '0.08em',
-    color: 'var(--text3)',
-    borderBottom: '1px solid var(--border)',
-    textTransform: 'uppercase',
-  };
-}
-
-function tdStyle(align, stripe, active) {
-  return {
-    textAlign: align,
-    padding: '10px 16px',
-    fontSize: 13,
-    color: active ? 'var(--text1)' : 'var(--text3)',
-    fontWeight: active ? 500 : 400,
-    borderBottom: '1px solid var(--border)',
-  };
+function cellClass(value, isActivePlan) {
+  const isDash = value === '–';
+  const isRoadmap = typeof value === 'string' && value.includes('Roadmap');
+  const parts = ['center'];
+  if (isDash || isRoadmap) parts.push('dim');
+  else if (isActivePlan) parts.push('active-col');
+  return parts.join(' ');
 }

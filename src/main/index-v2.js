@@ -10,9 +10,10 @@ const { ProviderRegistry }   = require('./providers/providerRegistry');
 const { QueueRouter }        = require('./queueRouter');
 const { MultiQueueManager, tagsToTaskType, computePriority } = require('./multiQueueManager');
 const { LicenseChecker }     = require('./licenseChecker');
+const { WebSearchService }   = require('./webSearch');
 
 let mainWindow;
-let tracker, convStore, registry, router, queue, license;
+let tracker, convStore, registry, router, queue, license, webSearch;
 
 function createWindow() {
   const isMac = process.platform === 'darwin';
@@ -42,7 +43,8 @@ app.whenReady().then(() => {
   // All synchronous — no awaits needed
   const store = createStore();
 
-  license  = new LicenseChecker(store);   // reads from electron-store
+  license    = new LicenseChecker(store);
+  webSearch  = new WebSearchService(store);
 
   tracker   = new MultiUsageTracker();
   tracker.open();                           // sync
@@ -59,6 +61,7 @@ app.whenReady().then(() => {
     }
   });
   queue.open();                            // sync
+  queue.setWebSearch(webSearch);           // attach search enrichment
 
   createWindow();
   setupIPC();
@@ -86,13 +89,14 @@ function setupIPC() {
 
   ipcMain.handle('add-to-queue', (_, item) => {
     const tags     = Array.isArray(item.tags) ? item.tags : [];
-    const isPaid   = license.getLicense().plan === 'pro';
+    const lic      = license.getLicense();
+    const isPaid   = lic.plan === 'starter' || lic.plan === 'pro';
     const taskType = tagsToTaskType(tags) || item.taskType || 'general';
     const priority = computePriority(tags, isPaid);
 
-    // Compare mode requires a Pro license
+    // Compare mode requires a Pro license (not available on Starter)
     const compareProviders = Array.isArray(item.compareProviders) ? item.compareProviders : null;
-    if (compareProviders && compareProviders.length >= 2 && !isPaid) {
+    if (compareProviders && compareProviders.length >= 2 && !lic.flags.compareMode) {
       throw new Error('Compare mode requires a Pro license. Upgrade in the License tab.');
     }
 
@@ -154,6 +158,17 @@ function setupIPC() {
   });
 
   ipcMain.handle('open-external',      (_, url)                 => shell.openExternal(url));
+
+  // Local provider port configuration
+  ipcMain.handle('get-local-ports',    ()                       => registry.getLocalPorts());
+  ipcMain.handle('set-local-port',     (_, { provider, port })  => registry.setLocalPort(provider, port));
+
+  // Web search configuration
+  ipcMain.handle('get-search-config',  ()                       => webSearch.getConfig());
+  ipcMain.handle('set-search-backend', (_, backend)             => webSearch.setBackend(backend));
+  ipcMain.handle('set-search-key',     (_, key)                 => webSearch.setTavilyKey(key));
+  ipcMain.handle('remove-search-key',  ()                       => webSearch.removeTavilyKey());
+  ipcMain.handle('set-searxng-url',    (_, url)                 => webSearch.setSearxngUrl(url));
 
   // License
   ipcMain.handle('get-license',        ()        => license.getLicense());

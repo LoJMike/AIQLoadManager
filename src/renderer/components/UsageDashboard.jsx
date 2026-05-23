@@ -5,6 +5,14 @@ const PROVIDER_COLORS = {
   groq: '#f55036', deepseek: '#4d6bfe', mistral: '#ff7000', grok: '#1da1f2',
 };
 
+/** Meter fill color per DESIGN.md threshold spectrum */
+function meterColor(pct) {
+  if (pct >= 90) return 'var(--meter-crit)';
+  if (pct >= 80) return 'var(--meter-warn)';
+  if (pct >= 60) return 'var(--meter-caution)';
+  return 'var(--meter-ok)';
+}
+
 function ProviderCard({ provider, usage }) {
   const color  = PROVIDER_COLORS[provider.name] || '#888';
   const status = usage || {};
@@ -20,7 +28,8 @@ function ProviderCard({ provider, usage }) {
   const canSend    = status.canSend ?? true;
   const totalTok   = status.tokens?.totalAll   || 0;
 
-  const barColor = rpmPct > 85 ? '#f87171' : rpmPct > 60 ? '#fbbf24' : color;
+  const barColor = meterColor(rpmPct);
+  const budgetBarColor = meterColor(budgetPct || 0);
 
   return (
     <div className="card provider-card" style={{ borderColor: provider.configured ? `${color}30` : undefined }}>
@@ -37,11 +46,11 @@ function ProviderCard({ provider, usage }) {
           <div className="pc-stats">
             <div>
               <div className="metric-label">Req / min</div>
-              <div className="metric-value" style={{ fontSize: 18 }}>{rpmUsed}<span style={{ fontSize: 12, color: 'var(--text3)' }}>/{rpmLimit || '∞'}</span></div>
+              <div className="metric-value" style={{ fontSize: 18 }}>{rpmUsed}<span className="metric-inline-denom">/{rpmLimit || '∞'}</span></div>
             </div>
             <div>
               <div className="metric-label">Req / day</div>
-              <div className="metric-value" style={{ fontSize: 18 }}>{rpdUsed}<span style={{ fontSize: 12, color: 'var(--text3)' }}>/{rpdLimit || '∞'}</span></div>
+              <div className="metric-value" style={{ fontSize: 18 }}>{rpdUsed}<span className="metric-inline-denom">/{rpdLimit || '∞'}</span></div>
             </div>
             <div>
               <div className="metric-label">Tokens (30d)</div>
@@ -54,7 +63,7 @@ function ProviderCard({ provider, usage }) {
           </div>
 
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text3)', marginBottom: 4 }}>
+            <div className="meter-row-label">
               <span>RPM usage</span><span>{rpmPct}%</span>
             </div>
             <div className="progress-track">
@@ -64,11 +73,11 @@ function ProviderCard({ provider, usage }) {
 
           {budget > 0 && (
             <div style={{ marginTop: 8 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text3)', marginBottom: 4 }}>
+              <div className="meter-row-label">
                 <span>Budget</span><span>${costMonth.toFixed(2)} / ${budget}/mo</span>
               </div>
               <div className="progress-track">
-                <div className="progress-fill" style={{ width: `${budgetPct || 0}%`, background: budgetPct > 80 ? '#f87171' : '#fbbf24' }} />
+                <div className="progress-fill" style={{ width: `${budgetPct || 0}%`, background: budgetBarColor }} />
               </div>
             </div>
           )}
@@ -94,11 +103,15 @@ function formatTokens(n) {
   return String(n);
 }
 
-export default function UsageDashboard({ providers, usageAll }) {
+export default function UsageDashboard({ providers, usageAll, queue = [] }) {
   const configured = providers.filter(p => p.configured).length;
   const totalCost  = Object.values(usageAll).reduce((s, u) => s + (u?.cost?.lastMonth || 0), 0);
   const totalReqs  = Object.values(usageAll).reduce((s, u) => s + (u?.requests?.lastDay || 0), 0);
   const anyLimited = providers.some(p => usageAll[p.name]?.canSend === false);
+
+  const upNext = queue
+    .filter(i => i.status === 'pending' || i.status === 'processing')
+    .slice(0, 3);
 
   return (
     <div>
@@ -109,7 +122,7 @@ export default function UsageDashboard({ providers, usageAll }) {
       <div className="grid-4" style={{ marginBottom: 24 }}>
         <div className="card">
           <div className="metric-label">Providers active</div>
-          <div className="metric-value">{configured}<span style={{ fontSize: 13, color: 'var(--text3)' }}>/{providers.length}</span></div>
+          <div className="metric-value">{configured}<span className="metric-inline-denom">/{providers.length}</span></div>
         </div>
         <div className="card">
           <div className="metric-label">Requests today</div>
@@ -136,15 +149,30 @@ export default function UsageDashboard({ providers, usageAll }) {
         ))}
       </div>
 
-      <style>{`
-        .provider-card { display: flex; flex-direction: column; gap: 14px; }
-        .pc-header { display: flex; align-items: center; gap: 8px; }
-        .pc-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-        .pc-name { flex: 1; font-size: 13px; font-weight: 600; color: var(--text1); }
-        .pc-stats { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
-        .pc-wait { font-size: 11px; color: var(--warning); background: rgba(251,191,36,0.08); padding: 6px 10px; border-radius: 6px; }
-        .pc-unconfigured { font-size: 12px; color: var(--text3); font-style: italic; padding: 8px 0; }
-      `}</style>
+      {upNext.length > 0 && (
+        <>
+          <h3 className="section-heading">Up next in queue</h3>
+          <div className="events-row">
+            {upNext.map(item => (
+              <div
+                key={item.id}
+                className={'event-card' + (item.status === 'processing' ? ' highlight' : '')}
+              >
+                <h5>{item.label || (item.prompt || '').slice(0, 40) || 'Prompt'}</h5>
+                <p>
+                  {item.compare_providers ? 'Compare mode' : (item.routing_mode || 'auto')}
+                  {item.used_provider && item.used_provider !== 'compare' ? ' · ' + item.used_provider : ''}
+                </p>
+                <div className="event-meta">
+                  {item.status}
+                  {item.scheduled_for ? ' · ' + new Date(item.scheduled_for).toLocaleString() : ''}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
     </div>
   );
 }

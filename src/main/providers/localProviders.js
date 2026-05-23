@@ -1,9 +1,9 @@
 /**
- * Local AI Providers — Ollama & LM Studio
+ * Local AI Providers — Ollama, LM Studio, Jan.ai, LocalAI, llama.cpp
  *
- * Both expose an OpenAI-compatible REST API on localhost, so we use
- * the same `openai` SDK pattern as openaiCompatProviders.js, just
- * pointed at a local port instead of a cloud endpoint.
+ * All five expose an OpenAI-compatible REST API on localhost, so we use
+ * the same `openai` SDK pattern as openaiCompatProviders.js, pointed at
+ * a local port instead of a cloud endpoint.
  *
  * Key differences from cloud providers:
  *   - No API key required — just run the app locally
@@ -12,8 +12,12 @@
  *   - Models are discovered dynamically from the running server
  *   - If the server is not running, sendMessage throws a clear error
  *
- * Ollama:    https://ollama.com         — port 11434
- * LM Studio: https://lmstudio.ai       — port 1234
+ * Port defaults (all configurable in Settings → Connectors):
+ *   Ollama:    http://localhost:11434
+ *   LM Studio: http://localhost:1234
+ *   Jan.ai:    http://localhost:1337
+ *   LocalAI:   http://localhost:8080
+ *   llama.cpp: http://localhost:8181  ← different from LocalAI to avoid conflict
  */
 
 'use strict';
@@ -21,8 +25,7 @@
 const { BaseProvider } = require('./baseProvider');
 
 // ── Popular default model lists ────────────────────────────────────────────
-// These are shown before dynamic discovery completes.
-// Users can pull/load any model they want — the list refreshes on sendMessage.
+// Shown before dynamic discovery completes.
 
 const OLLAMA_DEFAULT_MODELS = [
   { id: 'llama3.2',        name: 'Llama 3.2 (3B)',        contextWindow: 131_072, inputCost: 0, outputCost: 0, tier: 'local', free: true },
@@ -44,6 +47,29 @@ const LM_STUDIO_DEFAULT_MODELS = [
   { id: 'qwen2.5-7b',           name: 'Qwen 2.5 7B',             contextWindow: 32_768,  inputCost: 0, outputCost: 0, tier: 'local', free: true },
   { id: 'deepseek-r1-distill',  name: 'DeepSeek-R1 Distilled',   contextWindow: 32_768,  inputCost: 0, outputCost: 0, tier: 'local', free: true },
   { id: 'codestral-22b',        name: 'Codestral 22B',           contextWindow: 32_768,  inputCost: 0, outputCost: 0, tier: 'local', free: true },
+];
+
+const JAN_DEFAULT_MODELS = [
+  { id: 'mistral-ins-7b-q4',           name: 'Mistral 7B Instruct (Q4)',    contextWindow: 32_768,  inputCost: 0, outputCost: 0, tier: 'local', free: true },
+  { id: 'llama3.2-3b-instruct',        name: 'Llama 3.2 3B Instruct',       contextWindow: 131_072, inputCost: 0, outputCost: 0, tier: 'local', free: true },
+  { id: 'llama3.1-8b-instruct',        name: 'Llama 3.1 8B Instruct',       contextWindow: 131_072, inputCost: 0, outputCost: 0, tier: 'local', free: true },
+  { id: 'phi-3.5-mini-instruct',       name: 'Phi-3.5 Mini Instruct',        contextWindow: 131_072, inputCost: 0, outputCost: 0, tier: 'local', free: true },
+  { id: 'gemma2-2b-instruct',          name: 'Gemma 2 2B Instruct',          contextWindow: 8_192,   inputCost: 0, outputCost: 0, tier: 'local', free: true },
+  { id: 'qwen2.5-7b-instruct',         name: 'Qwen 2.5 7B Instruct',         contextWindow: 32_768,  inputCost: 0, outputCost: 0, tier: 'local', free: true },
+  { id: 'deepseek-r1-distill-qwen-7b', name: 'DeepSeek-R1 Distill Qwen 7B', contextWindow: 32_768,  inputCost: 0, outputCost: 0, tier: 'local', free: true },
+  { id: 'codestral-7b-v0.1',           name: 'Codestral 7B',                 contextWindow: 32_768,  inputCost: 0, outputCost: 0, tier: 'local', free: true },
+];
+
+const LOCALAI_DEFAULT_MODELS = [
+  { id: 'mistral-7b-instruct-v0.1.Q4_K_M',  name: 'Mistral 7B Instruct',     contextWindow: 32_768,  inputCost: 0, outputCost: 0, tier: 'local', free: true },
+  { id: 'llama-3.1-8b-instruct',            name: 'Llama 3.1 8B Instruct',   contextWindow: 131_072, inputCost: 0, outputCost: 0, tier: 'local', free: true },
+  { id: 'phi-2',                            name: 'Phi-2',                    contextWindow: 2_048,   inputCost: 0, outputCost: 0, tier: 'local', free: true },
+  { id: 'orca-mini-3b',                     name: 'Orca Mini 3B',             contextWindow: 2_048,   inputCost: 0, outputCost: 0, tier: 'local', free: true },
+];
+
+// llama.cpp loads one model at a time — no useful static defaults
+const LLAMACPP_DEFAULT_MODELS = [
+  { id: 'loaded-model', name: 'Active Model (detect on use)', contextWindow: 4_096, inputCost: 0, outputCost: 0, tier: 'local', free: true },
 ];
 
 // ── Shared OpenAI-compat send logic ───────────────────────────────────────
@@ -97,20 +123,50 @@ async function sendViaLocal(provider, opts) {
 }
 
 // ── Base class for local providers ─────────────────────────────────────────
+//
+// Constructor now takes a numeric defaultPort rather than a full URL string.
+// The actual port used is read from the store on startup (user may have
+// overridden it in Settings), falling back to defaultPort.
 
 class LocalBaseProvider extends BaseProvider {
-  constructor(name, baseURL, displayName, defaultModels, usageTracker, store) {
+  constructor(name, defaultPort, displayName, defaultModels, usageTracker, store) {
     super(name, usageTracker, store);
 
-    this._baseURL      = baseURL;
+    this._defaultPort  = defaultPort;
     this.displayName   = displayName;
     this._models       = [...defaultModels];
     this._modelsFetched = false;
+
+    // Load user-saved port override; fall back to the compiled default
+    const savedPort    = store?.get(`localPort.${name}`);
+    this._currentPort  = (savedPort && Number.isInteger(savedPort)) ? savedPort : defaultPort;
+    this._baseURL      = `http://localhost:${this._currentPort}`;
 
     // Always initialise — no API key needed for local providers
     if (!this.client) {
       try { this._initClient('local'); } catch (_) {}
     }
+  }
+
+  // ── Port management ────────────────────────────────────────────────────────
+
+  getCurrentPort() { return this._currentPort; }
+  getDefaultPort() { return this._defaultPort; }
+
+  /**
+   * Change the port at runtime. Saves to store, re-initialises the HTTP
+   * client with the new base URL, and resets model discovery so the next
+   * sendMessage re-discovers models from the new address.
+   */
+  setLocalPort(port) {
+    const p = parseInt(port, 10);
+    if (!p || p < 1 || p > 65535) throw new Error('Invalid port number (must be 1–65535)');
+    this.store?.set(`localPort.${this.name}`, p);
+    this._currentPort  = p;
+    this._baseURL      = `http://localhost:${p}`;
+    this._modelsFetched = false;
+    try { this._initClient('local'); } catch (_) {}
+    return { success: true, port: p };
   }
 
   // No API key needed — any truthy value passes validation
@@ -133,8 +189,7 @@ class LocalBaseProvider extends BaseProvider {
   // Effectively unlimited — bounded by hardware, not a rate-limit policy
   getRateLimits() { return { rpm: 9999, rpd: null, tpm: null, tpd: null }; }
 
-  getModels() { return this._models; }
-
+  getModels()       { return this._models; }
   getDefaultModel() { return this._models[0]?.id || 'unknown'; }
 
   // Override to be a no-op — there is no key to remove for a local provider
@@ -170,19 +225,12 @@ class LocalBaseProvider extends BaseProvider {
 
 class OllamaProvider extends LocalBaseProvider {
   constructor(usageTracker, store) {
-    super(
-      'ollama',
-      'http://localhost:11434',
-      'Ollama',
-      OLLAMA_DEFAULT_MODELS,
-      usageTracker,
-      store
-    );
+    super('ollama', 11434, 'Ollama', OLLAMA_DEFAULT_MODELS, usageTracker, store);
   }
 
   // Ollama uses /api/tags — returns { models: [{ name, size, ... }] }
   async _fetchRemoteModels() {
-    const res  = await fetch('http://localhost:11434/api/tags');
+    const res  = await fetch(`http://localhost:${this._currentPort}/api/tags`);
     if (!res.ok) return null;
     const data = await res.json();
     if (!Array.isArray(data?.models) || data.models.length === 0) return null;
@@ -204,19 +252,12 @@ class OllamaProvider extends LocalBaseProvider {
 
 class LMStudioProvider extends LocalBaseProvider {
   constructor(usageTracker, store) {
-    super(
-      'lmstudio',
-      'http://localhost:1234',
-      'LM Studio',
-      LM_STUDIO_DEFAULT_MODELS,
-      usageTracker,
-      store
-    );
+    super('lmstudio', 1234, 'LM Studio', LM_STUDIO_DEFAULT_MODELS, usageTracker, store);
   }
 
   // LM Studio exposes a standard OpenAI /v1/models endpoint
   async _fetchRemoteModels() {
-    const res  = await fetch('http://localhost:1234/v1/models');
+    const res  = await fetch(`${this._baseURL}/v1/models`);
     if (!res.ok) return null;
     const data = await res.json();
     if (!Array.isArray(data?.data) || data.data.length === 0) return null;
@@ -233,4 +274,128 @@ class LMStudioProvider extends LocalBaseProvider {
   }
 }
 
-module.exports = { OllamaProvider, LMStudioProvider };
+// ── Jan.ai ──────────────────────────────────────────────────────────────────
+
+class JanProvider extends LocalBaseProvider {
+  constructor(usageTracker, store) {
+    super('jan', 1337, 'Jan.ai', JAN_DEFAULT_MODELS, usageTracker, store);
+  }
+
+  // Jan exposes a standard OpenAI /v1/models endpoint
+  async _fetchRemoteModels() {
+    const res  = await fetch(`${this._baseURL}/v1/models`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data?.data) || data.data.length === 0) return null;
+
+    return data.data.map(m => ({
+      id:            m.id,
+      name:          m.name || m.id,
+      contextWindow: m.context_window || m.context_length || 4_096,
+      inputCost:     0,
+      outputCost:    0,
+      tier:          'local',
+      free:          true,
+    }));
+  }
+}
+
+// ── LocalAI ─────────────────────────────────────────────────────────────────
+//
+// LocalAI is an open-source, self-hosted server that mimics the OpenAI API.
+// It can run many backends (llama.cpp, whisper, diffusion models).
+// Model IDs often include the filename/extension, e.g. "mistral-7b.Q4_K_M.gguf".
+// Default port: 8080.
+
+class LocalAIProvider extends LocalBaseProvider {
+  constructor(usageTracker, store) {
+    super('localai', 8080, 'LocalAI', LOCALAI_DEFAULT_MODELS, usageTracker, store);
+  }
+
+  async _fetchRemoteModels() {
+    const res  = await fetch(`${this._baseURL}/v1/models`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data?.data) || data.data.length === 0) return null;
+
+    return data.data.map(m => {
+      // Strip file extension from display name for readability
+      const displayName = m.id
+        .replace(/\.(gguf|bin|ggml|pt|ot)$/i, '')
+        .replace(/[-_.]/g, ' ')
+        .replace(/\bq[48]_k_[ms]\b/gi, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+
+      return {
+        id:            m.id,
+        name:          displayName || m.id,
+        contextWindow: m.context_window || 4_096,
+        inputCost:     0,
+        outputCost:    0,
+        tier:          'local',
+        free:          true,
+      };
+    });
+  }
+}
+
+// ── llama.cpp server ─────────────────────────────────────────────────────────
+//
+// llama.cpp's built-in HTTP server exposes an OpenAI-compatible API.
+// It loads ONE model at startup — you can't swap models via API.
+// The /props endpoint exposes n_ctx (context window) and other config.
+// Default port: 8181 (avoids conflict with LocalAI's 8080 default).
+
+class LlamaCppProvider extends LocalBaseProvider {
+  constructor(usageTracker, store) {
+    super('llamacpp', 8181, 'llama.cpp', LLAMACPP_DEFAULT_MODELS, usageTracker, store);
+  }
+
+  async _fetchRemoteModels() {
+    // Step 1: get the loaded model name from /v1/models
+    const modRes = await fetch(`${this._baseURL}/v1/models`);
+    if (!modRes.ok) return null;
+    const modData = await modRes.json();
+    if (!Array.isArray(modData?.data) || modData.data.length === 0) return null;
+
+    // Step 2: try /props for the actual context window size (n_ctx)
+    let ctxLen = 4_096;
+    try {
+      const propRes = await fetch(`${this._baseURL}/props`);
+      if (propRes.ok) {
+        const props = await propRes.json();
+        ctxLen = props.n_ctx ?? props.context_size ?? ctxLen;
+      }
+    } catch (_) {
+      // /props not available on older llama.cpp builds — use safe default
+    }
+
+    return modData.data.map(m => {
+      // Model ID is usually the full file path — extract just the filename
+      const basename    = m.id.replace(/\\/g, '/').split('/').pop() || m.id;
+      const displayName = basename
+        .replace(/\.(gguf|bin|ggml)$/i, '')
+        .replace(/[-_.]/g, ' ')
+        .trim();
+
+      return {
+        id:            m.id,          // keep full path as ID for API call
+        name:          displayName || basename,
+        contextWindow: ctxLen,
+        inputCost:     0,
+        outputCost:    0,
+        tier:          'local',
+        free:          true,
+      };
+    });
+  }
+}
+
+module.exports = {
+  OllamaProvider,
+  LMStudioProvider,
+  JanProvider,
+  LocalAIProvider,
+  LlamaCppProvider,
+};
