@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { FontSizeControl, ThemeSwitch } from './UiControls.jsx';
+import logoSrc from '../assets/AIQLoadManager_logo_large.png';
 
 const SEARCH_SCOPES = [
   { id: 'queue',    label: 'Queue'    },
@@ -89,8 +90,7 @@ export default function AppHeader({
   return (
     <header className="app-header">
       <div className="header-brand">
-        <div className="brand-mark">Q</div>
-        <span className="brand-name">AIQ Load Manager</span>
+        <img src={logoSrc} alt="AIQ Load Manager" className="header-logo" />
       </div>
 
       <div className="header-search-wrap" ref={searchRef}>
@@ -157,15 +157,6 @@ export default function AppHeader({
 
         <ThemeSwitch theme={theme} onToggle={onThemeToggle} />
 
-        <button
-          type="button"
-          className="icon-btn rail-toggle"
-          onClick={onRailToggle}
-          title={railOpen ? 'Hide side panel' : 'Show side panel'}
-        >
-          {railOpen ? 'Hide panel' : 'Panel'}
-        </button>
-
         <button type="button" className="btn-add-prompt" onClick={onAddPrompt}>+ Add prompt</button>
 
         <div className="user-chip" title="License tier">
@@ -175,6 +166,19 @@ export default function AppHeader({
             <span className="user-role">{planLabel} plan</span>
           </div>
         </div>
+
+        <button
+          type="button"
+          className={'icon-btn rail-toggle' + (railOpen ? ' active' : '')}
+          onClick={onRailToggle}
+          title={railOpen ? 'Hide side panel' : 'Show side panel'}
+          aria-label={railOpen ? 'Hide side panel' : 'Show side panel'}
+        >
+          <svg width="24" height="24" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
+            <line x1="10.5" y1="2.5" x2="10.5" y2="13.5" />
+          </svg>
+        </button>
       </div>
     </header>
   );

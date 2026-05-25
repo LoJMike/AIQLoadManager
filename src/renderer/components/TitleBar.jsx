@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import badgeIcon from '../assets/AIQLoadManager_logo_badge.png';
 
 const isMac = navigator.userAgent.includes('Macintosh');
 
@@ -20,7 +21,7 @@ export default function TitleBar({ title = 'AIQ Load Manager' }) {
       {isMac && <div className="titlebar-mac-spacer" />}
 
       <div className="titlebar-logo">
-        <span className="titlebar-icon">⬡</span>
+        <img src={badgeIcon} alt="" className="titlebar-icon" />
         <span className="titlebar-title">{title}</span>
       </div>
 

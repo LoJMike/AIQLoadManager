@@ -119,9 +119,11 @@ body {
 }
 
 .titlebar-icon {
-  font-size: 17px;
-  color: var(--purple);
-  filter: drop-shadow(0 0 7px var(--purple-glow));
+  height: 22px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .titlebar-title {
@@ -237,6 +239,10 @@ body {
 }
 
 .pause-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   background: var(--bg3);
   border: 1px solid var(--border-dim);
   border-radius: var(--radius);

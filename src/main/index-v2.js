@@ -207,6 +207,7 @@ function createWindow() {
     height: 1025,
     minWidth: 1250,
     minHeight: 800,
+    icon: path.join(__dirname, "../renderer/assets/AIQLoadManager_logo_badge.png"),
     ...(isMac
       ? { titleBarStyle: "hiddenInset", trafficLightPosition: { x: 14, y: 11 } }
       : { frame: false }),

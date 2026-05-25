@@ -173,7 +173,7 @@ export default function App() {
                 title={n.label}
               >
                 <span className="nav-icon-wrap">
-                  <NavIcon name={n.id} size={28} />
+                  <NavIcon name={n.id} size={21} />
                   {n.id === 'queue' && pendingCount > 0 && (
                     <span className="nav-badge-v">{pendingCount}</span>
                   )}
@@ -189,7 +189,22 @@ export default function App() {
               className={'pause-btn ' + (queueState.paused ? 'paused' : '')}
               onClick={handlePauseResume}
             >
-              {queueState.paused ? 'Resume' : 'Pause'}
+              {queueState.paused ? (
+                <>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden style={{ flexShrink: 0 }}>
+                    <polygon points="5 3 19 12 5 21" />
+                  </svg>
+                  Resume
+                </>
+              ) : (
+                <>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden style={{ flexShrink: 0 }}>
+                    <rect x="5" y="4" width="5" height="16" rx="1" />
+                    <rect x="14" y="4" width="5" height="16" rx="1" />
+                  </svg>
+                  Pause
+                </>
+              )}
             </button>
             <div className="provider-dots">
               {providers.map(p => (
