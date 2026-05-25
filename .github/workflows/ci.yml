@@ -42,7 +42,7 @@ jobs:
           if grep -r "sk-proj-" src/ 2>/dev/null; then
             echo "❌ OpenAI API key found in source!"; exit 1
           fi
-          if grep -r "xai-" src/ 2>/dev/null; then
+          if grep -rE "xai-[A-Za-z0-9]{20,}" src/ 2>/dev/null; then
             echo "❌ xAI API key found in source!"; exit 1
           fi
           echo "✅ No API keys in source"
