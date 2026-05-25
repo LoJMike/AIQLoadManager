@@ -10,30 +10,50 @@ prompts across 12 AI providers — 7 cloud APIs plus Ollama, LM Studio, Jan.ai, 
 
 ## Pricing Tiers
 
-| | Free | Starter | Pro |
-|---|---|---|---|
-| **Price** | $0 forever | $6/mo · **$39 one-time** | $14/mo · **$79 one-time** |
-| **AI providers (total)** | 5 | 7 | All 12 |
-| **Max queue depth** | 10 items | 100 items | Unlimited |
-| **Projects** | 1 | 5 | Unlimited |
-| **Routing modes** | Manual, Free Tier | + Auto, Balance | + Cheapest, Fastest, Custom |
-| **Cost tracking** | — | ✓ | ✓ |
-| **Budget caps & alerts** | — | — | ✓ |
-| **⚡ Urgent priority boost** | ✓ | ✓ | ✓ |
-| **Tag-based smart priority (all tags)** | — | — | ✓ |
-| **Batch CSV import** | — | ✓ | ✓ |
-| **Usage export** | — | CSV | CSV + JSON |
-| **Prompt template library** | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
-| **Compare mode (A/B providers)** | — | — | ✓ |
-| **Prompt chaining** | — | — | ✓ *(Roadmap)* |
-| **Image generation** | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
-| **Video generation** | — | — | ✓ *(Roadmap)* |
-| **Webhook output delivery** | — | — | ✓ *(Roadmap)* |
-| **Cost forecasting** | — | — | ✓ *(Roadmap)* |
-| **iOS & Android companion** | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
-| **100% local — no cloud sync** | ✓ | ✓ | ✓ |
+All plans are **monthly subscriptions** — cancel any time. No lifetime deals, no usage surcharges on top of your API costs. The monthly cloud prompt and token limits below are AIQ-side caps to keep the service sustainable; you still pay your AI providers directly at their published rates.
 
-One-time / lifetime pricing saves 46% (Starter) and 53% (Pro) vs monthly. No usage meters on top of your API costs — you pay your providers directly.
+| | Free | Starter | Pro | Pro+ *(Coming soon)* | Team *(Coming soon)* |
+|---|---|---|---|---|---|
+| **Price** | $0 forever | $9/mo | $19/mo | $34/mo | $49/user/mo |
+| **AI providers** | 5 (local only) | 8 (local + free cloud) | All 12 | All 12 | All 12 |
+| **Monthly cloud prompt runs** | 50 | 500 | 2,500 | 10,000 | 25,000 (pooled) |
+| **Monthly cloud tokens** | 100K | 1M | 5M | 20M | 60M (pooled) |
+| **Max queue depth** | 10 items | 100 items | 500 (soft cap) | Unlimited | Unlimited |
+| **Projects** | 1 | 5 | Unlimited | Unlimited | Unlimited |
+| **Routing modes** | Manual, Free Tier | + Auto, Balance | + Cheapest, Fastest, Custom | All modes | All modes |
+| **Budget spend visibility** | View-only | View-only | ✓ | ✓ | ✓ |
+| **Budget caps & alerts** | — | — | ✓ | ✓ | ✓ |
+| **Cost tracking per provider** | — | ✓ | ✓ | ✓ | ✓ |
+| **⚡ Urgent priority boost** | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **Tag-based smart priority (all tags)** | — | — | ✓ | ✓ | ✓ |
+| **Batch CSV import** | — | ✓ | ✓ | ✓ | ✓ |
+| **Usage export** | — | CSV | CSV + JSON | CSV + JSON | CSV + JSON |
+| **Response style presets** | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **Per-project response history** | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **Session digest export (HTML)** | — | ✓ | ✓ | ✓ | ✓ |
+| **Per-provider default model** | — | — | ✓ | ✓ | ✓ |
+| **Prompt template library** | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
+| **Document context injection** | — | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
+| **Email digest** | — | — | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
+| **Compare mode (A/B providers)** | — | — | ✓ | ✓ | ✓ |
+| **Consensus mode** | — | — | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
+| **Prompt chaining** | — | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
+| **Scheduled-items calendar view** | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
+| **Usage Insights panel** | — | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
+| **Usage heatmap calendar** | — | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
+| **Prompt habit analysis** | — | — | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
+| **AI-powered prompt optimization** | — | — | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
+| **Image generation** | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
+| **Video generation** | — | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
+| **Webhook output delivery** | — | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
+| **Cost forecasting** | — | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
+| **Priority email support** | — | — | — | ✓ | ✓ |
+| **iOS & Android companion** | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
+| **Shared settings & admin controls** | — | — | — | — | ✓ *(Coming soon)* |
+| **100% local — no cloud sync** | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **Anonymous usage analytics — opt out in Settings** | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+**Provider breakdown:** Free = 5 local AI providers (Ollama, LM Studio, Jan.ai, LocalAI, llama.cpp) — no API key needed, $0 per request. Starter adds the 3 permanent free cloud tiers (Gemini, Groq, Mistral). Pro unlocks all 4 paid cloud providers (Claude, OpenAI, DeepSeek, xAI Grok) plus everything below. **Pro+** is for solo power users who need 4× the throughput, unlimited queue depth, Consensus mode, and priority support. **Team** adds shared settings and admin controls for multi-user organisations.
 
 ---
 
@@ -44,20 +64,26 @@ One-time / lifetime pricing saves 46% (Starter) and 53% (Pro) vs monthly. No usa
 | **Multi-provider GUI** | All | Dark industrial dashboard with per-provider usage cards |
 | **Usage tracking** | All | Token in/out, requests/min, requests/day, cost estimate per provider |
 | **Rate limit awareness** | All | Knows each provider's RPM/RPD/TPM limits; waits automatically |
-| **Prompt queue** | All | Priority ordering, scheduling, retry on error |
+| **Prompt queue** | All | Priority ordering, scheduling, auto-retry on transient errors (up to 3 attempts) |
+| **Standing instructions** | All | Global system prompt prepended to every queued prompt — set once in Settings, applies across all providers |
 | **Prompt type tags** | All | 9 visual chip tags (Chat, Research, Code, Web Search, Writing, Analysis, Image, Translate, ⚡ Urgent) — drive routing and queue priority |
 | **Live cost estimation** | All | Token count and per-provider cost estimate shown as you type, before queuing |
 | **Provider comparison table** | All | Ranked table of all configured providers with estimated cost and availability shown live in the Add Prompt panel |
 | **⚡ Urgent priority boost** | All | Jumps the queue on any plan |
 | **Projects & chats** | All | Named projects; continue existing conversation threads |
 | **Persistent history** | All | Conversation history survives app restarts — stored in local SQLite |
-| **Smart routing** | Starter+ | 4 modes on Starter (Manual, Free Tier, Auto, Balance); all 6 on Pro |
+| **Smart routing** | Starter+ | 4 modes on Starter (Manual, Free Tier, Auto, Balance); all 6 on Pro (+ Cheapest, Fastest, Custom) |
 | **Cost tracking** | Starter+ | Detailed cost per provider & model |
 | **Tag-based smart priority** | Pro | All 9 tag types boost queue position |
 | **🌐 Web search** | All | Tag a prompt Web Search — live results from Tavily or SearXNG are injected into the system prompt before the AI call. Works with every model including local ones. |
 | **Compare mode** | Pro | Send the same prompt to multiple providers simultaneously; responses shown side-by-side |
 | **Budget caps & alerts** | Pro | Monthly USD cap per provider with visual progress |
 | **Batch CSV import** | Starter+ | Upload a CSV of prompts and queue them all at once |
+| **Response style presets** | All | Per-provider tone/format presets — Normal, Concise, Caveman, Bullet-only, ELI5, or Custom. Set in Settings → provider card. Appended to every prompt sent to that provider. |
+| **Per-provider default model** | Pro | Override the default model used for any provider when no model is specified in the queue item. Set in Settings → provider card. |
+| **Per-project response history** | All | View all completed prompts and responses for any project — click "View history" on any project card in the Projects tab. |
+| **Session digest export** | Starter+ | Export all completed queue items as a self-contained HTML file with summary stats, per-item prompt/response, and token costs. Opens natively after saving. |
+| **Anonymous usage analytics** | All | PostHog — routing mode usage, provider config, prompt counts. No prompt content, no keys, no personal data. Opt-out toggle in Settings → Analytics. |
 
 ---
 
@@ -67,7 +93,7 @@ Providers are grouped into three tiers in the app's Connectors settings panel.
 
 ### 🖥️ Local AI — no API key, no internet, $0 per request
 
-All ports are configurable in Settings → Connectors.
+All ports are configurable in Settings → Connectors. Each local provider card shows a **Setup guide ↗** link that opens the official getting-started documentation in your browser.
 
 | Provider    | How to use                                              | Default port |
 |-------------|---------------------------------------------------------|--------------|
@@ -255,35 +281,47 @@ Configure the backend and keys in **Settings → Connectors → 🌐 Web Search*
 
 ---
 
-## Routing modes
+## Auto-retry on failure
 
-| Mode       | Tier    | Behaviour |
-|------------|---------|-----------|
-| `manual`   | All     | You explicitly pick provider + model per prompt |
-| `freeTier` | All     | Local providers first (Ollama / LM Studio / Jan.ai / LocalAI / llama.cpp), then Gemini, Groq, Mistral |
-| `auto`     | Starter+| Scores all providers on capacity, cost, and task type — all local AI providers get a +50 bonus ($0 cost, no rate limits). Task type derived from prompt tags. |
-| `balance`  | Starter+| Round-robins across configured providers |
-| `cheapest` | Pro     | Always picks lowest input-token cost (local = $0, always wins) |
-| `fastest`  | Pro     | Groq → DeepSeek → Mistral → Gemini → OpenAI → Anthropic → local |
+When a queued prompt fails due to a transient error (network timeout, 5xx server error, or an unexpected rate-limit spike), the queue automatically resets it to `pending` and tries again — up to **3 attempts** by default. The retry count and last error message are stored in the database so you can see exactly what happened.
+
+**Errors that trigger auto-retry:** network errors, timeouts, 5xx server errors, unexpected rate limit responses.
+
+**Errors that do NOT trigger auto-retry:** invalid API key (401), spend-blocked provider ($0 budget), provider not configured. These are permanent failures that require user action and are surfaced immediately as errors.
+
+After all retries are exhausted the item settles into `error` status, where you can still click ↺ to retry manually.
 
 ---
 
-## Version
+## Standing instructions
 
-Current version: **0.3.6**
+Standing instructions are a global system prompt that is automatically prepended to **every prompt you queue**, across all providers. Set them once in **Settings → Standing Instructions** and forget about them — every AI call will carry those rules without you having to type them each time.
 
-| What changed | Version |
-|---|---|
-| Web search (Tavily + SearXNG); RAG injection for all models; configurable in Settings | 0.3.6 |
-| LocalAI + llama.cpp added; configurable ports for all 5 local providers; provider count 10→12 | 0.3.5 |
-| Jan.ai added as third local provider; Free tier now includes 3 local + 3 cloud free providers | 0.3.4 |
-| Pricing tiers aligned — Free/Starter/Pro; STARTER_FLAGS added; LicensePanel 3-column UI | 0.3.3 |
-| Compare mode (Pro) — multi-provider fan-out, side-by-side results | 0.3.2 |
-| Persistent conversation history (SQLite write-through) | 0.3.1 |
-| Prompt type tags + tag-driven queue priority | 0.3.0 |
-| Live token estimation + provider cost comparison | 0.3.0 |
-| Licensing skeleton (free/pro feature flags, LicensePanel UI) | 0.2.0 → 0.1.43 |
-| Neon glassmorphic UI redesign + custom title bar | 0.1.41 |
+Use standing instructions to set a consistent tone, language, output format, or any baseline rules that should apply to all your AI interactions — the equivalent of a `CLAUDE.md` or a custom system prompt, but for every provider at once.
+
+**Example:**
+
+```
+Always reply in British English.
+Keep responses concise — no more than 3 paragraphs unless asked.
+Format all code with syntax highlighting.
+You are a helpful assistant for a small software team.
+```
+
+Standing instructions are stored locally via `electron-store` and survive app restarts. They are prepended before any per-prompt system prompt, so per-prompt instructions can always override or extend them.
+
+---
+
+## Routing modes
+
+| Mode       | Tier         | Behaviour |
+|------------|--------------|-----------|
+| `manual`   | All          | You explicitly pick provider + model per prompt |
+| `freeTier` | All          | Local providers first (Ollama / LM Studio / Jan.ai / LocalAI / llama.cpp), then Gemini, Groq, Mistral |
+| `auto`     | Starter, Pro | Scores all providers on capacity, cost, and task type — all local AI providers get a +50 bonus ($0 cost, no rate limits). Task type derived from prompt tags. |
+| `balance`  | Starter, Pro | Round-robins across configured providers |
+| `cheapest` | Pro          | Always picks lowest input-token cost (local = $0, always wins) |
+| `fastest`  | Pro          | Groq → DeepSeek → Mistral → Gemini → OpenAI → Anthropic → local |
 
 ---
 
@@ -304,9 +342,11 @@ Compare mode requires a Pro license. No conversation history is injected — eac
 
 | Feature | Tier | Notes |
 |---|---|---|
-| **Pro+ tier** | Pro+ | A higher tier above Pro for power users: Consensus mode, advanced chaining, priority support. Details TBD. |
-| **Consensus mode** | Pro+ | After Compare mode collects responses from all providers, a meta-model synthesises the best answer, flags disagreements, or votes across outputs. Extends Compare mode's data model — no separate queue needed. |
+| **Consensus mode** | Pro+ | After Compare mode collects responses from all providers, a meta-model synthesises the best answer, flags disagreements, or votes across outputs. Extends Compare mode's data model — no separate queue needed. Ships with the Pro+ tier launch. |
+| **Document context injection** | Pro | Attach local files (PDF, DOCX, TXT) as context that is injected into the system prompt for every prompt in a project. No cloud upload — files are read locally. |
+| **Email digest** | Pro+ | Schedule automated email digests of completed session activity — daily or weekly, delivered to any address. Free tier digest is file-export only. |
 | **Cross-provider conversation context** | Starter | When the router re-routes a conversation to a different provider (e.g. due to rate limits), the relevant history is adapted and forwarded automatically. No other tool does this — it's only possible because AIQ already sees all provider traffic. |
+| **In-app diagnostic bug reports** | All | Upgrade the sidebar "Report a Bug" button to auto-attach diagnostics: app version, OS, configured providers, recent error log entries, and current queue state — all pre-filled into the GitHub issue body so bug reports arrive with full context, not just a title. |
 | Image generation | Starter | DALL-E 3, Flux, Ideogram, Stable Diffusion (local via ComfyUI) |
 | Video generation | Pro | Runway, Pika, Kling — async job polling fits the queue model perfectly |
 | Prompt template library | Starter | Named variables, fill-and-queue |
@@ -315,6 +355,11 @@ Compare mode requires a Pro license. No conversation history is injected — eac
 | Webhook output delivery | Pro | POST results to any URL on completion |
 | Cost forecasting | Pro | Predict monthly spend from usage trends |
 | iOS & Android companion | Starter | Monitor queue, add prompts, push notifications. Included at no extra charge. |
+| **Scheduled-items calendar view** | Starter | Week/month grid of all upcoming scheduled queue items. Click any item to preview, edit, or cancel it. Drag to reschedule. Pairs with the usage heatmap to give a full past/future time view of your queue activity. |
+| **Usage Insights panel** | Pro | New Insights sidebar panel: time-series charts of prompts/day, cost/day, and tokens/day; provider distribution; tag type breakdown; busiest-hours heatmap. All powered by existing local SQLite data — no new backend infrastructure needed. |
+| **Usage heatmap calendar** | Pro | GitHub-style contribution graph showing prompt volume and cost by day over the last 90 days. Lives inside the Insights panel alongside the scheduled-items calendar, giving a unified past/forward view of queue activity. |
+| **Prompt habit analysis** | Pro+ | Pattern observations that surface routing efficiency suggestions based on your actual usage — e.g. "You route 90% of Research prompts to Claude but Gemini costs 4× less for those queries." Runs entirely against local data, no prompt content analysed externally. |
+| **AI-powered prompt optimization** | Pro+ | A local model (Ollama or LM Studio) reviews your prompt patterns and suggests rewrites and routing changes that cut cost or improve output quality. Requires a local provider to be configured. No prompt content ever leaves the machine. |
 
 ---
 
@@ -326,12 +371,12 @@ AIQ Load Manager uses **[Lemon Squeezy](https://www.lemonsqueezy.com)** as its p
 
 | Product | Type | Price | Lemon Squeezy product name |
 |---|---|---|---|
-| Starter Monthly | Subscription | $6.00/mo | `AIQ Load Manager — Starter` |
-| Starter Lifetime | One-time | $39.00 | `AIQ Load Manager — Starter Lifetime` |
-| Pro Monthly | Subscription | $14.00/mo | `AIQ Load Manager — Pro` |
-| Pro Lifetime | One-time | $79.00 | `AIQ Load Manager — Pro Lifetime` |
+| Starter Monthly | Subscription | $9.00/mo | `AIQ Load Manager — Starter` |
+| Pro Monthly | Subscription | $19.00/mo | `AIQ Load Manager — Pro` |
+| Pro+ Monthly | Subscription | $34.00/mo | `AIQ Load Manager — Pro+` *(Coming soon)* |
+| Team Monthly | Subscription | $49.00/user/mo | `AIQ Load Manager — Team` *(Coming soon)* |
 
-Enable **License Keys** on every product (1 key per order). Free tier users download directly from GitHub Releases — no checkout needed.
+Enable **License Keys** on every product (1 key per order). Free tier users download directly from GitHub Releases — no checkout needed. All plans are monthly subscriptions — no lifetime deals are offered.
 
 ### Newsletter opt-in
 
@@ -339,22 +384,15 @@ In Lemon Squeezy dashboard → **Store Settings → Checkout**, enable "Show new
 
 ### Landing page checkout integration
 
-`landing-page.html` uses **Lemon.js** (Lemon Squeezy's mini JS library) to open checkout as an overlay popup. The `CHECKOUT_URLS` block near the bottom of the file holds the four product checkout URLs — replace the placeholder strings with your real URLs after creating products in Lemon Squeezy:
+`website/index.html` uses **Lemon.js** (Lemon Squeezy's mini JS library) to open checkout as an overlay popup. The `CHECKOUT_URLS` block near the bottom of the file holds the four product checkout URLs — replace the placeholder strings with your real URLs after creating products in Lemon Squeezy:
 
 ```js
 const CHECKOUT_URLS = {
-  starter: {
-    monthly:  'https://your-store.lemonsqueezy.com/checkout/buy/xxxx',
-    lifetime: 'https://your-store.lemonsqueezy.com/checkout/buy/xxxx',
-  },
-  pro: {
-    monthly:  'https://your-store.lemonsqueezy.com/checkout/buy/xxxx',
-    lifetime: 'https://your-store.lemonsqueezy.com/checkout/buy/xxxx',
-  }
+  starter:  'https://your-store.lemonsqueezy.com/checkout/buy/xxxx',  // $9/mo subscription
+  pro:      'https://your-store.lemonsqueezy.com/checkout/buy/xxxx',  // $19/mo subscription
+  pro_plus: 'https://your-store.lemonsqueezy.com/checkout/buy/xxxx',  // $34/mo subscription (coming soon)
 };
 ```
-
-The billing toggle (Monthly ↔ Lifetime) automatically swaps both the displayed price and the button's checkout URL.
 
 ### License key validation (TODO)
 
@@ -384,6 +422,21 @@ All data is local — no cloud sync.
 | macOS | `~/Library/Application Support/ai-queue-manager/ai-queue.db` |
 
 API keys are stored in the OS user data directory via `electron-store`.
+
+---
+
+## Bug reports & feature requests
+
+AIQ Load Manager has a built-in **🐛 Report a Bug** button at the bottom of the sidebar. Clicking it opens GitHub Issues in your browser with a pre-filled template that includes your app version and OS — no copying and pasting required.
+
+For feature requests, open an issue manually at [github.com/LoJMike/AIQLoadManager/issues](https://github.com/LoJMike/AIQLoadManager/issues) and use the title prefix `Feature:`.
+
+**Tips for a great bug report:**
+- Describe what you expected to happen and what actually happened
+- Include steps to reproduce the issue
+- Note which provider(s) were involved, if applicable
+
+**Coming soon (roadmap):** the button will automatically attach diagnostics — configured providers, recent error log, queue state — so bug reports arrive with full context.
 
 ---
 

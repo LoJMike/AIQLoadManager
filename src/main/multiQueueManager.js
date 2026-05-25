@@ -79,15 +79,30 @@ const STATUS = {
 
 class MultiQueueManager {
   constructor(providerRegistry, multiUsageTracker, queueRouter, pushEvent) {
-    this.registry    = providerRegistry;
-    this.tracker     = multiUsageTracker;
-    this.router      = queueRouter;
-    this.push        = pushEvent;
-    this.webSearch   = null;   // set via setWebSearch() after construction
-    this.paused      = false;
-    this.processing  = false;
-    this._timer      = null;
-    this.db          = null;
+    this.registry             = providerRegistry;
+    this.tracker              = multiUsageTracker;
+    this.router               = queueRouter;
+    this.push                 = pushEvent;
+    this.webSearch            = null;   // set via setWebSearch() after construction
+    this.standingInstructions = null;   // set via setStandingInstructions() after construction
+    this.providerStyles       = {};     // { providerName: styleText } — set via setProviderStyles()
+    this.paused               = false;
+    this.processing           = false;
+    this._timer               = null;
+    this.db                   = null;
+  }
+
+  /** Set a global system prompt that is prepended to every item's system prompt. */
+  setStandingInstructions(text) {
+    this.standingInstructions = text || null;
+  }
+
+  /**
+   * Set per-provider response style texts.
+   * @param {Object} styles  - { providerName: styleText|null, ... }
+   */
+  setProviderStyles(styles) {
+    this.providerStyles = styles && typeof styles === 'object' ? styles : {};
   }
 
   /** Attach the WebSearchService. Called from index-v2.js after both are constructed. */
@@ -135,7 +150,9 @@ class MultiQueueManager {
         cost_usd        REAL DEFAULT 0,
         error            TEXT,
         routing_reason   TEXT,
-        compare_providers TEXT DEFAULT NULL
+        compare_providers TEXT DEFAULT NULL,
+        retry_count      INTEGER DEFAULT 0,
+        max_retries      INTEGER DEFAULT 3
       );
       CREATE TABLE IF NOT EXISTS projects (
         id          TEXT PRIMARY KEY,
@@ -147,8 +164,10 @@ class MultiQueueManager {
     `);
 
     // Migrations — silent ALTER TABLE for columns added in later versions
-    try { this.db.exec("ALTER TABLE queue_items ADD COLUMN tags TEXT DEFAULT '[]'"); }             catch (_) {}
-    try { this.db.exec("ALTER TABLE queue_items ADD COLUMN compare_providers TEXT DEFAULT NULL"); } catch (_) {}
+    try { this.db.exec("ALTER TABLE queue_items ADD COLUMN tags TEXT DEFAULT '[]'"); }                catch (_) {}
+    try { this.db.exec("ALTER TABLE queue_items ADD COLUMN compare_providers TEXT DEFAULT NULL"); }    catch (_) {}
+    try { this.db.exec("ALTER TABLE queue_items ADD COLUMN retry_count INTEGER DEFAULT 0"); }          catch (_) {}
+    try { this.db.exec("ALTER TABLE queue_items ADD COLUMN max_retries INTEGER DEFAULT 3"); }          catch (_) {}
   }
 
   _resetStuck() {
@@ -194,7 +213,7 @@ class MultiQueueManager {
 
   retryItem(id) {
     this.db.prepare(
-      "UPDATE queue_items SET status='pending',error=NULL,started_at=NULL,completed_at=NULL,response=NULL,used_provider=NULL,used_model=NULL WHERE id=? AND status IN ('error','cancelled')"
+      "UPDATE queue_items SET status='pending',error=NULL,started_at=NULL,completed_at=NULL,response=NULL,used_provider=NULL,used_model=NULL,retry_count=0 WHERE id=? AND status IN ('error','cancelled')"
     ).run(id);
     this.push('queue-update', { action: 'retry', id });
     return this._getItem(id);
@@ -236,6 +255,35 @@ class MultiQueueManager {
   deleteProject(id) {
     this.db.prepare('DELETE FROM projects WHERE id=?').run(id);
     return { success: true };
+  }
+
+  /**
+   * Returns all completed queue items for a project, newest first.
+   * @param {string} projectId
+   * @returns {object[]}
+   */
+  getProjectHistory(projectId) {
+    return this.db.prepare(
+      "SELECT * FROM queue_items WHERE project_id=? AND status='complete' ORDER BY completed_at DESC"
+    ).all(projectId);
+  }
+
+  /**
+   * Returns completed queue items for digest export.
+   * @param {object} opts
+   * @param {number}  [opts.since]     - Unix ms timestamp (inclusive lower bound)
+   * @param {number}  [opts.until]     - Unix ms timestamp (inclusive upper bound)
+   * @param {string}  [opts.projectId] - filter by project
+   * @returns {object[]}
+   */
+  getQueueForExport({ since = null, until = null, projectId = null } = {}) {
+    let sql    = "SELECT * FROM queue_items WHERE status='complete'";
+    const args = [];
+    if (since)     { sql += ' AND completed_at >= ?'; args.push(since); }
+    if (until)     { sql += ' AND completed_at <= ?'; args.push(until); }
+    if (projectId) { sql += ' AND project_id = ?';    args.push(projectId); }
+    sql += ' ORDER BY completed_at ASC';
+    return this.db.prepare(sql).all(...args);
   }
 
   // ── Processing Loop ─────────────────────────────────────────────────────────
@@ -314,13 +362,56 @@ class MultiQueueManager {
     return { prompt, systemPrompt };
   }
 
+  /**
+   * Classify whether an error is worth retrying automatically.
+   * Auth failures and budget blocks are permanent — no point retrying.
+   * Network errors, timeouts, and transient 5xx responses are retryable.
+   */
+  _isRetryable(err) {
+    const msg    = err.message || String(err);
+    const status = err.status  || err.statusCode || null;
+
+    // Never retry auth errors — the API key is wrong and won't fix itself.
+    if (status === 401 || status === 403) return false;
+    if (/api.?key|unauthorized|forbidden|invalid.?key/i.test(msg)) return false;
+
+    // Never retry spend-blocked items — user needs to change the budget setting.
+    if (/spend.?block|budget.?set.?to.*\$0/i.test(msg)) return false;
+
+    // Never retry "not configured" errors — no provider is set up.
+    if (/not configured/i.test(msg)) return false;
+
+    // Retry on rate limits, timeouts, and 5xx server errors.
+    if (status === 429 || /rate.?limit/i.test(msg))  return true;
+    if (status >= 500)                                return true;
+    if (/timeout|ECONNRESET|ENOTFOUND|ECONNREFUSED|network/i.test(msg)) return true;
+
+    // Default: retry unknown errors (may be a transient glitch).
+    return true;
+  }
+
   async _processItem(item, decision) {
     this.processing = true;
     this._set(item.id, { status: STATUS.PROCESSING, started_at: Date.now() });
     this.push('queue-update', { action: 'processing', id: item.id, provider: decision.provider });
 
     try {
-      const { prompt, systemPrompt } = await this._enrichWithWebSearch(item);
+      const { prompt, systemPrompt: enrichedSP } = await this._enrichWithWebSearch(item);
+
+      // Prepend global standing instructions (if set) to the per-item system prompt.
+      let systemPrompt = enrichedSP || null;
+      if (this.standingInstructions) {
+        systemPrompt = systemPrompt
+          ? `${this.standingInstructions}\n\n${systemPrompt}`
+          : this.standingInstructions;
+      }
+
+      // Append provider response style preset (if configured) — appended so user
+      // system prompt takes precedence but the style acts as a final modifier.
+      const styleText = this.providerStyles[decision.provider];
+      if (styleText) {
+        systemPrompt = systemPrompt ? `${systemPrompt}\n\n${styleText}` : styleText;
+      }
 
       const result = await this.registry.sendMessage(decision.provider, {
         prompt,
@@ -351,10 +442,33 @@ class MultiQueueManager {
       this.push('usage-update', { allStatus: this.tracker.getStatusAll() });
 
     } catch (err) {
-      const msg = err.message || String(err);
-      this._set(item.id, { status: STATUS.ERROR, error: msg });
-      this.push('item-error', { id: item.id, provider: decision.provider, error: msg });
-      console.error('[Queue] error on', item.id, ':', msg);
+      const msg        = err.message || String(err);
+      const retryCount = (item.retry_count || 0);
+      const maxRetries = (item.max_retries != null ? item.max_retries : 3);
+
+      if (this._isRetryable(err) && retryCount < maxRetries) {
+        // Auto-retry: reset to pending with an incremented counter and a brief note.
+        const attempt = retryCount + 1;
+        this._set(item.id, {
+          status:      STATUS.PENDING,
+          started_at:  null,
+          retry_count: attempt,
+          error:       `Retry ${attempt}/${maxRetries}: ${msg}`,
+        });
+        this.push('queue-update', {
+          action: 'retry-auto',
+          id:     item.id,
+          attempt,
+          maxRetries,
+          error:  msg,
+        });
+        console.warn(`[Queue] auto-retry ${attempt}/${maxRetries} for ${item.id}: ${msg}`);
+      } else {
+        // Permanent failure — surface to the user.
+        this._set(item.id, { status: STATUS.ERROR, error: msg });
+        this.push('item-error', { id: item.id, provider: decision.provider, error: msg });
+        console.error('[Queue] error on', item.id, ':', msg);
+      }
     } finally {
       this.processing = false;
     }

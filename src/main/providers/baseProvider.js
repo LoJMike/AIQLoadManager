@@ -12,8 +12,9 @@ class BaseProvider {
     this.tracker   = usageTracker;
     this.store     = store;           // electron-store instance (may be null)
     this.convStore = null;            // ConversationStore (wired in after construction)
-    this.apiKey    = null;
-    this.client    = null;
+    this.apiKey             = null;
+    this.client             = null;
+    this._customDefaultModel = null;  // per-provider default model override (Pro+)
     this.conversations = new Map();   // convId → messages[] (fast in-memory cache)
 
     // Load persisted key synchronously — store is already initialised by main
@@ -57,6 +58,15 @@ class BaseProvider {
     this._initClient(key);
     this._saveKey(key);
     return { success: true, provider: this.name };
+  }
+
+  /**
+   * Set (or clear) the default model for this provider.
+   * When set, this model is used when no model is explicitly specified in a queue item.
+   * @param {string|null} model - model ID string, or null to clear
+   */
+  setDefaultModel(model) {
+    this._customDefaultModel = model || null;
   }
 
   removeApiKey() {

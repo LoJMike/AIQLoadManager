@@ -78,6 +78,31 @@ class ProviderRegistry {
 
   names() { return Object.keys(this.providers); }
 
+  // ── Default model control (Pro+) ──────────────────────────────────────
+
+  /**
+   * Set (or clear) a custom default model for a provider.
+   * @param {string}      name  - provider name
+   * @param {string|null} model - model ID, or null/'' to clear
+   */
+  setDefaultModel(name, model) {
+    this.get(name).setDefaultModel(model || null);
+  }
+
+  /**
+   * Returns a map of { providerName: modelId } for providers that have a
+   * custom default model set. Providers without one are omitted.
+   */
+  getDefaultModels() {
+    const result = {};
+    for (const [name, provider] of Object.entries(this.providers)) {
+      if (provider._customDefaultModel) {
+        result[name] = provider._customDefaultModel;
+      }
+    }
+    return result;
+  }
+
   // ── Port management (local providers only) ─────────────────────────────
 
   /**
@@ -121,6 +146,7 @@ class ProviderRegistry {
       rateLimits:      provider.getRateLimits(),
       hasFreeFreeTier: provider.hasFreeFreeTier?.() || false,
       conversations:   provider.listConversations(),
+      defaultModel:    provider._customDefaultModel || null,
       // Include port info for local providers so the UI can show/edit it
       ...(typeof provider.getCurrentPort === 'function' && {
         currentPort: provider.getCurrentPort(),
@@ -139,6 +165,7 @@ class ProviderRegistry {
       rateLimits:      provider.getRateLimits(),
       hasFreeFreeTier: provider.hasFreeFreeTier?.() || false,
       conversations:   provider.listConversations(),
+      defaultModel:    provider._customDefaultModel || null,
       ...(typeof provider.getCurrentPort === 'function' && {
         currentPort: provider.getCurrentPort(),
         defaultPort: provider.getDefaultPort(),
@@ -146,13 +173,18 @@ class ProviderRegistry {
     };
   }
 
-  /** Attempt to send a message via a specific provider */
+  /**
+   * Attempt to send a message via a specific provider.
+   * If no model is specified in opts, falls back to the provider's custom default model.
+   */
   async sendMessage(providerName, opts) {
     const provider = this.get(providerName);
     if (!provider.isConfigured()) {
       throw new Error(`Provider "${providerName}" is not configured (no API key)`);
     }
-    return provider.sendMessage(opts);
+    // Resolve model: explicit opts.model wins, then custom default, then provider's own default
+    const resolvedModel = opts.model || provider._customDefaultModel || null;
+    return provider.sendMessage({ ...opts, model: resolvedModel });
   }
 }
 

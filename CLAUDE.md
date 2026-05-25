@@ -19,7 +19,7 @@ These three values must always match each other. When one changes, update all th
 | **Project name (display — short)** | `AIQ Load Manager` |
 | **`package.json` → `"name"`** | `aiq-load-manager` |
 | **`package.json` → `"productName"`** (build section) | `AI Queue Load Manager` |
-| **`package.json` → `"version"`** | `0.3.6` |
+| **`package.json` → `"version"`** | `0.4.0` |
 | **GitHub repo** | https://github.com/LoJMike/AIQLoadManager |
 | **Local path (Windows)** | `C:\Users\mikel\Desktop\AIQLoadManager Project` |
 
@@ -66,6 +66,7 @@ A cross-platform Electron desktop app (Windows 10/11 + macOS) that:
 | Key storage | `electron-store` v8 (CommonJS) |
 | AI SDKs | `@anthropic-ai/sdk`, `openai` (Groq/DeepSeek/Mistral/Grok share it), `@google/generative-ai` |
 | IPC | Electron contextBridge — main ↔ renderer via `window.aiQueue.*` |
+| Analytics | `posthog-node` (app, main process) + PostHog JS snippet (landing page) — anonymous, opt-out |
 
 ---
 
@@ -107,6 +108,29 @@ C:\Users\mikel\Desktop\AIQLoadManager Project\
         QueueSettingsProjects.jsx
         index.js          ← re-exports all components
 ```
+
+---
+
+## Website / landing page
+
+All public-facing web files live in `website/`:
+
+```
+website/
+  index.html          ← Landing page (was landing-page.html in root)
+  landing-page-orig.html ← Archive of the original design
+  screenshots/        ← App screenshots used on the landing page (PNG, 2× retina)
+    README.md         ← Screenshot capture guide and filename conventions
+  assets/             ← Future: logos, fonts, standalone CSS
+```
+
+**Rules for the website folder:**
+- The landing page is self-contained HTML — no build step required
+- Screenshots go in `website/screenshots/` — see `README.md` there for naming conventions and capture instructions
+- The Lemon Squeezy checkout URLs live in the `<script>` block at the bottom of `index.html` — replace the `PASTE_..._CHECKOUT_URL_HERE` placeholders before going live
+- Do **not** move `mockups/` into `website/` — mockups are development references, not public assets
+
+---
 
 ### Legacy files — DO NOT EDIT
 
@@ -300,3 +324,9 @@ Commit message prefixes: `feat:` `fix:` `refactor:` `docs:` `chore:`
 - The file WORKLOG.md tracks all session history
 - At the start of each session, read WORKLOG.md to understand where we left off
 - At the end of each session, update WORKLOG.md with what was completed and next steps
+
+## Changelog
+- The file CHANGELOG.md records all notable changes per session or release
+- Write entries in clear, human-readable language — e.g. "Added X; fixed bug in Y; updated API docs"
+- Add a new entry at the top of CHANGELOG.md whenever a version is bumped or a meaningful feature/fix ships
+- Keep entries concise: one bullet per distinct change, grouped under the version number

@@ -10,10 +10,11 @@ const STATUS_COLORS = {
   cancelled:  'var(--text3)',
 };
 
-export function QueuePanel({ queue, providers, onRefresh, highlightId }) {
+export function QueuePanel({ queue, providers, onRefresh, highlightId, license }) {
   const [filter, setFilter] = useState('all');
   const [expanded, setExpanded] = useState(null);
   const api = window.aiQueue;
+  const canExportDigest = license?.flags?.digestExport;
 
   useEffect(() => {
     if (highlightId) {
@@ -37,6 +38,16 @@ export function QueuePanel({ queue, providers, onRefresh, highlightId }) {
   async function clearDone() { await api.clearCompleted(); onRefresh(); }
   async function reorder(id, dir) { await api.reorderQueue(id, dir); onRefresh(); }
 
+  async function exportDigest() {
+    try {
+      const result = await api.exportDigest({});
+      if (result?.canceled) return;
+      if (!result?.success) throw new Error('Export failed');
+    } catch (e) {
+      alert(e.message || 'Export failed');
+    }
+  }
+
   return (
     <div>
       <div className="panel-header-row">
@@ -44,7 +55,14 @@ export function QueuePanel({ queue, providers, onRefresh, highlightId }) {
           <div className="panel-title">Prompt Queue</div>
           <div className="panel-sub">{counts.pending} pending · {counts.complete} complete · {counts.error} errors</div>
         </div>
-        <button className="secondary" onClick={clearDone}>Clear completed</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {canExportDigest && (
+            <button className="secondary" onClick={exportDigest} title="Export completed items as HTML digest">
+              Export Digest
+            </button>
+          )}
+          <button className="secondary" onClick={clearDone}>Clear completed</button>
+        </div>
       </div>
 
       <div className="segmented-tabs">
@@ -238,11 +256,12 @@ const PROVIDER_TIER_GROUPS = [
 const PROVIDER_GUIDE = {
   // ── Local providers (no API key required) ──────────────────────────────────
   ollama: {
-    installLabel: 'Download Ollama',
-    installLink:  'https://ollama.com',
-    docsLink:     'https://ollama.com/library',
-    setupText:    'Download and install Ollama, then pull a model to get started.',
-    quickstart:   'Run in your terminal:  ollama pull llama3.2',
+    installLabel:   'Download Ollama',
+    installLink:    'https://ollama.com',
+    setupGuideLink: 'https://ollama.com/docs/tutorials/getting-started',
+    docsLink:       'https://ollama.com/library',
+    setupText:      'Download and install Ollama, then pull a model to get started.',
+    quickstart:     'Run in your terminal:  ollama pull llama3.2',
     localNote:    'Models are detected automatically when Ollama is running. Pull any model from ollama.com/library and it will appear here on next use.',
     limits: [
       { label: 'Cost per request', value: '$0.00',  note: 'All computation runs on your hardware' },
@@ -252,11 +271,12 @@ const PROVIDER_GUIDE = {
     ],
   },
   lmstudio: {
-    installLabel: 'Download LM Studio',
-    installLink:  'https://lmstudio.ai',
-    docsLink:     'https://lmstudio.ai/docs',
-    setupText:    'Download and install LM Studio, load a model, then open the Developer tab and start the Local Server.',
-    quickstart:   'In LM Studio: load a model → Developer tab → Start Server.',
+    installLabel:   'Download LM Studio',
+    installLink:    'https://lmstudio.ai',
+    setupGuideLink: 'https://lmstudio.ai/docs',
+    docsLink:       'https://lmstudio.ai/docs',
+    setupText:      'Download and install LM Studio, load a model, then open the Developer tab and start the Local Server.',
+    quickstart:     'In LM Studio: load a model → Developer tab → Start Server.',
     localNote:    'Models are detected automatically from the running LM Studio server. Load a model in LM Studio\'s model browser to get started.',
     limits: [
       { label: 'Cost per request', value: '$0.00',  note: 'All computation runs on your hardware' },
@@ -266,11 +286,12 @@ const PROVIDER_GUIDE = {
     ],
   },
   jan: {
-    installLabel: 'Download Jan.ai',
-    installLink:  'https://jan.ai',
-    docsLink:     'https://jan.ai/docs',
-    setupText:    'Download and install Jan.ai, download a model from the Hub, then go to Settings → Local API Server → Start.',
-    quickstart:   'Jan app → Settings → Local API Server → Start Server.',
+    installLabel:   'Download Jan.ai',
+    installLink:    'https://jan.ai',
+    setupGuideLink: 'https://jan.ai/docs',
+    docsLink:       'https://jan.ai/docs',
+    setupText:      'Download and install Jan.ai, download a model from the Hub, then go to Settings → Local API Server → Start.',
+    quickstart:     'Jan app → Settings → Local API Server → Start Server.',
     localNote:    'Models are detected automatically from the running Jan.ai server. Download models from Jan\'s Hub to add them to your library.',
     limits: [
       { label: 'Cost per request', value: '$0.00',  note: 'All computation runs on your hardware' },
@@ -280,11 +301,12 @@ const PROVIDER_GUIDE = {
     ],
   },
   localai: {
-    installLabel: 'LocalAI Setup Guide',
-    installLink:  'https://localai.io/basics/getting_started/',
-    docsLink:     'https://localai.io/models/',
-    setupText:    'Install LocalAI (Docker or binary), add model files to its models/ directory, then start the server. It exposes an OpenAI-compatible API automatically.',
-    quickstart:   'docker run -p 8080:8080 localai/localai:latest',
+    installLabel:   'LocalAI on GitHub',
+    installLink:    'https://github.com/mudler/LocalAI',
+    setupGuideLink: 'https://localai.io/basics/getting_started/',
+    docsLink:       'https://localai.io/models/',
+    setupText:      'Install LocalAI (Docker or binary), add model files to its models/ directory, then start the server. It exposes an OpenAI-compatible API automatically.',
+    quickstart:     'docker run -p 8080:8080 localai/localai:latest',
     localNote:    'Models are detected automatically from the running LocalAI server. Model IDs match the filenames in your models/ directory. Multiple models can run simultaneously.',
     limits: [
       { label: 'Cost per request', value: '$0.00',  note: 'All computation runs on your hardware' },
@@ -294,11 +316,12 @@ const PROVIDER_GUIDE = {
     ],
   },
   llamacpp: {
-    installLabel: 'llama.cpp Releases',
-    installLink:  'https://github.com/ggerganov/llama.cpp/releases',
-    docsLink:     'https://github.com/ggerganov/llama.cpp/blob/master/examples/server/README.md',
-    setupText:    'Download a llama.cpp release binary (or build from source), then launch llama-server with your .gguf model file. One model loads at a time — restart the server to change models.',
-    quickstart:   'llama-server -m model.gguf --port 8181 --ctx-size 4096',
+    installLabel:   'llama.cpp Releases',
+    installLink:    'https://github.com/ggerganov/llama.cpp/releases',
+    setupGuideLink: 'https://github.com/ggerganov/llama.cpp/blob/master/examples/server/README.md',
+    docsLink:       'https://github.com/ggerganov/llama.cpp/blob/master/examples/server/README.md',
+    setupText:      'Download a llama.cpp release binary (or build from source), then launch llama-server with your .gguf model file. One model loads at a time — restart the server to change models.',
+    quickstart:     'llama-server -m model.gguf --port 8181 --ctx-size 4096',
     localNote:    'llama.cpp loads one model at a time. The active model is detected automatically. To switch models, stop the server and restart it with a different .gguf file.',
     limits: [
       { label: 'Cost per request', value: '$0.00',  note: 'All computation runs on your hardware'   },
@@ -409,13 +432,25 @@ const PROVIDER_GUIDE = {
   },
 };
 
-function ProviderSettingsCard({ provider, onSaveKey, onRemoveKey, onSaveBudget, onSavePort, keyValue, setKeyValue, budgetValue, setBudgetValue, savedBudget, showToast }) {
-  const [expanded,  setExpanded]  = useState(false);
-  const [showKey,   setShowKey]   = useState(false);
-  const [portValue, setPortValue] = useState('');
+function ProviderSettingsCard({ provider, onSaveKey, onRemoveKey, onSaveBudget, onSavePort, keyValue, setKeyValue, budgetValue, setBudgetValue, savedBudget, showToast, licenseFlags, providerStyle, onSaveProviderStyle, defaultModel, onSaveDefaultModel }) {
+  const [expanded,     setExpanded]     = useState(false);
+  const [showKey,      setShowKey]      = useState(false);
+  const [portValue,    setPortValue]    = useState('');
+  const [stylePreset,  setStylePreset]  = useState(providerStyle?.preset  || 'normal');
+  const [customStyle,  setCustomStyle]  = useState(providerStyle?.customText || '');
+  const [modelDraft,   setModelDraft]   = useState(defaultModel || '');
   const guide    = PROVIDER_GUIDE[provider.name] || {};
   const api      = window.aiQueue;
   const isLocal  = !!provider.local;  // local providers — no API key needed
+
+  const STYLE_PRESETS = [
+    { id: 'normal',  label: 'Normal',      desc: 'Default model behaviour' },
+    { id: 'concise', label: 'Concise',     desc: 'Short answers, no padding' },
+    { id: 'caveman', label: 'Caveman',     desc: 'Extremely simple words' },
+    { id: 'bullet',  label: 'Bullet-only', desc: 'Lists only, no prose' },
+    { id: 'eli5',    label: 'ELI5',        desc: 'Explain like I\'m 5' },
+    { id: 'custom',  label: 'Custom',      desc: 'Your own instructions' },
+  ];
 
   // true when budget is explicitly set to $0 (hard spend block)
   const isSpendBlocked = !isLocal && savedBudget === 0;
@@ -451,10 +486,18 @@ function ProviderSettingsCard({ provider, onSaveKey, onRemoveKey, onSaveBudget, 
         </div>
         <div className="sc-links">
           {isLocal ? (
-            <button className="ghost" style={{ fontSize: 11 }}
-              onClick={e => { e.stopPropagation(); api.openExternal(guide.installLink); }}>
-              {guide.installLabel} ↗
-            </button>
+            <>
+              <button className="ghost" style={{ fontSize: 11 }}
+                onClick={e => { e.stopPropagation(); api.openExternal(guide.installLink); }}>
+                {guide.installLabel} ↗
+              </button>
+              {guide.setupGuideLink && (
+                <button className="ghost" style={{ fontSize: 11 }}
+                  onClick={e => { e.stopPropagation(); api.openExternal(guide.setupGuideLink); }}>
+                  Setup guide ↗
+                </button>
+              )}
+            </>
           ) : (
             <>
               <button className="ghost" style={{ fontSize: 11 }}
@@ -574,6 +617,37 @@ function ProviderSettingsCard({ provider, onSaveKey, onRemoveKey, onSaveBudget, 
                   ))}
                 </div>
               </div>
+
+              {/* Response Style */}
+              <div className="sc-section">
+                <div className="sc-section-title">Response Style</div>
+                <div className="sc-help">Set a tone or format modifier appended to every prompt sent to this provider.</div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+                  {STYLE_PRESETS.map(p => (
+                    <button
+                      key={p.id}
+                      className={stylePreset === p.id ? 'primary' : 'secondary'}
+                      style={{ fontSize: 11, padding: '4px 10px' }}
+                      title={p.desc}
+                      onClick={() => setStylePreset(p.id)}
+                    >{p.label}</button>
+                  ))}
+                </div>
+                {stylePreset === 'custom' && (
+                  <textarea
+                    rows={3}
+                    placeholder="Write your custom style instruction…"
+                    value={customStyle}
+                    onChange={e => setCustomStyle(e.target.value)}
+                    style={{ marginTop: 8, width: '100%', resize: 'vertical', fontSize: 12 }}
+                  />
+                )}
+                <button
+                  className="primary"
+                  style={{ marginTop: 8, fontSize: 12 }}
+                  onClick={() => onSaveProviderStyle(provider.name, stylePreset, customStyle)}
+                >Save Style</button>
+              </div>
             </>
           ) : (
             /* ════════════════════════════════════════════
@@ -651,37 +725,53 @@ function ProviderSettingsCard({ provider, onSaveKey, onRemoveKey, onSaveBudget, 
                 <div className="sc-section-title">Monthly Spend Budget</div>
                 <div className="sc-help">
                   The queue tracks your estimated spend based on tokens used.
-                  You can set a monthly cap, block spending entirely, or leave it uncapped.
+                  {licenseFlags?.budgetCaps
+                    ? ' You can set a monthly cap, block spending entirely, or leave it uncapped.'
+                    : ' Upgrade to Pro to set monthly caps and overage alerts.'}
                 </div>
-                <div style={{ marginTop: 8, marginBottom: 2, fontSize: 12, color: 'var(--text2)', lineHeight: 1.6 }}>
-                  <span style={{ color: 'var(--danger)', fontWeight: 600 }}>0</span> = block all spending (no requests sent to this provider)
-                  &nbsp;·&nbsp;
-                  <span style={{ fontWeight: 600 }}>blank</span> = no limit
-                  &nbsp;·&nbsp;
-                  <span style={{ fontWeight: 600 }}>positive number</span> = monthly cap
-                </div>
-                <div className="sc-budget-tip">💡 {guide.budgetTip}</div>
-                {isSpendBlocked && (
-                  <div style={{ marginTop: 8, padding: '7px 12px', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.25)', borderRadius: 6, fontSize: 12, color: 'var(--danger)' }}>
-                    ⛔ Spending is currently blocked on this provider. No requests will be sent until you change the budget.
+
+                {/* Free / Starter: view-only spend notice */}
+                {licenseFlags && !licenseFlags.budgetCaps && (
+                  <div style={{ marginTop: 8, padding: '8px 12px', background: 'rgba(124,92,255,0.07)', border: '1px solid rgba(124,92,255,0.20)', borderRadius: 6, fontSize: 12, color: 'var(--text2)', lineHeight: 1.6 }}>
+                    <span style={{ fontWeight: 600, color: 'var(--accent)' }}>Budget visibility (view-only)</span>
+                    {' — '}Your estimated spend is tracked and visible in the Usage Dashboard. Upgrade to <strong>Pro</strong> to set monthly caps and block overspend.
                   </div>
                 )}
-                <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
-                  <span style={{ color: 'var(--text3)', fontSize: 14, flexShrink: 0 }}>$</span>
-                  <input
-                    type="number" min={0} step={1}
-                    placeholder="blank = no limit  ·  0 = block"
-                    value={budgetValue ?? ''}
-                    onChange={e => setBudgetValue(e.target.value)}
-                    style={{ maxWidth: 200 }}
-                  />
-                  <span style={{ color: 'var(--text3)', fontSize: 12, flexShrink: 0 }}>USD / month</span>
-                  <button
-                    className="primary"
-                    style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
-                    onClick={() => onSaveBudget(provider.name)}
-                  >Set Budget</button>
-                </div>
+
+                {/* Pro+: full budget controls */}
+                {(!licenseFlags || licenseFlags.budgetCaps) && (
+                  <>
+                    <div style={{ marginTop: 8, marginBottom: 2, fontSize: 12, color: 'var(--text2)', lineHeight: 1.6 }}>
+                      <span style={{ color: 'var(--danger)', fontWeight: 600 }}>0</span> = block all spending (no requests sent to this provider)
+                      &nbsp;·&nbsp;
+                      <span style={{ fontWeight: 600 }}>blank</span> = no limit
+                      &nbsp;·&nbsp;
+                      <span style={{ fontWeight: 600 }}>positive number</span> = monthly cap
+                    </div>
+                    <div className="sc-budget-tip">💡 {guide.budgetTip}</div>
+                    {isSpendBlocked && (
+                      <div style={{ marginTop: 8, padding: '7px 12px', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.25)', borderRadius: 6, fontSize: 12, color: 'var(--danger)' }}>
+                        ⛔ Spending is currently blocked on this provider. No requests will be sent until you change the budget.
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+                      <span style={{ color: 'var(--text3)', fontSize: 14, flexShrink: 0 }}>$</span>
+                      <input
+                        type="number" min={0} step={1}
+                        placeholder="blank = no limit  ·  0 = block"
+                        value={budgetValue ?? ''}
+                        onChange={e => setBudgetValue(e.target.value)}
+                        style={{ maxWidth: 200 }}
+                      />
+                      <span style={{ color: 'var(--text3)', fontSize: 12, flexShrink: 0 }}>USD / month</span>
+                      <button
+                        className="primary"
+                        style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+                        onClick={() => onSaveBudget(provider.name)}
+                      >Set Budget</button>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Models & pricing */}
@@ -698,6 +788,83 @@ function ProviderSettingsCard({ provider, onSaveKey, onRemoveKey, onSaveBudget, 
                   ))}
                 </div>
               </div>
+
+              {/* Default Model — Pro+ only */}
+              <div className="sc-section">
+                <div className="sc-section-title">Default Model</div>
+                {licenseFlags?.modelControl ? (
+                  <>
+                    <div className="sc-help">
+                      Override the model used when no model is specified in the queue item.
+                      {provider.defaultModel && (
+                        <span style={{ color: 'var(--accent)', marginLeft: 4 }}>
+                          Currently: <strong>{provider.defaultModel}</strong>
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <select
+                        value={modelDraft}
+                        onChange={e => setModelDraft(e.target.value)}
+                        style={{ flex: 1, minWidth: 180 }}
+                      >
+                        <option value="">— provider default —</option>
+                        {(provider.models || []).map(m => (
+                          <option key={m.id} value={m.id}>{m.name}</option>
+                        ))}
+                      </select>
+                      <button
+                        className="primary"
+                        style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+                        onClick={() => onSaveDefaultModel(provider.name, modelDraft || null)}
+                      >Set Default</button>
+                      {provider.defaultModel && (
+                        <button
+                          className="secondary"
+                          style={{ fontSize: 11, flexShrink: 0 }}
+                          onClick={() => { setModelDraft(''); onSaveDefaultModel(provider.name, null); }}
+                        >Clear</button>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ marginTop: 6, padding: '8px 12px', background: 'rgba(124,92,255,0.07)', border: '1px solid rgba(124,92,255,0.20)', borderRadius: 6, fontSize: 12, color: 'var(--text2)' }}>
+                    <span style={{ fontWeight: 600, color: 'var(--accent)' }}>Pro feature</span>
+                    {' — '}Upgrade to <strong>Pro</strong> to set a per-provider default model.
+                  </div>
+                )}
+              </div>
+
+              {/* Response Style */}
+              <div className="sc-section">
+                <div className="sc-section-title">Response Style</div>
+                <div className="sc-help">Set a tone or format modifier appended to every prompt sent to this provider.</div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+                  {STYLE_PRESETS.map(p => (
+                    <button
+                      key={p.id}
+                      className={stylePreset === p.id ? 'primary' : 'secondary'}
+                      style={{ fontSize: 11, padding: '4px 10px' }}
+                      title={p.desc}
+                      onClick={() => setStylePreset(p.id)}
+                    >{p.label}</button>
+                  ))}
+                </div>
+                {stylePreset === 'custom' && (
+                  <textarea
+                    rows={3}
+                    placeholder="Write your custom style instruction…"
+                    value={customStyle}
+                    onChange={e => setCustomStyle(e.target.value)}
+                    style={{ marginTop: 8, width: '100%', resize: 'vertical', fontSize: 12 }}
+                  />
+                )}
+                <button
+                  className="primary"
+                  style={{ marginTop: 8, fontSize: 12 }}
+                  onClick={() => onSaveProviderStyle(provider.name, stylePreset, customStyle)}
+                >Save Style</button>
+              </div>
             </>
           )}
 
@@ -712,16 +879,30 @@ export function SettingsPanel({ providers, onRefresh, showToast }) {
   const [keys,          setKeys]          = useState({});
   const [budgets,       setBudgets]       = useState({});
   const [savedBudgets,  setSavedBudgets]  = useState({});
+  const [licenseFlags,  setLicenseFlags]  = useState(null);   // loaded async
   // Web search state
   const [searchConfig,    setSearchConfig]    = useState({ backend: 'none', tavilyConfigured: false, searxngUrl: 'http://localhost:8888', configured: false });
   const [searchKeyInput,  setSearchKeyInput]  = useState('');
   const [showSearchKey,   setShowSearchKey]   = useState(false);
   const [searxngUrlInput, setSearxngUrlInput] = useState('');
+  // Analytics opt-out state
+  const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
+  // Standing instructions state
+  const [standingInstructions,      setStandingInstructions]      = useState('');
+  const [standingInstructionsDraft, setStandingInstructionsDraft] = useState('');
+  // Response style presets — { providerName: { preset, customText } }
+  const [providerStyles,  setProviderStyles]  = useState({});
+  // Per-provider default models — { providerName: modelId }
+  const [defaultModels,   setDefaultModels]   = useState({});
 
   const api = window.aiQueue;
 
-  // Load saved budgets once on mount so inputs reflect current state
+  // Load saved budgets and license once on mount
   useEffect(() => {
+    api.getLicense?.().then(lic => {
+      if (lic?.flags) setLicenseFlags(lic.flags);
+    }).catch(() => {});
+
     api.getBudgets().then(b => {
       const asStrings = {};
       for (const [k, v] of Object.entries(b)) {
@@ -740,6 +921,27 @@ export function SettingsPanel({ providers, onRefresh, showToast }) {
     // Load web search config
     api.getSearchConfig?.().then(cfg => {
       if (cfg) setSearchConfig(cfg);
+    }).catch(() => {});
+
+    // Load analytics opt-out preference
+    api.getAnalyticsEnabled?.().then(enabled => {
+      setAnalyticsEnabled(enabled);
+    }).catch(() => {});
+
+    // Load standing instructions
+    api.getStandingInstructions?.().then(text => {
+      setStandingInstructions(text || '');
+      setStandingInstructionsDraft(text || '');
+    }).catch(() => {});
+
+    // Load response style presets
+    api.getProviderStyles?.().then(styles => {
+      if (styles) setProviderStyles(styles);
+    }).catch(() => {});
+
+    // Load per-provider default models
+    api.getDefaultModels?.().then(models => {
+      if (models) setDefaultModels(models);
     }).catch(() => {});
   }, []);
 
@@ -829,6 +1031,39 @@ export function SettingsPanel({ providers, onRefresh, showToast }) {
     }
   }
 
+  async function onSaveProviderStyle(providerName, preset, customText) {
+    try {
+      await api.setProviderStyle?.(providerName, preset, customText || '');
+      setProviderStyles(prev => {
+        const next = { ...prev };
+        if (!preset || preset === 'normal') {
+          delete next[providerName];
+        } else {
+          next[providerName] = { preset, customText: customText || '' };
+        }
+        return next;
+      });
+      showToast(`✓ Response style saved for ${providerName}`, 'success');
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  }
+
+  async function onSaveDefaultModel(providerName, model) {
+    try {
+      await api.setDefaultModel?.(providerName, model || '');
+      setDefaultModels(prev => {
+        const next = { ...prev };
+        if (model) next[providerName] = model;
+        else delete next[providerName];
+        return next;
+      });
+      showToast(model ? `✓ Default model set to ${model} for ${providerName}` : `Default model cleared for ${providerName}`, 'success');
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  }
+
   // Cloud providers that still need configuration (local providers are always ready)
   const cloudConfigured = providers.filter(p => !p.local && p.configured).length;
   const cloudTotal      = providers.filter(p => !p.local).length;
@@ -848,6 +1083,11 @@ export function SettingsPanel({ providers, onRefresh, showToast }) {
       setBudgetValue={v => setBudgets(b => ({ ...b, [p.name]: v }))}
       savedBudget={savedBudgets[p.name]}
       showToast={showToast}
+      licenseFlags={licenseFlags}
+      providerStyle={providerStyles[p.name] || null}
+      onSaveProviderStyle={onSaveProviderStyle}
+      defaultModel={defaultModels[p.name] || p.defaultModel || null}
+      onSaveDefaultModel={onSaveDefaultModel}
     />
   );
 
@@ -1058,16 +1298,114 @@ export function SettingsPanel({ providers, onRefresh, showToast }) {
         </div>
       </div>
 
+      {/* ── Standing Instructions ─────────────────────────────────────────── */}
+      <div className="settings-section">
+        <div className="settings-section-title">Standing Instructions</div>
+        <div className="card card-spaced">
+          <div style={{ fontSize: '0.82rem', color: 'var(--text2)', lineHeight: 1.6, marginBottom: 10 }}>
+            These instructions are automatically prepended to the system prompt of <strong>every prompt you queue</strong> — across all providers.
+            Think of it as a global CLAUDE.md: use it to set your preferred tone, output format, language, or any standing rules that apply to all your AI interactions.
+          </div>
+          {standingInstructions && standingInstructionsDraft === standingInstructions && (
+            <div style={{ marginBottom: 8, padding: '6px 10px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.22)', borderRadius: 6, fontSize: 11, color: 'var(--success)' }}>
+              ✓ Active — prepended to every queued prompt
+            </div>
+          )}
+          <textarea
+            rows={5}
+            placeholder={'Examples:\n• Always reply in British English.\n• Keep answers concise — no more than 3 paragraphs.\n• Format code blocks with syntax highlighting.\n• You are a helpful assistant for a software team.'}
+            value={standingInstructionsDraft}
+            onChange={e => setStandingInstructionsDraft(e.target.value)}
+            style={{ width: '100%', resize: 'vertical', fontFamily: 'monospace', fontSize: 12, lineHeight: 1.6 }}
+          />
+          <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+            <button
+              className="primary"
+              disabled={standingInstructionsDraft === standingInstructions}
+              onClick={async () => {
+                try {
+                  await api.setStandingInstructions?.(standingInstructionsDraft);
+                  setStandingInstructions(standingInstructionsDraft);
+                  showToast(
+                    standingInstructionsDraft.trim()
+                      ? '✓ Standing instructions saved — applied to all future prompts'
+                      : 'Standing instructions cleared',
+                    'success'
+                  );
+                } catch (e) { showToast(e.message, 'error'); }
+              }}
+            >Save Instructions</button>
+            {standingInstructions && (
+              <button
+                className="secondary"
+                style={{ color: 'var(--danger)' }}
+                onClick={async () => {
+                  try {
+                    await api.setStandingInstructions?.('');
+                    setStandingInstructions('');
+                    setStandingInstructionsDraft('');
+                    showToast('Standing instructions cleared', 'info');
+                  } catch (e) { showToast(e.message, 'error'); }
+                }}
+              >Clear</button>
+            )}
+            <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text3)' }}>
+              {standingInstructionsDraft.trim().length} chars
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Analytics opt-out ──────────────────────────────────────────────── */}
+      <div className="settings-section">
+        <div className="settings-section-title">Analytics</div>
+        <div className="card card-spaced" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--text1)', marginBottom: 6 }}>
+              Anonymous usage analytics
+            </div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text2)', lineHeight: 1.6 }}>
+              Helps improve AIQ by tracking which features are used (routing modes, providers configured, prompts queued).
+              No prompt content, no API keys, no personal data — ever. A random device ID is used; it cannot be traced back to you.
+            </div>
+          </div>
+          <button
+            onClick={async () => {
+              const next = !analyticsEnabled;
+              setAnalyticsEnabled(next);
+              await api.setAnalyticsEnabled?.(next);
+              showToast(next ? 'Analytics enabled — thank you!' : 'Analytics disabled', 'info');
+            }}
+            style={{
+              flexShrink: 0,
+              padding: '6px 16px',
+              borderRadius: 8,
+              border: `1.5px solid ${analyticsEnabled ? 'var(--accent)' : 'var(--border)'}`,
+              background: analyticsEnabled ? 'rgba(99,102,241,0.12)' : 'transparent',
+              color: analyticsEnabled ? 'var(--accent)' : 'var(--text2)',
+              cursor: 'pointer',
+              fontWeight: 600,
+              fontSize: '0.82rem',
+              transition: 'all 150ms ease',
+            }}
+          >
+            {analyticsEnabled ? '● Enabled' : '○ Disabled'}
+          </button>
+        </div>
+      </div>
+
     </div>
   );
 }
 
 // ─── ProjectsPanel ────────────────────────────────────────────────────────────
 
-export function ProjectsPanel({ projects, providers, onRefresh }) {
-  const [name,  setName]  = useState('');
-  const [desc,  setDesc]  = useState('');
-  const [color, setColor] = useState('#6366f1');
+export function ProjectsPanel({ projects, providers, onRefresh, license }) {
+  const [name,        setName]        = useState('');
+  const [desc,        setDesc]        = useState('');
+  const [color,       setColor]       = useState('#6366f1');
+  // history state: { [projectId]: { loading, items, open } }
+  const [historyMap,  setHistoryMap]  = useState({});
   const api = window.aiQueue;
 
   const COLORS = ['#6366f1','#10a37f','#d97757','#f55036','#4285f4','#ff7000','#ec4899'];
@@ -1083,6 +1421,23 @@ export function ProjectsPanel({ projects, providers, onRefresh }) {
   async function del(id) {
     await api.deleteProject(id);
     onRefresh();
+  }
+
+  async function toggleHistory(projectId) {
+    const current = historyMap[projectId];
+    // If already open, close it
+    if (current?.open) {
+      setHistoryMap(m => ({ ...m, [projectId]: { ...m[projectId], open: false } }));
+      return;
+    }
+    // Mark loading
+    setHistoryMap(m => ({ ...m, [projectId]: { loading: true, items: [], open: true } }));
+    try {
+      const items = await api.getProjectHistory?.(projectId) || [];
+      setHistoryMap(m => ({ ...m, [projectId]: { loading: false, items, open: true } }));
+    } catch (_) {
+      setHistoryMap(m => ({ ...m, [projectId]: { loading: false, items: [], open: true } }));
+    }
   }
 
   return (
@@ -1122,18 +1477,63 @@ export function ProjectsPanel({ projects, providers, onRefresh }) {
       )}
 
       <div className="grid-2">
-        {projects.map(p => (
-          <div key={p.id} className="card project-card" style={{ borderLeftColor: p.color }}>
-            <div className="project-card-header">
-              <span className="project-card-name">{p.name}</span>
-              <button className="ghost" style={{ color: 'var(--danger)' }} onClick={() => del(p.id)}>✕</button>
+        {projects.map(p => {
+          const hist = historyMap[p.id] || {};
+          return (
+            <div key={p.id} className="card project-card" style={{ borderLeftColor: p.color }}>
+              <div className="project-card-header">
+                <span className="project-card-name">{p.name}</span>
+                <button className="ghost" style={{ color: 'var(--danger)' }} onClick={() => del(p.id)}>✕</button>
+              </div>
+              {p.description && <div className="project-card-desc">{p.description}</div>}
+              <div className="project-card-date" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Created {new Date(p.created_at).toLocaleDateString()}</span>
+                <button
+                  className="ghost"
+                  style={{ fontSize: 11, color: 'var(--accent)' }}
+                  onClick={() => toggleHistory(p.id)}
+                >
+                  {hist.open ? '▲ Hide history' : '▼ View history'}
+                </button>
+              </div>
+
+              {/* Project History */}
+              {hist.open && (
+                <div style={{ marginTop: 10, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
+                  {hist.loading && (
+                    <div style={{ color: 'var(--text3)', fontSize: 12 }}>Loading…</div>
+                  )}
+                  {!hist.loading && hist.items.length === 0 && (
+                    <div style={{ color: 'var(--text3)', fontSize: 12 }}>No completed prompts in this project yet.</div>
+                  )}
+                  {!hist.loading && hist.items.map(item => (
+                    <div key={item.id} style={{ marginBottom: 10, padding: '8px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 6, borderLeft: `3px solid ${p.color}` }}>
+                      <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 3 }}>
+                        {item.used_provider || item.provider} · {item.used_model || item.model} · {item.completed_at ? new Date(item.completed_at).toLocaleString() : ''}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 4, fontStyle: 'italic' }}>
+                        {(item.label || item.prompt).slice(0, 120)}{(item.label || item.prompt).length > 120 ? '…' : ''}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--text1)', whiteSpace: 'pre-wrap', maxHeight: 120, overflow: 'auto' }}>
+                        {(() => {
+                          try {
+                            const arr = JSON.parse(item.response || '');
+                            if (Array.isArray(arr)) return arr.map(r => `[${r.provider}] ${r.response || r.error || ''}`).join('\n\n');
+                          } catch (_) {}
+                          return (item.response || '').slice(0, 400);
+                        })()}
+                      </div>
+                      <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 4 }}>
+                        {item.input_tokens || 0} in · {item.output_tokens || 0} out tokens
+                        {item.cost_usd ? ` · $${item.cost_usd.toFixed(6)}` : ''}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            {p.description && <div className="project-card-desc">{p.description}</div>}
-            <div className="project-card-date">
-              Created {new Date(p.created_at).toLocaleDateString()}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

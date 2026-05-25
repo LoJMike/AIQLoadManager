@@ -1,5 +1,174 @@
 # Work Log — AI Queue Load Manager
 
+## Session 18 — 2026-05-25
+**Goal:** Implement 4 new features (response style presets, per-provider default model, project history, digest export) and add 2 roadmap items (document context injection, email digest).
+
+**Completed:**
+- [x] **Feature 1 — Per-provider response style presets (all tiers):** Added 6 preset options per provider — Normal, Concise, Caveman, Bullet-only, ELI5, Custom. Style text is appended to the system prompt after standing instructions so user instructions still take precedence. `PRESET_TEXTS` map in `index-v2.js`; `computeStyleText()` helper; `providerStyles` property + `setProviderStyles()` in `MultiQueueManager`; style injected in `_processItem` after standing instructions; `responseStyle.*` persisted in `electron-store`, hot-loaded on startup. IPC handlers: `get-provider-styles` / `set-provider-style`. UI: Response Style section added to both local and cloud provider cards in Settings (preset buttons + custom textarea + Save button). Available on all tiers — no gate.
+- [x] **Feature 2 — Document context injection (roadmap, Pro+):** Added to roadmap only. Not implemented. Marked in README and landing-page as a Pro-tier roadmap item.
+- [x] **Feature 3 — Per-provider default model (Pro+ only):** `BaseProvider` gained `_customDefaultModel` property and `setDefaultModel()` method. `ProviderRegistry` gained `setDefaultModel(name, model)`, `getDefaultModels()`, and modified `sendMessage()` to resolve `opts.model → provider._customDefaultModel → null` in that order. `defaultModel` added to `getProviderSummaries()` and `getProviderSummary()`. Persisted in `electron-store` (`defaultModels.*`), hot-loaded on startup. IPC: `get-default-models` / `set-default-model` (license-gated to `modelControl` flag, Pro+). UI: Default Model dropdown in cloud provider cards — gated behind `licenseFlags.modelControl`; shows upgrade prompt on Free/Starter.
+- [x] **Feature 4 — Per-project response history (all tiers):** `MultiQueueManager.getProjectHistory(projectId)` queries completed items for a project newest-first. IPC handler `get-project-history`. UI: "View history / Hide history" toggle button on each project card in ProjectsPanel; loads and displays response items lazily with provider/model/timestamp/snippet/tokens. Available on all tiers.
+- [x] **Feature 5 — Digest file export (Starter+):** `MultiQueueManager.getQueueForExport({ since, until, projectId })` returns completed items with optional date/project filters. `generateDigestHtml()` helper in `index-v2.js` produces a styled dark-theme HTML report with summary stats (count, tokens, cost) and collapsible prompt/response sections; handles compare-mode JSON responses. `export-digest` IPC handler: license-gates to `digestExport` flag (Starter+), calls `dialog.showSaveDialog`, `fs.writeFileSync`, `shell.openPath`. Exposed in preload. UI: "Export Digest" button in QueuePanel header (hidden on Free tier), calls `exportDigest({})` and opens native save dialog.
+- [x] **Feature 5 roadmap — Email digest (roadmap, Pro+):** Added to roadmap in README and landing-page.
+- [x] **licenseChecker.js** — Added `modelControl`, `digestExport`, `responseStylePresets`, `projectHistory` flags to all 5 tier flag sets (FREE, STARTER, PRO, PRO_PLUS, TEAM) and to `FLAG_LABELS`.
+- [x] Updated `README.md`, `landing-page.html`, `WORKLOG.md`
+
+**Decisions Made:**
+- Style text appended AFTER user system prompt (not prepended) — user instructions always win; style is a modifier.
+- Default model resolution: `opts.model → _customDefaultModel → null` — explicit per-item selection always overrides the default.
+- Default model set via `ProviderRegistry.sendMessage()` injection rather than modifying all 5+ concrete provider classes.
+- Digest export uses `dialog.showSaveDialog` + `fs.writeFileSync` + `shell.openPath` — no extra npm packages.
+- Project history loaded lazily (on button click), not on panel mount — avoids expensive queries for users with large histories.
+- Compare-mode JSON responses rendered in both digest and history view as per-provider blocks.
+
+**Next Steps:**
+- [ ] Add date-range / project filter controls to Export Digest dialog (currently exports all completed items)
+- [ ] Show retry count badge on queue items in QueuePanel UI
+- [ ] Document context injection — implement for Pro tier when ready (roadmap)
+- [ ] Email digest — implement for Pro+ when ready (roadmap)
+
+**Files Changed:**
+- `src/main/licenseChecker.js`
+- `src/main/multiQueueManager.js`
+- `src/main/providers/baseProvider.js`
+- `src/main/providers/providerRegistry.js`
+- `src/main/index-v2.js`
+- `src/main/preload-v2.js`
+- `src/renderer/App.jsx`
+- `src/renderer/components/QueueSettingsProjects.jsx`
+- `README.md`
+- `landing-page.html`
+- `WORKLOG.md`
+
+---
+
+## Session 17 — 2026-05-24
+**Goal:** Implement auto-retry on transient failures, global standing instructions, and local-provider setup guide links. Update README.md and landing-page.html to reflect new features.
+**Completed:**
+- [x] **Auto-retry** — added `retry_count` and `max_retries` columns to `queue_items` (schema + silent migrations for existing DBs). Added `_isRetryable(err)` classifier in `MultiQueueManager` that returns `true` for network errors, timeouts, and 5xx responses and `false` for auth failures, budget blocks, and "not configured" errors. In `_processItem` catch block, retryable failures now reset to `pending` with incremented `retry_count` (up to 3) instead of going straight to `error`. Manual `retryItem()` now also resets `retry_count` to 0 so the counter is fresh. Queue push event for auto-retry is `retry-auto` with `attempt`/`maxRetries` payload.
+- [x] **Standing instructions** — `MultiQueueManager` gained `standingInstructions` property and `setStandingInstructions(text)` method. In `_processItem`, standing instructions are prepended to the final system prompt (before per-item system prompt). `index-v2.js` loads persisted instructions from `electron-store` on startup and calls `queue.setStandingInstructions()`. IPC handlers `get-standing-instructions` / `set-standing-instructions` added. Exposed in `preload-v2.js` contextBridge. UI added to `QueueSettingsProjects.jsx` SettingsPanel as a new "Standing Instructions" section with a textarea, Save/Clear buttons, character count, and an active-state indicator.
+- [x] **Local provider setup guide links** — added `setupGuideLink` field to all 5 local providers in `PROVIDER_GUIDE` (Ollama, LM Studio, Jan.ai, LocalAI, llama.cpp). Added a second "Setup guide ↗" ghost button in the card header `sc-links` section for local providers (alongside the existing download link).
+- [x] Updated `README.md` — new rows in Features table, dedicated "Auto-retry on failure" and "Standing instructions" sections with full documentation, updated local AI providers section noting setup guide links.
+- [x] Updated `landing-page.html` — two new feature cards (🔁 Auto-retry, 📋 Standing instructions), two new rows in the full feature compare table (both marked ✓ across all tiers).
+**Decisions Made:**
+- Retryable vs. non-retryable split on HTTP status and error message pattern — no hard dependency on provider-specific error classes, so the logic works across all 12 providers without per-provider changes.
+- Standing instructions stored in `electron-store` (not SQLite) so they survive app restarts and are available before the queue DB is opened; `queue.setStandingInstructions()` is called immediately on startup to hot-load the saved value.
+- Setup guide links use official provider docs rather than third-party tutorials — less likely to go stale.
+- No version bump for this session — these are additive features with no breaking changes. Version bump to happen when a more significant milestone is reached or on next release.
+**Next Steps:**
+- [ ] Show retry count in Queue panel UI (e.g., "Retry 2/3" badge on the item)
+- [ ] Consider per-project standing instructions as a future enhancement (override global for a specific project)
+- [ ] Create Pro+ product in Lemon Squeezy when ready to launch
+**Files Changed:**
+- `src/main/multiQueueManager.js`
+- `src/main/index-v2.js`
+- `src/main/preload-v2.js`
+- `src/renderer/components/QueueSettingsProjects.jsx`
+- `README.md`
+- `landing-page.html`
+- `WORKLOG.md`
+
+---
+
+## Session 16 — 2026-05-24
+**Goal:** Add Pro+ tier (coming soon) across all files — app, README.md, landing-page.html. Bump to v0.4.0.
+**Completed:**
+- [x] Defined Pro+ tier: $34/mo, 10,000 cloud prompts/month, 20M tokens/month, unlimited queue depth, Consensus mode (Roadmap), priority email support — all Pro features included
+- [x] Raised Team tier from $39 → $49/user/mo; increased Team limits to 25,000 prompts / 60M tokens pooled to maintain a clear step up from Pro+
+- [x] Added `PRO_PLUS_FLAGS` to `licenseChecker.js`; updated `getLicense()`, `setKey()`, and `module.exports` to handle `'pro_plus'` plan type; added `consensusMode` and `prioritySupport` flag labels
+- [x] Updated `LicensePanel.jsx` — Pro+ in `PLAN_META` (amber #f59e0b), `PRICING`, `FEATURE_ROWS` (new Consensus mode, Priority support rows with pro_plus column), plan cards loop, comparison table headers (5 columns), `planColClass()`, and upgrade CTA buttons
+- [x] Updated `README.md` — 5-tier pricing table (Free/Starter/Pro/Pro+/Team), roadmap table (collapsed Pro+ placeholder + separate queue depth rows into a single Consensus mode row), Purchasing & Licensing products table, CHECKOUT_URLS example
+- [x] Updated `landing-page.html` — Pro+ pricing card (amber, COMING SOON badge) inserted between Pro and Team; Pro+ column added to full feature compare table (all sections); roadmap card updated from "Increased queue depth" to "Pro+ tier"; CHECKOUT_URLS block extended with `pro_plus` placeholder; top comment block updated
+- [x] Bumped version 0.3.7 → 0.4.0 in `package.json` and `CLAUDE.md`
+- [x] Added `## [0.4.0]` entry to `CHANGELOG.md`
+**Decisions Made:**
+- Pro+ at $34/mo fills the gap between Pro ($19) and Team ($49/user × 5 seats min = $245+); gives solo power users a path that doesn't force them into team overhead
+- Team raised to $49 to make the collaboration premium clear and prevent "Team solo" confusion with Pro+
+- Pro+ is "Coming soon" — no checkout URL yet; waitlist CTA links to FAQ for now
+- Consensus mode is the headline Pro+ feature (ships with the tier); it's why Pro+ exists as a distinct tier rather than just bumped limits
+- `consensusMode` and `prioritySupport` added as explicit flags in licenseChecker.js so feature gates can be wired without further schema changes
+**Next Steps:**
+- [ ] Create Pro+ product in Lemon Squeezy when ready to launch (same flow as Starter/Pro)
+- [ ] Wire `consensusMode` flag to the Compare mode result panel once Consensus mode implementation begins
+- [ ] Add waitlist email capture for Pro+ (e.g. a simple Lemon Squeezy form or Mailchimp embed)
+**Files Changed:**
+- `src/main/licenseChecker.js`
+- `src/renderer/components/LicensePanel.jsx`
+- `README.md`
+- `landing-page.html`
+- `CHANGELOG.md`
+- `CLAUDE.md`
+- `package.json`
+- `WORKLOG.md`
+
+---
+
+## Session 15 — 2026-05-24
+**Goal:** Integrate PostHog analytics into the Electron app (main process) and landing page; add anonymous usage analytics with opt-out toggle in Settings; update all privacy claims across the app and marketing copy.
+**Completed:**
+- [x] Installed `posthog-node` SDK (user must run `npm install posthog-node` in project folder)
+- [x] Added PostHog init to `src/main/index-v2.js`: anonymous device ID via `crypto.randomUUID()` stored in `electron-store`, `flushAt: 1` / `flushInterval: 0` for immediate send on desktop, `posthog.shutdown()` on `before-quit`
+- [x] Added `track()` helper function in main process — checks `analytics.enabled` store flag before every call; never crashes the app (try/catch)
+- [x] Wired 3 tracking events: `app_launched` (with plan), `provider_configured` (with provider name), `prompt_queued` (with routing_mode, tag_count, is_compare, is_urgent)
+- [x] Added `get-analytics-enabled` / `set-analytics-enabled` IPC handlers in `index-v2.js`
+- [x] Exposed `getAnalyticsEnabled` / `setAnalyticsEnabled` in `preload-v2.js` via contextBridge
+- [x] Added Analytics toggle UI to `QueueSettingsProjects.jsx` SettingsPanel — shows current state, calls IPC on toggle, shows toast confirmation
+- [x] Added PostHog JS browser snippet to `landing-page.html` `<head>` — auto-captures pageviews, sessions, referrers, geography; `person_profiles: 'identified_only'` (no anonymous profiles created)
+- [x] Added `buy_button_clicked` custom event to landing page checkout buttons (captures plan + billing_type)
+- [x] Updated all privacy claims: "No telemetry or analytics" → "Anonymous usage analytics — opt out any time in Settings" in landing-page.html feature card, compare table, FAQ, and README.md pricing/features tables
+- [x] Added PostHog row to tech stack table in `CLAUDE.md`
+- [x] Added anonymous analytics rows to README.md Pricing Tiers and Features tables
+**Decisions Made:**
+- PostHog chosen over Mixpanel/Amplitude: generous free tier (1M events/mo), combined web + app analytics, built-in Surveys for in-app NPS, EU/US hosting options, open source
+- Main process only — renderer never touches PostHog directly; opt-out preference flows through IPC
+- `person_profiles: 'identified_only'` on landing page — no anonymous visitor profiles, only PostHog Web Analytics aggregates
+- In-app bug/suggestion tracking stays on GitHub Issues for now; PostHog Surveys earmarked for NPS and feature voting (free tier)
+- `purchase_completed` event deferred: will use Zapier/Make to forward Lemon Squeezy webhook to PostHog (no server required)
+**Next Steps:**
+- [ ] **REQUIRED before next dev run:** `cd "C:\Users\mikel\Desktop\AIQLoadManager Project" && npm install posthog-node`
+- [ ] Verify events appear in PostHog Live Events dashboard after `npm run dev:win`
+- [ ] Set up Lemon Squeezy → Zapier → PostHog webhook for `purchase_completed` event
+- [ ] Add PostHog Surveys for in-app NPS and feature request collection
+- [ ] Continue Lemon Squeezy setup (paste real checkout URLs, real license validation)
+**Files Changed:**
+- `src/main/index-v2.js`
+- `src/main/preload-v2.js`
+- `src/renderer/components/QueueSettingsProjects.jsx`
+- `landing-page.html`
+- `README.md`
+- `CLAUDE.md`
+- `WORKLOG.md`
+
+---
+
+## Session 14 — 2026-05-24
+**Goal:** Add a built-in "Report a Bug" button to the app sidebar; add Option 3 (diagnostic auto-attach) to the roadmap; update README.md, landing-page.html, and WORKLOG.md.
+**Completed:**
+- [x] Confirmed `open-external` IPC handler already existed in `index-v2.js` (line 160) and `preload-v2.js` (line 60) — no main-process changes needed
+- [x] Added `🐛 Report a Bug` button to `.sidebar-footer` in `App.jsx` — click handler builds a pre-filled GitHub issue URL with version (0.3.7) and OS (detected via `navigator.platform`) and calls `api.openExternal()` to open it in the user's browser; labels the issue `bug` automatically
+- [x] Added `.report-btn` CSS to `App.css` — subtle muted style (transparent bg, dim border) with a soft red hover state to distinguish from the Pause button
+- [x] Updated `README.md` — added `## Bug reports & feature requests` section documenting the sidebar button and manual feature request flow; added "In-app diagnostic bug reports" row to the Roadmap table; bumped version to 0.3.7
+- [x] Updated `landing-page.html` — added new `🐛 Built-in bug reporting` feature card to the features grid
+- [x] Bumped version to 0.3.7 in `README.md` version table (package.json and CLAUDE.md version bump deferred — no code-breaking change)
+**Decisions Made:**
+- Button placed in sidebar footer (below provider dots) — always visible regardless of which tab is active, consistent with the Pause button pattern
+- URL pre-fills: issue title prefix `Bug: `, body template with Version/OS/What happened/Steps/Expected sections, and `labels=bug` query param — browser opens GitHub's new-issue form with everything ready; user just fills in the blanks
+- OS detected client-side via `navigator.platform` (no extra IPC round-trip needed)
+- Option 3 (auto-attach diagnostics: error log, provider config, queue state) recorded in roadmap but not implemented yet — requires a structured error log on the main process side first
+**Next Steps:**
+- [ ] Bump version in `package.json` and `CLAUDE.md` when next meaningful change lands (can batch with next feature)
+- [ ] Build a structured error log in the main process (prerequisite for Option 3 / diagnostic auto-attach)
+- [ ] Implement Option 3: upgrade the Report a Bug button to collect and pre-fill diagnostics automatically
+- [ ] Continue Lemon Squeezy setup (create products, paste checkout URLs, real license validation)
+**Files Changed:**
+- `src/renderer/App.jsx`
+- `src/renderer/App.css`
+- `README.md`
+- `landing-page.html`
+- `WORKLOG.md`
+
+---
+
 ## Session 13 — 2026-05-23
 **Goal:** Select a purchase/subscription vendor, document the setup process, and integrate Lemon Squeezy checkout into the landing page.
 **Completed:**

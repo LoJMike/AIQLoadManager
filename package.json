@@ -1,7 +1,7 @@
 {
   "name": "aiq-load-manager",
-  "version": "0.3.6",
-  "description": "AI Queue Load Manager \u2014 Cross-platform AI prompt queue manager for Claude, GPT, Gemini, Groq, DeepSeek, Mistral, xAI Grok, Ollama, LM Studio, Jan.ai, LocalAI, llama.cpp",
+  "version": "0.4.0",
+  "description": "AI Queue Load Manager — Cross-platform AI prompt queue manager for Claude, GPT, Gemini, Groq, DeepSeek, Mistral, xAI Grok, Ollama, LM Studio, Jan.ai, LocalAI, llama.cpp",
   "main": "src/main/index-v2.js",
   "scripts": {
     "start": "npx --no-install electron .",
@@ -15,8 +15,9 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0",
     "@google/generative-ai": "^0.21.0",
+    "electron-store": "^8.2.0",
     "openai": "^4.97.0",
-    "electron-store": "^8.2.0"
+    "posthog-node": "^5.35.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
@@ -77,7 +78,4 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
-    }
-  }
-}
+      "allowToChangeInstallationD

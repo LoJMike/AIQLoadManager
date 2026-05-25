@@ -56,6 +56,28 @@ contextBridge.exposeInMainWorld('aiQueue', {
   removeSearchKey:    ()                    => ipcRenderer.invoke('remove-search-key'),
   setSearxngUrl:      (url)                 => ipcRenderer.invoke('set-searxng-url', url),
 
+  // Standing instructions — global system prompt for all queued prompts
+  getStandingInstructions: ()        => ipcRenderer.invoke('get-standing-instructions'),
+  setStandingInstructions: (text)    => ipcRenderer.invoke('set-standing-instructions', text),
+
+  // Response style presets (per-provider) — all tiers
+  getProviderStyles:  ()                             => ipcRenderer.invoke('get-provider-styles'),
+  setProviderStyle:   (provider, preset, customText) => ipcRenderer.invoke('set-provider-style', { provider, preset, customText }),
+
+  // Per-provider default model (Pro+)
+  getDefaultModels:   ()                => ipcRenderer.invoke('get-default-models'),
+  setDefaultModel:    (provider, model) => ipcRenderer.invoke('set-default-model', { provider, model }),
+
+  // Project history — all tiers
+  getProjectHistory:  (projectId)       => ipcRenderer.invoke('get-project-history', projectId),
+
+  // Digest export — Starter+
+  exportDigest:       (opts)            => ipcRenderer.invoke('export-digest', opts),
+
+  // Analytics opt-out
+  getAnalyticsEnabled: ()             => ipcRenderer.invoke('get-analytics-enabled'),
+  setAnalyticsEnabled: (enabled)      => ipcRenderer.invoke('set-analytics-enabled', enabled),
+
   // Misc
   openExternal:       (url)           => ipcRenderer.invoke('open-external', url),
 

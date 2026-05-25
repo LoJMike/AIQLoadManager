@@ -196,6 +196,26 @@ export default function App() {
                 />
               ))}
             </div>
+            <button
+              type="button"
+              className="report-btn"
+              title="Report a bug or request a feature on GitHub"
+              onClick={() => {
+                const os  = navigator.platform.includes('Win') ? 'Windows'
+                          : navigator.platform.includes('Mac') ? 'macOS'
+                          : navigator.platform;
+                const ver = '0.3.6';
+                const title = encodeURIComponent('Bug: ');
+                const body  = encodeURIComponent(
+                  `**Version:** ${ver}\n**OS:** ${os}\n\n**What happened:**\n\n\n**Steps to reproduce:**\n\n1. \n2. \n\n**Expected behaviour:**\n\n`
+                );
+                api.openExternal(
+                  `https://github.com/LoJMike/AIQLoadManager/issues/new?title=${title}&body=${body}&labels=bug`
+                );
+              }}
+            >
+              🐛 Report a Bug
+            </button>
           </div>
         </nav>
 
@@ -218,9 +238,9 @@ export default function App() {
           <div className="content-row">
             <main className="main-panel">
               {tab === 'usage'    && <UsageDashboard providers={providers} usageAll={usageAll} queue={queue} />}
-              {tab === 'queue'    && <QueuePanel queue={queue} providers={providers} onRefresh={loadAll} highlightId={highlightId} />}
+              {tab === 'queue'    && <QueuePanel queue={queue} providers={providers} onRefresh={loadAll} highlightId={highlightId} license={license} />}
               {tab === 'add'      && <AddPromptPanel providers={providers} projects={projects} onSubmit={handleAddPrompt} license={license} />}
-              {tab === 'projects' && <ProjectsPanel projects={projects} providers={providers} onRefresh={loadAll} />}
+              {tab === 'projects' && <ProjectsPanel projects={projects} providers={providers} onRefresh={loadAll} license={license} />}
               {tab === 'settings' && <SettingsPanel providers={providers} onRefresh={loadAll} showToast={showToast} />}
               {tab === 'license'  && <LicensePanel showToast={showToast} />}
             </main>
