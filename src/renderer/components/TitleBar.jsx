@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import badgeIcon from '../assets/AIQLoadManager_logo_badge.png';
+import badgeDark  from '../assets/AIQLoadManager_logo_badge.png';
+import badgeLight from '../assets/AIQLoadManager_logo_badge_white.png';
 
 const isMac = navigator.userAgent.includes('Macintosh');
 
-export default function TitleBar({ title = 'AIQ Load Manager' }) {
+export default function TitleBar({ title = 'AIQ Load Manager', theme = 'dark' }) {
   const [isMaximized, setIsMaximized] = useState(false);
 
   const handleMinimize = () => window.aiQueue.windowMinimize?.();
@@ -21,7 +22,7 @@ export default function TitleBar({ title = 'AIQ Load Manager' }) {
       {isMac && <div className="titlebar-mac-spacer" />}
 
       <div className="titlebar-logo">
-        <img src={badgeIcon} alt="" className="titlebar-icon" />
+        <img src={theme === 'light' ? badgeLight : badgeDark} alt="" className="titlebar-icon" />
         <span className="titlebar-title">{title}</span>
       </div>
 

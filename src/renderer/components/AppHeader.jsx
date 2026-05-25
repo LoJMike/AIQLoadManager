@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { FontSizeControl, ThemeSwitch } from './UiControls.jsx';
-import logoSrc from '../assets/AIQLoadManager_logo_large.png';
+import logoDark  from '../assets/AIQLoadManager_logo_large.png';
+import logoLight from '../assets/AIQLoadManager_logo_large_white.png';
 
 const SEARCH_SCOPES = [
   { id: 'queue',    label: 'Queue'    },
@@ -90,7 +91,7 @@ export default function AppHeader({
   return (
     <header className="app-header">
       <div className="header-brand">
-        <img src={logoSrc} alt="AIQ Load Manager" className="header-logo" />
+        <img src={theme === 'light' ? logoLight : logoDark} alt="AIQ Load Manager" className="header-logo" />
       </div>
 
       <div className="header-search-wrap" ref={searchRef}>
@@ -159,13 +160,18 @@ export default function AppHeader({
 
         <button type="button" className="btn-add-prompt" onClick={onAddPrompt}>+ Add prompt</button>
 
-        <div className="user-chip" title="License tier">
+        <button
+          type="button"
+          className="user-chip"
+          title="View license & plan"
+          onClick={() => onNavigate?.('license')}
+        >
           <div className="user-avatar" />
           <div className="user-meta">
             <span className="user-name">Local</span>
             <span className="user-role">{planLabel} plan</span>
           </div>
-        </div>
+        </button>
 
         <button
           type="button"
@@ -174,7 +180,7 @@ export default function AppHeader({
           title={railOpen ? 'Hide side panel' : 'Show side panel'}
           aria-label={railOpen ? 'Hide side panel' : 'Show side panel'}
         >
-          <svg width="24" height="24" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <svg width="24" height="24" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
             <line x1="10.5" y1="2.5" x2="10.5" y2="13.5" />
           </svg>

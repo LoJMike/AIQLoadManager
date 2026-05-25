@@ -577,6 +577,16 @@
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+.user-chip:hover {
+  background: var(--bg3);
+  border-color: var(--purple-mid);
+}
+.user-chip:active {
+  background: var(--bg4);
 }
 
 .user-avatar {

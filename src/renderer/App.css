@@ -278,7 +278,12 @@ body {
   cursor: pointer;
   transition: all 0.15s;
   letter-spacing: 0.03em;
-  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
 }
 .report-btn:hover {
   color: var(--text2);

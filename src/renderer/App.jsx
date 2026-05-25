@@ -159,7 +159,7 @@ export default function App() {
       className="app-root"
       data-theme={theme}
     >
-      <TitleBar title="AIQ Load Manager" />
+      <TitleBar title="AIQ Load Manager" theme={theme} />
 
       <div className={shellClass} style={{ '--ui-scale': uiScale }}>
         <nav className="sidebar" aria-label="Main navigation">
@@ -235,7 +235,14 @@ export default function App() {
                 );
               }}
             >
-              🐛 Report a Bug
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0 }}>
+                <ellipse cx="12" cy="14" rx="5" ry="6" />
+                <circle cx="12" cy="6" r="3" />
+                <path d="M9 4L7 2M15 4L17 2" />
+                <path d="M7 10H3M7 14.5H3M7 18.5H3" />
+                <path d="M17 10H21M17 14.5H21M17 18.5H21" />
+              </svg>
+              Report
             </button>
           </div>
         </nav>
