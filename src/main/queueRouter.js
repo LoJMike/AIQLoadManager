@@ -122,40 +122,54 @@ class QueueRouter {
 
   // ── Internal ───────────────────────────────────────────────────────────────
 
+  /**
+   * Compute the numeric score for a single provider.
+   * Single source of truth — used by both _getCandidates and previewCandidates
+   * so the two never drift apart.
+   *
+   * @param {object} provider       - provider instance from registry
+   * @param {object} status         - result of tracker.getStatus(provider.name)
+   * @param {string[]} taskStrengths - ordered array of preferred provider names for this task type
+   * @returns {{ score: number, costScore: number, cheapest: object|null }}
+   */
+  _scoreProvider(provider, status, taskStrengths) {
+    let score = 0;
+
+    // Free tier bonus — local providers score highest (truly $0, no rate limits)
+    if (LOCAL_PROVIDERS.has(provider.name))                                          score += 50;
+    else if (FREE_TIER_PROVIDERS.has(provider.name) && provider.hasFreeFreeTier?.()) score += 30;
+
+    // RPM headroom (normalised 0-20)
+    const rpmPct = status.headroom.rpm != null
+      ? Math.min(20, Math.round((status.headroom.rpm / (status.limits.rpm || 1)) * 20))
+      : 20;
+    score += rpmPct;
+
+    // Task type strength
+    const strengthRank = taskStrengths.indexOf(provider.name);
+    if (strengthRank !== -1) score += Math.max(0, 15 - strengthRank * 3);
+
+    // Budget penalty
+    if (status.cost.budgetPct !== null && status.cost.budgetPct > 80) score -= 10;
+
+    // Cheapest model (used by 'cheapest' routing mode and cost estimates)
+    const models   = provider.getModels();
+    const cheapest = models.reduce((best, m) => (!best || m.inputCost < best.inputCost) ? m : best, null);
+    const costScore = cheapest != null ? cheapest.inputCost : 999;
+
+    return { score, costScore, cheapest };
+  }
+
   /** Get all configured providers that have capacity right now, with scores */
   _getCandidates(item) {
-    const taskType = item.task_type || 'general';
+    const taskType      = item.task_type || 'general';
     const taskStrengths = TASK_STRENGTHS[taskType] || TASK_STRENGTHS.general;
-    const configured = this.registry.configured();
 
-    return configured
+    return this.registry.configured()
       .filter(p => this.tracker.canSend(p.name))
       .map(p => {
-        const status = this.tracker.getStatus(p.name);
-        let score = 0;
-
-        // Free tier bonus — local providers score highest (truly $0, no rate limits)
-        if (LOCAL_PROVIDERS.has(p.name))                                    score += 50;
-        else if (FREE_TIER_PROVIDERS.has(p.name) && p.hasFreeFreeTier?.()) score += 30;
-
-        // RPM headroom (normalised 0-20)
-        const rpmPct = status.headroom.rpm != null
-          ? Math.min(20, Math.round((status.headroom.rpm / (status.limits.rpm || 1)) * 20))
-          : 20;
-        score += rpmPct;
-
-        // Task type strength
-        const strengthRank = taskStrengths.indexOf(p.name);
-        if (strengthRank !== -1) score += Math.max(0, 15 - strengthRank * 3);
-
-        // Budget penalty
-        if (status.cost.budgetPct !== null && status.cost.budgetPct > 80) score -= 10;
-
-        // Cost score (lower = cheaper — used by 'cheapest' mode)
-        const models = p.getModels();
-        const cheapest = models.reduce((best, m) => (!best || m.inputCost < best.inputCost) ? m : best, null);
-        const costScore = cheapest != null ? cheapest.inputCost : 999;
-
+        const status                     = this.tracker.getStatus(p.name);
+        const { score, costScore, cheapest } = this._scoreProvider(p, status, taskStrengths);
         return {
           name:      p.name,
           score,
@@ -185,33 +199,12 @@ class QueueRouter {
   previewCandidates(item) {
     const taskType      = item.task_type || 'general';
     const taskStrengths = TASK_STRENGTHS[taskType] || TASK_STRENGTHS.general;
-    const configured    = this.registry.configured();
 
-    return configured.map(p => {
-      const status  = this.tracker.getStatus(p.name);
-      const canSend = status.canSend;
-
-      let score = 0;
-      if (LOCAL_PROVIDERS.has(p.name))                                    score += 50;
-      else if (FREE_TIER_PROVIDERS.has(p.name) && p.hasFreeFreeTier?.()) score += 30;
-
-      const rpmPct = status.headroom.rpm != null
-        ? Math.min(20, Math.round((status.headroom.rpm / (status.limits.rpm || 1)) * 20))
-        : 20;
-      score += rpmPct;
-
-      const strengthRank = taskStrengths.indexOf(p.name);
-      if (strengthRank !== -1) score += Math.max(0, 15 - strengthRank * 3);
-
-      if (status.cost.budgetPct !== null && status.cost.budgetPct > 80) score -= 10;
-
-      // Cheapest model for this provider (used for cost estimate)
-      const models   = p.getModels();
-      const cheapest = models.reduce(
-        (best, m) => (!best || m.inputCost < best.inputCost) ? m : best, null
-      );
-
-      const budgetBlocked = status.cost.budgetBlocked || false;
+    return this.registry.configured().map(p => {
+      const status                     = this.tracker.getStatus(p.name);
+      const { score, cheapest }        = this._scoreProvider(p, status, taskStrengths);
+      const canSend                    = status.canSend;
+      const budgetBlocked              = status.cost.budgetBlocked || false;
 
       return {
         name:          p.name,

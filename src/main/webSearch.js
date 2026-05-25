@@ -119,9 +119,13 @@ class WebSearchService {
 
     const res = await fetch('https://api.tavily.com/search', {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        api_key:             key,
+      // Send the key as a Bearer token, not in the body — body fields appear
+      // in server access logs and proxy inspection tools.
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${key}`,
+      },
+      body: JSON.stringify({
         query,
         max_results:         MAX_RESULTS,
         search_depth:        'basic',

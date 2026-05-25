@@ -10,7 +10,8 @@
     "dev:win": "npx --no-install concurrently \"npm run dev:renderer\" \"npx --no-install wait-on http://localhost:3000 && npm run start:win\"",
     "build": "npx --no-install vite build && npx --no-install electron-builder",
     "build:win": "npx --no-install vite build && npx --no-install electron-builder --win",
-    "build:mac": "npx --no-install vite build && npx --no-install electron-builder --mac"
+    "build:mac": "npx --no-install vite build && npx --no-install electron-builder --mac",
+    "build:linux": "npx --no-install vite build && npx --no-install electron-builder --linux"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0",
@@ -78,4 +79,9 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationD
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

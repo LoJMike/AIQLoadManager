@@ -59,9 +59,13 @@ class ConversationStore {
   }
 
   /**
-   * Load all conversations for a provider from SQLite.
+   * Load conversations for a provider from SQLite.
    * Returns a Map<convId, messages[]> — same shape as BaseProvider.conversations.
    * Called once at startup per provider to warm the in-memory cache.
+   *
+   * Only the 50 most-recently-active conversations are loaded. Loading every
+   * historical conversation at startup could be thousands of rows for long-running
+   * installs, most of which will never be referenced again.
    */
   loadAll(providerName) {
     const result = new Map();
@@ -71,8 +75,15 @@ class ConversationStore {
       `SELECT conv_id, role, content
          FROM conversations
         WHERE provider = ?
+          AND conv_id IN (
+            SELECT conv_id FROM conversations
+             WHERE provider = ?
+             GROUP BY conv_id
+             ORDER BY MAX(created_at) DESC
+             LIMIT 50
+          )
         ORDER BY conv_id, turn_index ASC`
-    ).all(providerName);
+    ).all(providerName, providerName);
 
     for (const row of rows) {
       if (!result.has(row.conv_id)) result.set(row.conv_id, []);
@@ -84,43 +95,48 @@ class ConversationStore {
   /**
    * Persist a completed user+assistant turn.
    * Automatically enforces the MAX_MESSAGES cap by pruning oldest rows.
+   * All three writes run inside a single transaction — a crash mid-way can
+   * no longer leave a conversation with the user message written but the
+   * assistant reply missing.
    */
   appendTurn(providerName, convId, userMsg, assistantMsg) {
     if (!this.db) return;
 
-    // Determine the next available turn index for this conversation
-    const last = this.db.prepare(
-      `SELECT MAX(turn_index) AS max_idx
-         FROM conversations
-        WHERE conv_id = ? AND provider = ?`
-    ).get(convId, providerName);
+    this.db.transaction(() => {
+      // Determine the next available turn index for this conversation
+      const last = this.db.prepare(
+        `SELECT MAX(turn_index) AS max_idx
+           FROM conversations
+          WHERE conv_id = ? AND provider = ?`
+      ).get(convId, providerName);
 
-    const baseIdx = (last?.max_idx ?? -2) + 2; // two rows per turn
+      const baseIdx = (last?.max_idx ?? -2) + 2; // two rows per turn
 
-    this.db.prepare(
-      `INSERT OR REPLACE INTO conversations
-         (conv_id, provider, role, content, turn_index)
-       VALUES (?, ?, 'user', ?, ?)`
-    ).run(convId, providerName, userMsg, baseIdx);
+      this.db.prepare(
+        `INSERT OR REPLACE INTO conversations
+           (conv_id, provider, role, content, turn_index)
+         VALUES (?, ?, 'user', ?, ?)`
+      ).run(convId, providerName, userMsg, baseIdx);
 
-    this.db.prepare(
-      `INSERT OR REPLACE INTO conversations
-         (conv_id, provider, role, content, turn_index)
-       VALUES (?, ?, 'assistant', ?, ?)`
-    ).run(convId, providerName, assistantMsg, baseIdx + 1);
+      this.db.prepare(
+        `INSERT OR REPLACE INTO conversations
+           (conv_id, provider, role, content, turn_index)
+         VALUES (?, ?, 'assistant', ?, ?)`
+      ).run(convId, providerName, assistantMsg, baseIdx + 1);
 
-    // Prune oldest rows so the conversation stays within the cap
-    this.db.prepare(
-      `DELETE FROM conversations
-        WHERE conv_id = ? AND provider = ?
-          AND turn_index NOT IN (
-            SELECT turn_index
-              FROM conversations
-             WHERE conv_id = ? AND provider = ?
-             ORDER BY turn_index DESC
-             LIMIT ?
-          )`
-    ).run(convId, providerName, convId, providerName, MAX_MESSAGES);
+      // Prune oldest rows so the conversation stays within the cap
+      this.db.prepare(
+        `DELETE FROM conversations
+          WHERE conv_id = ? AND provider = ?
+            AND turn_index NOT IN (
+              SELECT turn_index
+                FROM conversations
+               WHERE conv_id = ? AND provider = ?
+               ORDER BY turn_index DESC
+               LIMIT ?
+            )`
+      ).run(convId, providerName, convId, providerName, MAX_MESSAGES);
+    });
   }
 
   /** Delete all messages for a single conversation */

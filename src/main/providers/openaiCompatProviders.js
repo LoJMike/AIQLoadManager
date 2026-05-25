@@ -91,7 +91,13 @@ class GroqProvider extends BaseProvider {
 class DeepSeekProvider extends BaseProvider {
   constructor(usageTracker, store) { super('deepseek', usageTracker, store); }
 
-  validateApiKey(key) { return typeof key === 'string' && key.startsWith('sk-'); }
+  validateApiKey(key) {
+    // DeepSeek keys start with 'sk-' and are longer than the bare prefix, but
+    // OpenAI keys also start with 'sk-'. A minimum length check prevents an
+    // OpenAI key pasted here from passing silently (it'll still fail at the API
+    // but the error message will be much clearer with this gate).
+    return typeof key === 'string' && key.startsWith('sk-') && key.length > 20;
+  }
   _initClient(key) {
     this.apiKey = key;
     this.client = makeOpenAICompatClient(key, 'https://api.deepseek.com/v1');

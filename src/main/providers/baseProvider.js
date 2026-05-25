@@ -130,7 +130,15 @@ class BaseProvider {
   }
 
   _recordUsage(inputTokens, outputTokens, model, queueItemId) {
-    return this.tracker.recordMessage(this.name, { model, inputTokens, outputTokens, queueItemId });
+    // Wrapped in try/catch: a DB write failure here (e.g. disk full) must never
+    // cause the queue item to be marked as an error — the AI response was already
+    // received and stored successfully.
+    try {
+      return this.tracker.recordMessage(this.name, { model, inputTokens, outputTokens, queueItemId });
+    } catch (e) {
+      console.error(`[${this.name}] usage recording failed (response still saved):`, e.message);
+      return null;
+    }
   }
 }
 

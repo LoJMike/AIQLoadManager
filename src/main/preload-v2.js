@@ -86,10 +86,36 @@ contextBridge.exposeInMainWorld('aiQueue', {
   windowMaximize:     ()              => ipcRenderer.invoke('window-maximize'),
   windowClose:        ()              => ipcRenderer.invoke('window-close'),
 
-  // Push events (main → renderer)
-  onQueueUpdate:      (cb) => { ipcRenderer.on('queue-update',          (_, d) => cb(d)); return () => ipcRenderer.removeAllListeners('queue-update');          },
-  onUsageUpdate:      (cb) => { ipcRenderer.on('usage-update',          (_, d) => cb(d)); return () => ipcRenderer.removeAllListeners('usage-update');          },
-  onItemComplete:     (cb) => { ipcRenderer.on('item-complete',         (_, d) => cb(d)); return () => ipcRenderer.removeAllListeners('item-complete');         },
-  onItemError:        (cb) => { ipcRenderer.on('item-error',            (_, d) => cb(d)); return () => ipcRenderer.removeAllListeners('item-error');            },
-  onCompareComplete:  (cb) => { ipcRenderer.on('item-compare-complete', (_, d) => cb(d)); return () => ipcRenderer.removeAllListeners('item-compare-complete'); },
+  // App version — live from package.json, never hardcoded
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+
+  // Push events (main → renderer).
+  // Each on*() returns a specific cleanup function that removes only the handler
+  // it registered — NOT removeAllListeners(), which would also remove handlers
+  // registered by other components and cause silent data-loss bugs.
+  onQueueUpdate: (cb) => {
+    const h = (_, d) => cb(d);
+    ipcRenderer.on('queue-update', h);
+    return () => ipcRenderer.removeListener('queue-update', h);
+  },
+  onUsageUpdate: (cb) => {
+    const h = (_, d) => cb(d);
+    ipcRenderer.on('usage-update', h);
+    return () => ipcRenderer.removeListener('usage-update', h);
+  },
+  onItemComplete: (cb) => {
+    const h = (_, d) => cb(d);
+    ipcRenderer.on('item-complete', h);
+    return () => ipcRenderer.removeListener('item-complete', h);
+  },
+  onItemError: (cb) => {
+    const h = (_, d) => cb(d);
+    ipcRenderer.on('item-error', h);
+    return () => ipcRenderer.removeListener('item-error', h);
+  },
+  onCompareComplete: (cb) => {
+    const h = (_, d) => cb(d);
+    ipcRenderer.on('item-compare-complete', h);
+    return () => ipcRenderer.removeListener('item-compare-complete', h);
+  },
 });

@@ -1,0 +1,41 @@
+AI Queue Load Manager
+Copyright (c) 2026 Mikel Hall. All Rights Reserved.
+
+PROPRIETARY AND CONFIDENTIAL
+
+This software and its source code are the exclusive property of Mikel Hall
+("Owner"). All rights are reserved.
+
+You may NOT, without the prior written permission of the Owner:
+
+  - Copy, reproduce, or duplicate this software or its source code,
+    in whole or in part
+  - Modify, adapt, translate, or create derivative works based on
+    this software or its source code
+  - Distribute, sell, sublicense, transfer, or otherwise make this
+    software or its source code available to any third party
+  - Reverse engineer, decompile, or disassemble the compiled software,
+    except to the minimum extent permitted by applicable law
+  - Remove or alter any proprietary notices, labels, or marks on
+    this software
+
+PERMITTED USE:
+
+  End users who obtain a valid license through the official distribution
+  channel (https://github.com/LoJMike/AIQLoadManager or the official
+  website) may install and run the compiled application solely for their
+  own personal or business purposes, in accordance with the applicable
+  subscription terms. This permission covers use of the compiled installer
+  only — it does not extend to the source code.
+
+DISCLAIMER:
+
+  This software is provided "AS IS" without warranty of any kind, express
+  or implied, including but not limited to the warranties of
+  merchantability, fitness for a particular purpose, and non-infringement.
+  In no event shall the Owner be liable for any claim, damages, or other
+  liability, whether in an action of contract, tort, or otherwise, arising
+  from, out of, or in connection with the software or the use or other
+  dealings in the software.
+
+For licensing inquiries: mikelhall2001@yahoo.com

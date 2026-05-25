@@ -4,7 +4,7 @@ Cross-platform desktop app (Windows 10/11 + macOS) for queuing, routing, and tra
 prompts across 12 AI providers — 7 cloud APIs plus Ollama, LM Studio, Jan.ai, LocalAI, and llama.cpp for fully local, offline AI.
 
 **GitHub:** https://github.com/LoJMike/AIQLoadManager  
-**Local path:** `C:\Users\mikel\Desktop\AIQLoadManager Project`
+**Version history:** [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
@@ -16,22 +16,22 @@ All plans are **monthly subscriptions** — cancel any time. No lifetime deals, 
 |---|---|---|---|---|---|
 | **Price** | $0 forever | $9/mo | $19/mo | $34/mo | $49/user/mo |
 | **AI providers** | 5 (local only) | 8 (local + free cloud) | All 12 | All 12 | All 12 |
-| **Monthly cloud prompt runs** | 50 | 500 | 2,500 | 10,000 | 25,000 (pooled) |
-| **Monthly cloud tokens** | 100K | 1M | 5M | 20M | 60M (pooled) |
+| **Monthly cloud prompt runs** | — | 500 | 2,500 | 10,000 | 25,000 (pooled) |
+| **Monthly cloud tokens** | — | 1M | 5M | 20M | 60M (pooled) |
 | **Max queue depth** | 10 items | 100 items | 500 (soft cap) | Unlimited | Unlimited |
 | **Projects** | 1 | 5 | Unlimited | Unlimited | Unlimited |
-| **Routing modes** | Manual, Free Tier | + Auto, Balance | + Cheapest, Fastest, Custom | All modes | All modes |
+| **Routing modes** | Manual, Free Tier | + Auto, Balance | + Cheapest, Fastest | All modes | All modes |
 | **Budget spend visibility** | View-only | View-only | ✓ | ✓ | ✓ |
 | **Budget caps & alerts** | — | — | ✓ | ✓ | ✓ |
 | **Cost tracking per provider** | — | ✓ | ✓ | ✓ | ✓ |
 | **⚡ Urgent priority boost** | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **Tag-based smart priority (all tags)** | — | — | ✓ | ✓ | ✓ |
-| **Batch CSV import** | — | ✓ | ✓ | ✓ | ✓ |
-| **Usage export** | — | CSV | CSV + JSON | CSV + JSON | CSV + JSON |
+| **Batch CSV import** | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
+| **Usage export** | — | CSV *(Roadmap)* | CSV + JSON *(Roadmap)* | CSV + JSON *(Roadmap)* | CSV + JSON *(Roadmap)* |
 | **Response style presets** | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **Per-project response history** | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **Session digest export (HTML)** | — | ✓ | ✓ | ✓ | ✓ |
-| **Per-provider default model** | — | — | ✓ | ✓ | ✓ |
+| **Per-provider default model** | — | — | — | ✓ | ✓ |
 | **Prompt template library** | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
 | **Document context injection** | — | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
 | **Email digest** | — | — | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
@@ -48,6 +48,7 @@ All plans are **monthly subscriptions** — cancel any time. No lifetime deals, 
 | **Webhook output delivery** | — | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
 | **Cost forecasting** | — | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
 | **Priority email support** | — | — | — | ✓ | ✓ |
+| **Linux native app** | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
 | **iOS & Android companion** | — | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* | ✓ *(Roadmap)* |
 | **Shared settings & admin controls** | — | — | — | — | ✓ *(Coming soon)* |
 | **100% local — no cloud sync** | ✓ | ✓ | ✓ | ✓ | ✓ |
@@ -72,15 +73,15 @@ All plans are **monthly subscriptions** — cancel any time. No lifetime deals, 
 | **⚡ Urgent priority boost** | All | Jumps the queue on any plan |
 | **Projects & chats** | All | Named projects; continue existing conversation threads |
 | **Persistent history** | All | Conversation history survives app restarts — stored in local SQLite |
-| **Smart routing** | Starter+ | 4 modes on Starter (Manual, Free Tier, Auto, Balance); all 6 on Pro (+ Cheapest, Fastest, Custom) |
+| **Smart routing** | Starter+ | 4 modes on Starter (Manual, Free Tier, Auto, Balance); all 6 on Pro (+ Cheapest, Fastest) |
 | **Cost tracking** | Starter+ | Detailed cost per provider & model |
 | **Tag-based smart priority** | Pro | All 9 tag types boost queue position |
 | **🌐 Web search** | All | Tag a prompt Web Search — live results from Tavily or SearXNG are injected into the system prompt before the AI call. Works with every model including local ones. |
 | **Compare mode** | Pro | Send the same prompt to multiple providers simultaneously; responses shown side-by-side |
 | **Budget caps & alerts** | Pro | Monthly USD cap per provider with visual progress |
-| **Batch CSV import** | Starter+ | Upload a CSV of prompts and queue them all at once |
+| **Batch CSV import** | Starter+ *(Roadmap)* | Upload a CSV of prompts and queue them all at once |
 | **Response style presets** | All | Per-provider tone/format presets — Normal, Concise, Caveman, Bullet-only, ELI5, or Custom. Set in Settings → provider card. Appended to every prompt sent to that provider. |
-| **Per-provider default model** | Pro | Override the default model used for any provider when no model is specified in the queue item. Set in Settings → provider card. |
+| **Per-provider default model** | Pro+ | Override the default model used for any provider when no model is specified in the queue item. Set in Settings → provider card. |
 | **Per-project response history** | All | View all completed prompts and responses for any project — click "View history" on any project card in the Projects tab. |
 | **Session digest export** | Starter+ | Export all completed queue items as a self-contained HTML file with summary stats, per-item prompt/response, and token costs. Opens natively after saving. |
 | **Anonymous usage analytics** | All | PostHog — routing mode usage, provider config, prompt counts. No prompt content, no keys, no personal data. Opt-out toggle in Settings → Analytics. |
@@ -135,7 +136,6 @@ All ports are configurable in Settings → Connectors. Each local provider card 
 ### Clone & install
 
 ```powershell
-cd "C:\Users\mikel\Desktop"
 git clone https://github.com/LoJMike/AIQLoadManager.git "AIQLoadManager Project"
 cd "AIQLoadManager Project"
 npm install
@@ -160,6 +160,10 @@ npm run build:win
 
 # macOS disk image (.dmg) — run on macOS only
 npm run build:mac
+
+# Linux AppImage — run on Linux or via GitHub Actions CI
+npm run build:linux
+# Output: dist-app/AI Queue Load Manager.AppImage
 ```
 
 ---
@@ -355,11 +359,14 @@ Compare mode requires a Pro license. No conversation history is injected — eac
 | Webhook output delivery | Pro | POST results to any URL on completion |
 | Cost forecasting | Pro | Predict monthly spend from usage trends |
 | iOS & Android companion | Starter | Monitor queue, add prompts, push notifications. Included at no extra charge. |
+| **Custom routing rules** | Pro | Cost and model threshold rules that override the automatic routing decision — e.g. "never use Claude if cost exceeds $0.02" or "always use GPT-4o for Code prompts". Builds on the existing 6 routing modes. |
+| **Usage export (CSV / JSON)** | Starter+ | Export raw usage data — token counts, costs, timestamps, provider/model — as CSV (Starter) or CSV + JSON (Pro+). Different from the session digest HTML export. |
 | **Scheduled-items calendar view** | Starter | Week/month grid of all upcoming scheduled queue items. Click any item to preview, edit, or cancel it. Drag to reschedule. Pairs with the usage heatmap to give a full past/future time view of your queue activity. |
 | **Usage Insights panel** | Pro | New Insights sidebar panel: time-series charts of prompts/day, cost/day, and tokens/day; provider distribution; tag type breakdown; busiest-hours heatmap. All powered by existing local SQLite data — no new backend infrastructure needed. |
 | **Usage heatmap calendar** | Pro | GitHub-style contribution graph showing prompt volume and cost by day over the last 90 days. Lives inside the Insights panel alongside the scheduled-items calendar, giving a unified past/forward view of queue activity. |
 | **Prompt habit analysis** | Pro+ | Pattern observations that surface routing efficiency suggestions based on your actual usage — e.g. "You route 90% of Research prompts to Claude but Gemini costs 4× less for those queries." Runs entirely against local data, no prompt content analysed externally. |
 | **AI-powered prompt optimization** | Pro+ | A local model (Ollama or LM Studio) reviews your prompt patterns and suggests rewrites and routing changes that cut cost or improve output quality. Requires a local provider to be configured. No prompt content ever leaves the machine. |
+| **Linux native app** | All | AppImage (runs on any distro without installation — no root required) + `.deb` for Debian/Ubuntu. The `electron-builder` config is already in place and a `build:linux` script is ready. Needs testing on a Linux runner before public release. |
 
 ---
 
@@ -460,3 +467,16 @@ npm install
 
 ### Blank/white window on launch
 Open Electron DevTools (F12) and check the Console tab for the specific error.
+
+---
+
+## License
+
+Copyright (c) 2026 Mikel Hall. All Rights Reserved.
+
+AI Queue Load Manager is proprietary software. The source code may not be copied,
+modified, distributed, or reverse-engineered without prior written permission.
+End users may install and run the compiled application under the applicable
+subscription terms.
+
+See [LICENSE.txt](LICENSE.txt) for the full terms.

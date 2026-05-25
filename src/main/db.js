@@ -42,11 +42,29 @@ function toPlain(obj) {
 
 class NodeSqliteDatabase {
   constructor(dbPath) {
-    this.dbPath = dbPath;
+    this.dbPath     = dbPath;
+    this._stmtCache = new Map();   // sql → StatementSync (prepared once, reused forever)
     fs.mkdirSync(path.dirname(dbPath), { recursive: true });
     this.db = new DatabaseSync(dbPath);
     // Enable WAL mode for better concurrent write performance
     this.db.exec('PRAGMA journal_mode = WAL');
+  }
+
+  /**
+   * Run a synchronous transaction.
+   * fn() is called inside BEGIN/COMMIT; any throw triggers ROLLBACK and re-throw.
+   *
+   * @param {() => void} fn
+   */
+  transaction(fn) {
+    this.db.exec('BEGIN');
+    try {
+      fn();
+      this.db.exec('COMMIT');
+    } catch (e) {
+      try { this.db.exec('ROLLBACK'); } catch (_) {}
+      throw e;
+    }
   }
 
   /**
@@ -73,24 +91,29 @@ class NodeSqliteDatabase {
 
   /** Returns a statement object with run / get / all */
   prepare(sql) {
-    const db = this.db;
+    // Lazily prepare and cache the statement — prepared once, reused on every call.
+    const cache = this._stmtCache;
+    const db    = this.db;
+    const _stmt = () => {
+      if (!cache.has(sql)) cache.set(sql, db.prepare(sql));
+      return cache.get(sql);
+    };
 
     return {
+      // run() re-throws on failure so callers can detect write errors.
+      // Callers that must never surface a write failure (e.g. usage recording)
+      // wrap this in their own try/catch.
       run(...params) {
-        try {
-          const stmt = db.prepare(sql);
-          stmt.run(...params);
-          return { changes: 1 };
-        } catch (e) {
-          console.error('[db] run error:', e.message, '| SQL:', sql.slice(0, 80));
-          return { changes: 0 };
-        }
+        const result = _stmt().run(...params);
+        // node:sqlite returns { changes, lastInsertRowid }
+        return { changes: result?.changes ?? 1, lastInsertRowid: result?.lastInsertRowid };
       },
 
+      // Read methods keep the defensive fallback — a failed SELECT should not
+      // crash the app; returning empty is safer than propagating.
       get(...params) {
         try {
-          const stmt = db.prepare(sql);
-          const row  = stmt.get(...params);
+          const row = _stmt().get(...params);
           return row ? toPlain(row) : undefined;
         } catch (e) {
           console.error('[db] get error:', e.message, '| SQL:', sql.slice(0, 80));
@@ -100,9 +123,7 @@ class NodeSqliteDatabase {
 
       all(...params) {
         try {
-          const stmt = db.prepare(sql);
-          const rows = stmt.all(...params);
-          return rows.map(toPlain);
+          return _stmt().all(...params).map(toPlain);
         } catch (e) {
           console.error('[db] all error:', e.message, '| SQL:', sql.slice(0, 80));
           return [];

@@ -88,6 +88,7 @@ class MultiQueueManager {
     this.providerStyles       = {};     // { providerName: styleText } — set via setProviderStyles()
     this.paused               = false;
     this.processing           = false;
+    this._ticking             = false;   // re-entrancy guard — prevents two concurrent ticks
     this._timer               = null;
     this.db                   = null;
   }
@@ -204,9 +205,17 @@ class MultiQueueManager {
   }
 
   removeItem(id) {
-    const item = this._getItem(id);
-    if (item?.status === STATUS.PROCESSING) throw new Error('Cannot remove item being processed');
-    this.db.prepare('DELETE FROM queue_items WHERE id=?').run(id);
+    // Atomic: only delete if the item is NOT currently processing.
+    // This eliminates the TOCTOU window between the status read and the DELETE.
+    const result = this.db.prepare(
+      "DELETE FROM queue_items WHERE id=? AND status != 'processing'"
+    ).run(id);
+
+    if (result.changes === 0) {
+      const item = this._getItem(id);
+      if (!item) return { success: true };   // already gone — that's fine
+      if (item.status === STATUS.PROCESSING) throw new Error('Cannot remove an item that is currently being processed');
+    }
     this.push('queue-update', { action: 'removed', id });
     return { success: true };
   }
@@ -225,9 +234,31 @@ class MultiQueueManager {
   }
 
   reorderItem(id, direction) {
-    this.db.prepare('UPDATE queue_items SET priority=priority+? WHERE id=?').run(
-      direction === 'up' ? 1 : -1, id
-    );
+    // Fetch pending items in their current display order so we can swap
+    // positional neighbours rather than blindly incrementing — repeated
+    // +1/-1 increments collapse all priorities to the same value over time.
+    const pending = this.db.prepare(
+      "SELECT id, priority FROM queue_items WHERE status='pending' ORDER BY priority DESC, created_at ASC"
+    ).all();
+
+    const idx = pending.findIndex(i => i.id === id);
+    if (idx !== -1) {
+      const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (swapIdx >= 0 && swapIdx < pending.length) {
+        const item     = pending[idx];
+        const neighbor = pending[swapIdx];
+        if (item.priority !== neighbor.priority) {
+          // Simple swap
+          this.db.prepare('UPDATE queue_items SET priority=? WHERE id=?').run(neighbor.priority, id);
+          this.db.prepare('UPDATE queue_items SET priority=? WHERE id=?').run(item.priority, neighbor.id);
+        } else {
+          // Same priority — nudge the moving item to break the tie
+          const nudge = direction === 'up' ? 1 : -1;
+          this.db.prepare('UPDATE queue_items SET priority=? WHERE id=?').run(item.priority + nudge, id);
+        }
+      }
+    }
+
     this.push('queue-update', { action: 'reordered', id });
     return this.getQueue();
   }
@@ -276,7 +307,12 @@ class MultiQueueManager {
    * @param {string}  [opts.projectId] - filter by project
    * @returns {object[]}
    */
-  getQueueForExport({ since = null, until = null, projectId = null } = {}) {
+  getQueueForExport(opts = {}) {
+    // Validate params from the renderer so NaN/undefined can never reach SQLite.
+    const since     = Number.isFinite(opts.since)              ? opts.since     : null;
+    const until     = Number.isFinite(opts.until)              ? opts.until     : null;
+    const projectId = typeof opts.projectId === 'string' && opts.projectId ? opts.projectId : null;
+
     let sql    = "SELECT * FROM queue_items WHERE status='complete'";
     const args = [];
     if (since)     { sql += ' AND completed_at >= ?'; args.push(since); }
@@ -295,6 +331,10 @@ class MultiQueueManager {
   resume() { this.paused = false; this.push('queue-update', { action: 'resumed' }); this._tick(); return { paused: false }; }
 
   async _tick() {
+    // Prevent two concurrent invocations (e.g. resume() + timer firing mid-await)
+    if (this._ticking) return;
+    this._ticking = true;
+    try {
     if (this.paused || this.processing) {
       this._timer = setTimeout(() => this._tick(), 2000);
       return;
@@ -328,6 +368,9 @@ class MultiQueueManager {
 
     await this._processItem(next, decision);
     this._timer = setTimeout(() => this._tick(), 1500);
+    } finally {
+      this._ticking = false;
+    }
   }
 
   /**
@@ -382,8 +425,8 @@ class MultiQueueManager {
     if (/not configured/i.test(msg)) return false;
 
     // Retry on rate limits, timeouts, and 5xx server errors.
-    if (status === 429 || /rate.?limit/i.test(msg))  return true;
-    if (status >= 500)                                return true;
+    if (status === 429 || /rate.?limit/i.test(msg))          return true;
+    if (status !== null && status >= 500)                     return true;
     if (/timeout|ECONNRESET|ENOTFOUND|ECONNREFUSED|network/i.test(msg)) return true;
 
     // Default: retry unknown errors (may be a transient glitch).
@@ -423,14 +466,17 @@ class MultiQueueManager {
         queueItemId:    item.id,
       });
 
+      const inTok  = result.usage?.inputTokens  || 0;
+      const outTok = result.usage?.outputTokens || 0;
       this._set(item.id, {
         status:         STATUS.COMPLETE,
         completed_at:   Date.now(),
         response:       result.response,
         used_provider:  result.provider,
         used_model:     result.model,
-        input_tokens:   result.usage?.inputTokens  || 0,
-        output_tokens:  result.usage?.outputTokens || 0,
+        input_tokens:   inTok,
+        output_tokens:  outTok,
+        cost_usd:       this.tracker.estimateCost(result.provider, result.model, inTok, outTok),
         routing_reason: decision.reason,
       });
 
@@ -481,81 +527,138 @@ class MultiQueueManager {
    */
   async _processCompareItem(item) {
     this.processing = true;
-    let providers = [];
-    try { providers = JSON.parse(item.compare_providers || '[]'); } catch (_) {}
 
-    this._set(item.id, { status: STATUS.PROCESSING, started_at: Date.now() });
-    this.push('queue-update', { action: 'processing', id: item.id, provider: 'compare' });
+    // Wrap the entire body in try/finally so processing is always cleared,
+    // even if _enrichWithWebSearch throws.
+    try {
+      let providers = [];
+      try { providers = JSON.parse(item.compare_providers || '[]'); } catch (_) {}
 
-    // Enrich with web search context once — all providers get the same context block
-    const { prompt, systemPrompt } = await this._enrichWithWebSearch(item);
+      this._set(item.id, { status: STATUS.PROCESSING, started_at: Date.now() });
+      this.push('queue-update', { action: 'processing', id: item.id, provider: 'compare' });
 
-    const settled = await Promise.allSettled(
-      providers.map(providerName =>
-        this.registry.sendMessage(providerName, {
-          prompt,
-          systemPrompt,
-          model:       null,                // each provider uses its own default
-          maxTokens:   item.max_tokens || 1024,
-          queueItemId: item.id,
-        })
-      )
-    );
+      // Enrich with web search context once — all providers get the same context block
+      const { prompt, systemPrompt: enrichedSP } = await this._enrichWithWebSearch(item);
 
-    const results = settled.map((outcome, i) => {
-      const providerName = providers[i];
-      if (outcome.status === 'fulfilled') {
-        return {
-          provider: outcome.value.provider || providerName,
-          model:    outcome.value.model,
-          response: outcome.value.response,
-          usage:    outcome.value.usage,
-          error:    null,
-        };
+      // Apply global standing instructions (same as _processItem)
+      let baseSystemPrompt = enrichedSP || null;
+      if (this.standingInstructions) {
+        baseSystemPrompt = baseSystemPrompt
+          ? `${this.standingInstructions}\n\n${baseSystemPrompt}`
+          : this.standingInstructions;
       }
-      return {
-        provider: providerName,
-        model:    null,
-        response: null,
-        usage:    null,
-        error:    outcome.reason?.message || String(outcome.reason),
-      };
-    });
 
-    const succeeded = results.filter(r => r.response !== null);
+      const settled = await Promise.allSettled(
+        providers.map(providerName => {
+          // Apply per-provider style — each provider may have a different preset
+          let systemPrompt = baseSystemPrompt;
+          const styleText  = this.providerStyles[providerName];
+          if (styleText) {
+            systemPrompt = systemPrompt ? `${systemPrompt}\n\n${styleText}` : styleText;
+          }
+          return this.registry.sendMessage(providerName, {
+            prompt,
+            systemPrompt,
+            model:       null,            // each provider uses its own default
+            maxTokens:   item.max_tokens || 1024,
+            queueItemId: item.id,
+          });
+        })
+      );
 
-    if (succeeded.length === 0) {
-      const errMsg = results.map(r => `${r.provider}: ${r.error}`).join('; ');
-      this._set(item.id, { status: STATUS.ERROR, error: `All providers failed — ${errMsg}` });
-      this.push('item-error', { id: item.id, provider: 'compare', error: errMsg });
-    } else {
-      this._set(item.id, {
-        status:        STATUS.COMPLETE,
-        completed_at:  Date.now(),
-        response:      JSON.stringify(results),
-        used_provider: 'compare',
-        used_model:    results.filter(r => r.model).map(r => r.model).join(', '),
-        input_tokens:  results.reduce((s, r) => s + (r.usage?.inputTokens  || 0), 0),
-        output_tokens: results.reduce((s, r) => s + (r.usage?.outputTokens || 0), 0),
+      const results = settled.map((outcome, i) => {
+        const providerName = providers[i];
+        if (outcome.status === 'fulfilled') {
+          return {
+            provider: outcome.value.provider || providerName,
+            model:    outcome.value.model,
+            response: outcome.value.response,
+            usage:    outcome.value.usage,
+            error:    null,
+          };
+        }
+        return {
+          provider: providerName,
+          model:    null,
+          response: null,
+          usage:    null,
+          error:    outcome.reason?.message || String(outcome.reason),
+        };
       });
-      this.push('item-compare-complete', {
-        id:      item.id,
-        label:   item.label || item.prompt.slice(0, 60),
-        results,
-      });
-      this.push('usage-update', { allStatus: this.tracker.getStatusAll() });
+
+      // Record per-provider token usage so rate-limit tracking stays accurate.
+      // (Previously, compare runs consumed tokens but the tracker never knew.)
+      for (const r of results) {
+        if (r.response !== null && r.usage) {
+          try {
+            this.tracker.recordMessage(r.provider, {
+              model:        r.model,
+              inputTokens:  r.usage.inputTokens  || 0,
+              outputTokens: r.usage.outputTokens || 0,
+              queueItemId:  item.id,
+            });
+          } catch (e) {
+            console.warn('[Queue] compare usage recording failed for', r.provider, ':', e.message);
+          }
+        }
+      }
+
+      const succeeded = results.filter(r => r.response !== null);
+
+      if (succeeded.length === 0) {
+        const errMsg = results.map(r => `${r.provider}: ${r.error}`).join('; ');
+        this._set(item.id, { status: STATUS.ERROR, error: `All providers failed — ${errMsg}` });
+        this.push('item-error', { id: item.id, provider: 'compare', error: errMsg });
+      } else {
+        const totalIn  = results.reduce((s, r) => s + (r.usage?.inputTokens  || 0), 0);
+        const totalOut = results.reduce((s, r) => s + (r.usage?.outputTokens || 0), 0);
+        // Aggregate cost across all providers
+        const totalCost = results.reduce((s, r) => {
+          if (!r.response || !r.usage) return s;
+          return s + this.tracker.estimateCost(r.provider, r.model, r.usage.inputTokens || 0, r.usage.outputTokens || 0);
+        }, 0);
+
+        this._set(item.id, {
+          status:        STATUS.COMPLETE,
+          completed_at:  Date.now(),
+          response:      JSON.stringify(results),
+          used_provider: 'compare',
+          used_model:    results.filter(r => r.model).map(r => r.model).join(', '),
+          input_tokens:  totalIn,
+          output_tokens: totalOut,
+          cost_usd:      totalCost,
+        });
+        this.push('item-compare-complete', {
+          id:      item.id,
+          label:   item.label || item.prompt.slice(0, 60),
+          results,
+        });
+        this.push('usage-update', { allStatus: this.tracker.getStatusAll() });
+      }
+    } finally {
+      this.processing = false;
     }
-
-    this.processing = false;
   }
 
   _getItem(id) {
     return this.db.prepare('SELECT * FROM queue_items WHERE id=?').get(id);
   }
 
+  // Columns that _set() is allowed to update. Column names are interpolated into SQL,
+  // so we whitelist them explicitly to prevent injection if a future caller passes
+  // attacker-influenced field names.
+  static _SETTABLE = new Set([
+    'status', 'started_at', 'completed_at', 'response',
+    'used_provider', 'used_model', 'input_tokens', 'output_tokens',
+    'cost_usd', 'routing_reason', 'retry_count', 'error',
+  ]);
+
   _set(id, fields) {
-    const sets = Object.keys(fields).map(k => `${k}=?`).join(',');
-    this.db.prepare(`UPDATE queue_items SET ${sets} WHERE id=?`).run(...Object.values(fields), id);
+    const safeEntries = Object.entries(fields).filter(([k]) => MultiQueueManager._SETTABLE.has(k));
+    if (safeEntries.length === 0) return;
+    const sets = safeEntries.map(([k]) => `${k}=?`).join(',');
+    const vals = safeEntries.map(([, v]) => v);
+    this.db.prepare(`UPDATE queue_items SET ${sets} WHERE id=?`).run(...vals, id);
   }
 }
 

@@ -24,6 +24,7 @@ Thumbs.db
 .env
 .env.local
 *.env
+config/secrets.*
 
 # Electron userData (local DB and config — user-specific)
 # These live in %APPDATA% anyway, not in the project folder
@@ -41,3 +42,4 @@ landing-page-orig.html
 landing-page.html
 /.claude/*
 /website/*
+CODE_REVIEW.md

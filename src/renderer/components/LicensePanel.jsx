@@ -11,83 +11,91 @@ const PLAN_META = {
 };
 
 // Feature rows for the comparison table
-// Each entry: { label, free, starter, pro, pro_plus }
+// Each entry: { label, free, starter, pro, pro_plus, team }
 // Values can be strings, '✓', or '–'
 const FEATURE_ROWS = [
   {
     category: 'AI Providers',
     rows: [
-      { label: 'AI providers (total)',           free: '5 (local only)', starter: '8',          pro: 'All 12',         pro_plus: 'All 12'         },
-      { label: 'Local AI (Ollama, LM Studio, Jan.ai, LocalAI, llama.cpp)', free: '✓', starter: '✓', pro: '✓',         pro_plus: '✓'              },
-      { label: 'Free cloud tier (Gemini, Groq, Mistral)', free: '–',     starter: '✓',          pro: '✓',              pro_plus: '✓'              },
-      { label: 'Paid cloud (Claude, OpenAI, DeepSeek, xAI Grok)', free: '–', starter: '–',      pro: '✓',              pro_plus: '✓'              },
+      { label: 'AI providers (total)',           free: '5 (local only)', starter: '8',          pro: 'All 12',         pro_plus: 'All 12',        team: 'All 12'             },
+      { label: 'Local AI (Ollama, LM Studio, Jan.ai, LocalAI, llama.cpp)', free: '✓', starter: '✓', pro: '✓',         pro_plus: '✓',             team: '✓'                  },
+      { label: 'Free cloud tier (Gemini, Groq, Mistral)', free: '–',     starter: '✓',          pro: '✓',              pro_plus: '✓',             team: '✓'                  },
+      { label: 'Paid cloud (Claude, OpenAI, DeepSeek, xAI Grok)', free: '–', starter: '–',      pro: '✓',              pro_plus: '✓',             team: '✓'                  },
     ],
   },
   {
     category: 'Usage Limits (AIQ-side caps)',
     rows: [
-      { label: 'Monthly cloud prompt runs',      free: '50/mo',         starter: '500/mo',      pro: '2,500/mo',       pro_plus: '10,000/mo'      },
-      { label: 'Monthly cloud tokens',           free: '100K/mo',       starter: '1M/mo',       pro: '5M/mo',          pro_plus: '20M/mo'         },
+      { label: 'Monthly cloud prompt runs',      free: '50/mo',         starter: '500/mo',      pro: '2,500/mo',       pro_plus: '10,000/mo',     team: '25,000/mo (pooled)' },
+      { label: 'Monthly cloud tokens',           free: '100K/mo',       starter: '1M/mo',       pro: '5M/mo',          pro_plus: '20M/mo',        team: '60M/mo (pooled)'    },
     ],
   },
   {
     category: 'Queue',
     rows: [
-      { label: 'Max queue depth',                free: '10 items',      starter: '100 items',   pro: '500 (soft cap)', pro_plus: 'Unlimited'      },
-      { label: '⚡ Urgent priority boost',       free: '✓',             starter: '✓',           pro: '✓',              pro_plus: '✓'              },
-      { label: 'Tag-based smart priority',       free: '–',             starter: '–',           pro: '✓',              pro_plus: '✓'              },
-      { label: 'Batch CSV import',               free: '–',             starter: '✓',           pro: '✓',              pro_plus: '✓'              },
+      { label: 'Max queue depth',                free: '10 items',      starter: '100 items',   pro: '500 (soft cap)', pro_plus: 'Unlimited',     team: '500 (soft cap)'     },
+      { label: '⚡ Urgent priority boost',       free: '✓',             starter: '✓',           pro: '✓',              pro_plus: '✓',             team: '✓'                  },
+      { label: 'Tag-based smart priority',       free: '–',             starter: '–',           pro: '✓',              pro_plus: '✓',             team: '✓'                  },
+      { label: 'Batch CSV import',               free: '–',             starter: '✓',           pro: '✓',              pro_plus: '✓',             team: '✓'                  },
     ],
   },
   {
     category: 'Routing',
     rows: [
-      { label: 'Manual routing',                 free: '✓',             starter: '✓',           pro: '✓',              pro_plus: '✓'              },
-      { label: 'Free Tier routing',              free: '✓',             starter: '✓',           pro: '✓',              pro_plus: '✓'              },
-      { label: 'Auto & Balance routing',         free: '–',             starter: '✓',           pro: '✓',              pro_plus: '✓'              },
-      { label: 'Cheapest & Fastest routing',     free: '–',             starter: '–',           pro: '✓',              pro_plus: '✓'              },
-      { label: 'Custom routing rules',           free: '–',             starter: '–',           pro: '✓',              pro_plus: '✓'              },
+      { label: 'Manual routing',                 free: '✓',             starter: '✓',           pro: '✓',              pro_plus: '✓',             team: '✓'                  },
+      { label: 'Free Tier routing',              free: '✓',             starter: '✓',           pro: '✓',              pro_plus: '✓',             team: '✓'                  },
+      { label: 'Auto & Balance routing',         free: '–',             starter: '✓',           pro: '✓',              pro_plus: '✓',             team: '✓'                  },
+      { label: 'Cheapest & Fastest routing',     free: '–',             starter: '–',           pro: '✓',              pro_plus: '✓',             team: '✓'                  },
+      { label: 'Custom routing rules',           free: '–',             starter: '–',           pro: '✓',              pro_plus: '✓',             team: '✓'                  },
     ],
   },
   {
     category: 'Cost & Analytics',
     rows: [
-      { label: 'Basic usage dashboard',          free: '✓',             starter: '✓',           pro: '✓',              pro_plus: '✓'              },
-      { label: 'Budget spend visibility',        free: 'View-only',     starter: 'View-only',   pro: '✓',              pro_plus: '✓'              },
-      { label: 'Cost tracking per provider',     free: '–',             starter: '✓',           pro: '✓',              pro_plus: '✓'              },
-      { label: 'Budget caps & alerts',           free: '–',             starter: '–',           pro: '✓',              pro_plus: '✓'              },
-      { label: 'Usage history export',           free: '–',             starter: 'CSV',         pro: 'CSV + JSON',     pro_plus: 'CSV + JSON'     },
-      { label: 'Cost forecasting',               free: '–',             starter: '–',           pro: '✓ Roadmap',      pro_plus: '✓ Roadmap'      },
+      { label: 'Basic usage dashboard',          free: '✓',             starter: '✓',           pro: '✓',              pro_plus: '✓',             team: '✓'                  },
+      { label: 'Budget spend visibility',        free: 'View-only',     starter: 'View-only',   pro: '✓',              pro_plus: '✓',             team: '✓'                  },
+      { label: 'Cost tracking per provider',     free: '–',             starter: '✓',           pro: '✓',              pro_plus: '✓',             team: '✓'                  },
+      { label: 'Budget caps & alerts',           free: '–',             starter: '–',           pro: '✓',              pro_plus: '✓',             team: '✓'                  },
+      { label: 'Usage history export',           free: '–',             starter: 'CSV',         pro: 'CSV + JSON',     pro_plus: 'CSV + JSON',    team: 'CSV + JSON'         },
+      { label: 'Cost forecasting',               free: '–',             starter: '–',           pro: '✓ Roadmap',      pro_plus: '✓ Roadmap',     team: '✓ Roadmap'          },
     ],
   },
   {
     category: 'Productivity',
     rows: [
-      { label: 'Projects',                       free: '1',             starter: '5',           pro: 'Unlimited',      pro_plus: 'Unlimited'      },
-      { label: 'Prompt template library',        free: '–',             starter: '✓ Roadmap',   pro: '✓ Roadmap',      pro_plus: '✓ Roadmap'      },
-      { label: 'Compare mode (A/B)',             free: '–',             starter: '–',           pro: '✓',              pro_plus: '✓'              },
-      { label: 'Consensus mode',                 free: '–',             starter: '–',           pro: '–',              pro_plus: '✓ Roadmap'      },
-      { label: 'Prompt chaining',                free: '–',             starter: '–',           pro: '✓ Roadmap',      pro_plus: '✓ Roadmap'      },
-      { label: 'Webhook output delivery',        free: '–',             starter: '–',           pro: '✓ Roadmap',      pro_plus: '✓ Roadmap'      },
+      { label: 'Projects',                       free: '1',             starter: '5',           pro: 'Unlimited',      pro_plus: 'Unlimited',     team: 'Unlimited'          },
+      { label: 'Prompt template library',        free: '–',             starter: '✓ Roadmap',   pro: '✓ Roadmap',      pro_plus: '✓ Roadmap',     team: '✓ Roadmap'          },
+      { label: 'Compare mode (A/B)',             free: '–',             starter: '–',           pro: '✓',              pro_plus: '✓',             team: '✓'                  },
+      { label: 'Consensus mode',                 free: '–',             starter: '–',           pro: '–',              pro_plus: '✓ Roadmap',     team: '✓ Roadmap'          },
+      { label: 'Prompt chaining',                free: '–',             starter: '–',           pro: '✓ Roadmap',      pro_plus: '✓ Roadmap',     team: '✓ Roadmap'          },
+      { label: 'Webhook output delivery',        free: '–',             starter: '–',           pro: '✓ Roadmap',      pro_plus: '✓ Roadmap',     team: '✓ Roadmap'          },
+    ],
+  },
+  {
+    category: 'Team',
+    rows: [
+      { label: 'Shared settings & config',       free: '–',             starter: '–',           pro: '–',              pro_plus: '–',             team: '✓ Roadmap'          },
+      { label: 'Admin controls & user mgmt',     free: '–',             starter: '–',           pro: '–',              pro_plus: '–',             team: '✓ Roadmap'          },
+      { label: 'Team collaboration features',    free: '–',             starter: '–',           pro: '–',              pro_plus: '–',             team: '✓ Roadmap'          },
     ],
   },
   {
     category: 'Media Generation',
     rows: [
-      { label: 'Image generation',               free: '–',             starter: '✓ Roadmap',   pro: '✓ Roadmap',      pro_plus: '✓ Roadmap'      },
-      { label: 'Video generation',               free: '–',             starter: '–',           pro: '✓ Roadmap',      pro_plus: '✓ Roadmap'      },
+      { label: 'Image generation',               free: '–',             starter: '✓ Roadmap',   pro: '✓ Roadmap',      pro_plus: '✓ Roadmap',     team: '✓ Roadmap'          },
+      { label: 'Video generation',               free: '–',             starter: '–',           pro: '✓ Roadmap',      pro_plus: '✓ Roadmap',     team: '✓ Roadmap'          },
     ],
   },
   {
     category: 'Support',
     rows: [
-      { label: 'Priority email support',         free: '–',             starter: '–',           pro: '–',              pro_plus: '✓'              },
+      { label: 'Priority email support',         free: '–',             starter: '–',           pro: '–',              pro_plus: '✓',             team: '✓'                  },
     ],
   },
   {
     category: 'Mobile',
     rows: [
-      { label: 'iOS & Android companion',        free: '–',             starter: '✓ Roadmap',   pro: '✓ Roadmap',      pro_plus: '✓ Roadmap'      },
+      { label: 'iOS & Android companion',        free: '–',             starter: '✓ Roadmap',   pro: '✓ Roadmap',      pro_plus: '✓ Roadmap',     team: '✓ Roadmap'          },
     ],
   },
 ];
@@ -160,6 +168,7 @@ export function LicensePanel({ showToast }) {
     if (tier === 'starter') return 'plan-col-starter';
     if (tier === 'pro') return 'plan-col-pro';
     if (tier === 'pro_plus') return 'plan-col-pro-plus';
+    if (tier === 'team') return 'plan-col-team';
     return 'plan-col-active';
   };
 
@@ -211,13 +220,14 @@ export function LicensePanel({ showToast }) {
               <th className={`center ${planColClass('starter')}`}>Starter</th>
               <th className={`center ${planColClass('pro')}`}>Pro</th>
               <th className={`center ${planColClass('pro_plus')}`} style={{ color: '#f59e0b' }}>Pro+ <span style={{ fontSize: '0.68rem', opacity: 0.7 }}>Soon</span></th>
+              <th className={`center ${planColClass('team')}`} style={{ color: '#22d3ee' }}>Team <span style={{ fontSize: '0.68rem', opacity: 0.7 }}>Soon</span></th>
             </tr>
           </thead>
           <tbody>
             {FEATURE_ROWS.map(section => (
               <Fragment key={section.category}>
                 <tr className="category-row">
-                  <td colSpan={5}>{section.category}</td>
+                  <td colSpan={6}>{section.category}</td>
                 </tr>
                 {section.rows.map(row => (
                   <tr key={row.label}>
@@ -226,6 +236,7 @@ export function LicensePanel({ showToast }) {
                     <td className={cellClass(row.starter, plan === 'starter')}>{row.starter}</td>
                     <td className={cellClass(row.pro, plan === 'pro')}>{row.pro}</td>
                     <td className={cellClass(row.pro_plus, plan === 'pro_plus')}>{row.pro_plus}</td>
+                    <td className={cellClass(row.team, plan === 'team')}>{row.team}</td>
                   </tr>
                 ))}
               </Fragment>
@@ -267,6 +278,9 @@ export function LicensePanel({ showToast }) {
             </button>
             <button className="primary" style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', opacity: 0.8 }} onClick={() => api.openExternal('https://example.com/upgrade-pro-plus')} title="Coming soon">
               ✦ Pro+ — $34/mo (Coming soon)
+            </button>
+            <button className="primary" style={{ background: 'linear-gradient(135deg,#22d3ee,#0891b2)', opacity: 0.8 }} onClick={() => api.openExternal('https://example.com/upgrade-team')} title="Coming soon">
+              ✦ Team — $49/user/mo (Coming soon)
             </button>
           </div>
         </div>

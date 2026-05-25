@@ -43,6 +43,7 @@ export default function App() {
   const [queueState,    setQueueState]    = useState({ paused: false, processing: false });
   const [license,       setLicense]       = useState(null);
   const [toast,         setToast]         = useState(null);
+  const [appVersion,    setAppVersion]    = useState('');
   const [theme,         setTheme]         = useState(() => readPref('aiq-theme', 'dark'));
   const [fontScaleIdx,  setFontScaleIdx]  = useState(() => readPref('aiq-font-idx', DEFAULT_FONT_IDX));
   const [railOpen,      setRailOpen]      = useState(() => readPref('aiq-rail-open', true));
@@ -75,6 +76,11 @@ export default function App() {
     } catch (e) {
       console.error('loadAll error:', e);
     }
+  }, []);
+
+  // Load the real version from package.json via Electron once on mount
+  useEffect(() => {
+    api.getAppVersion().then(v => { if (v) setAppVersion(v); }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -204,7 +210,7 @@ export default function App() {
                 const os  = navigator.platform.includes('Win') ? 'Windows'
                           : navigator.platform.includes('Mac') ? 'macOS'
                           : navigator.platform;
-                const ver = '0.3.6';
+                const ver = appVersion || 'unknown';
                 const title = encodeURIComponent('Bug: ');
                 const body  = encodeURIComponent(
                   `**Version:** ${ver}\n**OS:** ${os}\n\n**What happened:**\n\n\n**Steps to reproduce:**\n\n1. \n2. \n\n**Expected behaviour:**\n\n`
@@ -257,7 +263,15 @@ export default function App() {
       </div>
 
       {toast && (
-        <div className={'toast toast-' + toast.type} role="status">{toast.msg}</div>
+        // role="alert" + assertive for errors so screen readers interrupt immediately;
+        // role="status" + polite for non-urgent messages.
+        <div
+          role={toast.type === 'error' ? 'alert' : 'status'}
+          aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
+          className={'toast toast-' + toast.type}
+        >
+          {toast.msg}
+        </div>
       )}
     </div>
   );

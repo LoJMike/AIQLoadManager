@@ -44,8 +44,9 @@ const RATE_LIMITS = {
 
 class MultiUsageTracker {
   constructor() {
-    this.db       = null;
-    this._budgets = {};
+    this.db          = null;
+    this._budgets    = {};
+    this._statusCache = new Map();  // provider → { data, expiresAt }
   }
 
   /** Synchronous open — call before using */
@@ -102,6 +103,9 @@ class MultiUsageTracker {
       'INSERT INTO messages (id,provider,model,timestamp,input_tokens,output_tokens,cost_usd,queue_item_id,conversation_id) VALUES (?,?,?,?,?,?,?,?,?)'
     ).run(id, provider, model, timestamp, inputTokens, outputTokens, costUsd, queueItemId, conversationId);
 
+    // Invalidate cached status so the next canSend/getStatus reflects this message
+    this._statusCache.delete(provider);
+
     return { id, provider, costUsd };
   }
 
@@ -112,8 +116,14 @@ class MultiUsageTracker {
   }
 
   getStatus(provider) {
-    const limits  = RATE_LIMITS[provider] || {};
+    // Short-lived cache (1 s) — getStatus is called for every provider on every
+    // router tick and every IPC getUsageAll. Without caching this fires 36+ queries
+    // per second at full usage. Invalidated immediately on recordMessage/setBudget.
     const now     = Date.now();
+    const cached  = this._statusCache.get(provider);
+    if (cached && cached.expiresAt > now) return cached.data;
+
+    const limits  = RATE_LIMITS[provider] || {};
     const oneMin  = 60_000, oneDay = 86_400_000, oneMonth = 2_592_000_000;
 
     const lastMin   = this.db.prepare('SELECT * FROM messages WHERE provider=? AND timestamp>=? ORDER BY timestamp ASC').all(provider, now - oneMin);
@@ -147,7 +157,7 @@ class MultiUsageTracker {
       ? Math.min(100, Math.round((costMonth / budget) * 100))
       : null;
 
-    return {
+    const result = {
       provider, canSend, nextSlotMs, limits,
       requests: { lastMin: rpmUsed, lastDay: rpdUsed },
       tokens:   { totalIn, totalOut, totalAll: totalIn + totalOut },
@@ -159,6 +169,9 @@ class MultiUsageTracker {
       },
       timestamp: now,
     };
+
+    this._statusCache.set(provider, { data: result, expiresAt: now + 1_000 });
+    return result;
   }
 
   getHistory(provider, limit = 50) {
@@ -190,6 +203,7 @@ class MultiUsageTracker {
    *   positive number        →  soft monthly cap in USD
    */
   setBudget(provider, usd) {
+    this._statusCache.delete(provider);   // budget change must invalidate cached status
     if (usd === null || usd === undefined || usd === '') {
       // No limit — remove the stored entry
       this._budgets[provider] = null;
