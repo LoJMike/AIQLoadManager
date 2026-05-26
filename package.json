@@ -46,16 +46,17 @@
   "build": {
     "appId": "com.aiqueuemanager.app",
     "productName": "AI Queue Load Manager",
-    "icon": "src/renderer/assets/AIQLoadManager_logo_badge.png",
+    "icon": "src/renderer/assets/AIQLoadManager_logo_badge_512.png",
     "directories": {
       "output": "dist-app"
     },
     "files": [
       "src/**/*",
-      "dist/**/*"
+      "dist/**/*",
+      "stubs/**/*"
     ],
     "win": {
-      "icon": "src/renderer/assets/AIQLoadManager_logo_badge.png",
+      "icon": "src/renderer/assets/AIQLoadManager_logo_badge.ico",
       "target": [
         {
           "target": "nsis",
@@ -66,7 +67,7 @@
       ]
     },
     "mac": {
-      "icon": "src/renderer/assets/AIQLoadManager_logo_badge.png",
+      "icon": "src/renderer/assets/AIQLoadManager_logo_badge.icns",
       "target": [
         {
           "target": "dmg",
@@ -78,7 +79,7 @@
       ]
     },
     "linux": {
-      "icon": "src/renderer/assets/AIQLoadManager_logo_badge.png",
+      "icon": "src/renderer/assets/AIQLoadManager_logo_badge_512.png",
       "target": "AppImage"
     },
     "nsis": {
