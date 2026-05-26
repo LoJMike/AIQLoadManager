@@ -205,9 +205,12 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1600,
     height: 1025,
-    minWidth: 1250,
-    minHeight: 800,
-    icon: path.join(__dirname, "../renderer/assets/AIQLoadManager_logo_badge.png"),
+    minWidth: 1440,
+    minHeight: 900,
+    icon: path.join(
+      __dirname,
+      "../renderer/assets/AIQLoadManager_logo_badge.png",
+    ),
     ...(isMac
       ? { titleBarStyle: "hiddenInset", trafficLightPosition: { x: 14, y: 11 } }
       : { frame: false }),

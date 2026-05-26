@@ -4,6 +4,7 @@ Cross-platform desktop app (Windows 10/11 + macOS) for queuing, routing, and tra
 prompts across 12 AI providers — 7 cloud APIs plus Ollama, LM Studio, Jan.ai, LocalAI, and llama.cpp for fully local, offline AI.
 
 **GitHub:** https://github.com/LoJMike/AIQLoadManager  
+**Current version:** v0.5.0 (testing release)  
 **Version history:** [CHANGELOG.md](CHANGELOG.md)
 
 ---
@@ -85,6 +86,7 @@ All plans are **monthly subscriptions** — cancel any time. No lifetime deals, 
 | **Per-project response history** | All | View all completed prompts and responses for any project — click "View history" on any project card in the Projects tab. |
 | **Session digest export** | Starter+ | Export all completed queue items as a self-contained HTML file with summary stats, per-item prompt/response, and token costs. Opens natively after saving. |
 | **Anonymous usage analytics** | All | PostHog — routing mode usage, provider config, prompt counts. No prompt content, no keys, no personal data. Opt-out toggle in Settings → Analytics. |
+| **Support tab** | All | In-app support page with product homepage link, how-it-works guide, bug report shortcut (version and OS pre-filled), feature request link, and GitHub Discussions. Replaces the old nav-bar Report button. |
 
 ---
 

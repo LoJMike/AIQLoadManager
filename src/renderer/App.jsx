@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import UsageDashboard from './components/UsageDashboard';
 import AddPromptPanel from './components/AddPromptPanel';
-import { QueuePanel, SettingsPanel, ProjectsPanel, TitleBar, LicensePanel } from './components/index.js';
+import { QueuePanel, SettingsPanel, ProjectsPanel, TitleBar, LicensePanel, SupportPanel } from './components/index.js';
 import NavIcon from './components/NavIcons.jsx';
 import AppHeader from './components/AppHeader.jsx';
 import RightRail from './components/RightRail.jsx';
@@ -15,6 +15,7 @@ const NAV = [
   { id: 'projects', label: 'Projects' },
   { id: 'settings', label: 'Settings' },
   { id: 'license',  label: 'License'  },
+  { id: 'support',  label: 'Support'  },
 ];
 
 const FONT_SCALES = [0.85, 0.92, 1.0, 1.08, 1.15];
@@ -217,33 +218,6 @@ export default function App() {
                 />
               ))}
             </div>
-            <button
-              type="button"
-              className="report-btn"
-              title="Report a bug or request a feature on GitHub"
-              onClick={() => {
-                const os  = navigator.platform.includes('Win') ? 'Windows'
-                          : navigator.platform.includes('Mac') ? 'macOS'
-                          : navigator.platform;
-                const ver = appVersion || 'unknown';
-                const title = encodeURIComponent('Bug: ');
-                const body  = encodeURIComponent(
-                  `**Version:** ${ver}\n**OS:** ${os}\n\n**What happened:**\n\n\n**Steps to reproduce:**\n\n1. \n2. \n\n**Expected behaviour:**\n\n`
-                );
-                api.openExternal(
-                  `https://github.com/LoJMike/AIQLoadManager/issues/new?title=${title}&body=${body}&labels=bug`
-                );
-              }}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0 }}>
-                <ellipse cx="12" cy="14" rx="5" ry="6" />
-                <circle cx="12" cy="6" r="3" />
-                <path d="M9 4L7 2M15 4L17 2" />
-                <path d="M7 10H3M7 14.5H3M7 18.5H3" />
-                <path d="M17 10H21M17 14.5H21M17 18.5H21" />
-              </svg>
-              Report
-            </button>
           </div>
         </nav>
 
@@ -271,6 +245,7 @@ export default function App() {
               {tab === 'projects' && <ProjectsPanel projects={projects} providers={providers} onRefresh={loadAll} license={license} />}
               {tab === 'settings' && <SettingsPanel providers={providers} onRefresh={loadAll} showToast={showToast} />}
               {tab === 'license'  && <LicensePanel showToast={showToast} />}
+              {tab === 'support'  && <SupportPanel appVersion={appVersion} />}
             </main>
 
             {railOpen && (

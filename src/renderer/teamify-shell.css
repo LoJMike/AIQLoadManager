@@ -68,6 +68,10 @@
   --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
+.app-root[data-theme="light"] .glass-card {
+  background: rgba(255, 255, 255, 0.85);
+}
+
 /* ── Shell grid (continued) ─────────────────────────────────────────────── */ .content-row {
   grid-template-columns: 1fr var(--rail-w);
 }

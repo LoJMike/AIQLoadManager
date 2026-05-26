@@ -1,5 +1,65 @@
 # Work Log — AI Queue Load Manager
 
+## Session 20 — 2026-05-25
+**Goal:** Fix dropdown menus being hidden behind cards; bump to v0.5.0 as our testing release; update CHANGELOG, WORKLOG, and README.
+
+**Completed:**
+- [x] **Dropdown z-index stacking fix** — Custom dropdown menus (e.g. Routing Mode selector in the Add Prompt panel) were being obscured by `.card` elements that came after them in the DOM. Root cause: `backdrop-filter: blur(10px)` on `.card` creates a CSS stacking context, confining the dropdown's `z-index: 200` to that card's layer. The next card (also z-index: 1) would then paint on top. Fix: added a single CSS rule to `App.css` using the `:has()` pseudo-class — `.card:has(.routing-select-menu) { z-index: 10; }` — which automatically elevates a card's stacking context the moment it contains an open dropdown menu. The dropdown div only exists in the DOM while open (React conditional render), so `:has()` fires exactly when needed. No JavaScript changes.
+- [x] **Bumped version 0.4.0 → 0.5.0** in `package.json` and `CLAUDE.md`.
+- [x] Updated `CHANGELOG.md`, `WORKLOG.md`, and `README.md`.
+
+**Decisions Made:**
+- v0.5.0 designated as our testing release milestone — no new features, just the dropdown fix and version housekeeping.
+- CSS `:has()` chosen over JavaScript portal rendering or fixed positioning — far simpler, zero risk of layout side-effects, supported in Chromium 105+ (Electron uses Chromium 134+).
+
+**Next Steps:**
+- [ ] Run `npm run dev:win` and confirm the Routing Mode dropdown opens cleanly above the cards below it.
+- [ ] Begin testing pass against all features before public release.
+- [ ] Add date-range / project filter controls to Export Digest dialog.
+- [ ] Show retry count badge on queue items in QueuePanel UI.
+
+**Files Changed:**
+- `src/renderer/App.css`
+- `package.json`
+- `CLAUDE.md`
+- `CHANGELOG.md`
+- `README.md`
+- `WORKLOG.md`
+
+---
+
+## Session 19 — 2026-05-25
+**Goal:** Add a dedicated Support tab to the left navigation, move the bug-report action there, and remove the Report button from the nav footer.
+
+**Completed:**
+- [x] **SupportPanel.jsx** — new component with four sections: Product Homepage (link to https://www.conxion.biz/aiqloadmanager/), How AIQ Load Manager Works (app overview with per-tab description), Report a Bug / Request a Feature (bug-report button with version+OS pre-filled, feature-request button), GitHub Discussions link.
+- [x] **NavIcons.jsx** — added `support` icon (info circle with exclamation dot).
+- [x] **App.jsx** — added `{ id: 'support', label: 'Support' }` to `NAV` array; imported and wired up `SupportPanel`; removed the `report-btn` block from the sidebar footer entirely.
+- [x] **components/index.js** — exported `SupportPanel`.
+- [x] **README.md** — added Support tab row to the Features table.
+- [x] **WORKLOG.md** — this entry.
+
+**Decisions Made:**
+- Support tab placed at the bottom of the NAV list (after License) so it doesn't interrupt the main workflow tabs.
+- Bug-report logic moved wholesale into SupportPanel; the sidebar footer now only shows Pause/Resume, provider dots — cleaner and less cluttered.
+- Feature-request button added alongside the bug-report button since both live on GitHub Issues.
+
+**Next Steps:**
+- [ ] Add date-range / project filter controls to Export Digest dialog
+- [ ] Show retry count badge on queue items in QueuePanel UI
+- [ ] Document context injection — implement for Pro tier when ready (roadmap)
+- [ ] Email digest — implement for Pro+ when ready (roadmap)
+
+**Files Changed:**
+- `src/renderer/components/SupportPanel.jsx` *(new)*
+- `src/renderer/components/NavIcons.jsx`
+- `src/renderer/components/index.js`
+- `src/renderer/App.jsx`
+- `README.md`
+- `WORKLOG.md`
+
+---
+
 ## Session 18 — 2026-05-25
 **Goal:** Implement 4 new features (response style presets, per-provider default model, project history, digest export) and add 2 roadmap items (document context injection, email digest).
 

@@ -695,6 +695,22 @@ button.ghost:hover { color: var(--text1); background: var(--bg3); }
 }
 
 /* ── Routing mode dropdown ─────────────────────────────────────────────────── */
+
+/*
+ * STACKING FIX — dropdown visibility
+ *
+ * .card has backdrop-filter: blur(), which creates a CSS stacking context even
+ * without an explicit z-index. That confines absolutely-positioned descendants
+ * (the routing dropdown menu) to the card's own stacking context, so the *next*
+ * card in the DOM (also z-index:1) paints over the open menu.
+ *
+ * Solution: when a card contains an open dropdown menu (the menu div only exists
+ * in the DOM while open), bump that card's z-index above siblings.
+ */
+.card:has(.routing-select-menu) {
+  z-index: 10;
+}
+
 .routing-select-wrap { position: relative; }
 .routing-select-trigger {
   width: 100%;

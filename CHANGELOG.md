@@ -5,6 +5,13 @@ Each entry describes what changed in plain language — no jargon.
 
 ---
 
+## [0.5.0] — Testing release
+
+- **v0.5.0 is our first dedicated testing release** — intended for internal testing before public launch. All features from v0.4.0 are included.
+- Fixed **dropdown menus being hidden behind cards** — the Routing Mode selector and any other custom dropdowns now correctly float above subsequent cards on the page. Root cause: `backdrop-filter: blur()` on `.card` elements was creating CSS stacking contexts that trapped the dropdown inside the card's paint layer. Fixed with a single CSS `:has()` rule that automatically elevates the active card's stacking context when a dropdown is open. No JavaScript changes needed.
+
+---
+
 ## [0.4.0]
 
 - Added **Pro+ tier** (coming soon, $34/mo) — positioned between Pro and Team for solo power users who need higher throughput, unlimited queue depth, Consensus mode, and priority support without team overhead.

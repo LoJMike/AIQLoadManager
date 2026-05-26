@@ -35,6 +35,13 @@ const paths = {
       <path d="M12 2l8 4v6c0 5-3.5 9.5-8 10-4.5-.5-8-5-8-10V6l8-4z" />
     </>
   ),
+  support: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 8v4" strokeLinecap="round" />
+      <circle cx="12" cy="16" r="0.5" fill="currentColor" stroke="none" />
+    </>
+  ),
 };
 
 export default function NavIcon({ name, size = 22 }) {
