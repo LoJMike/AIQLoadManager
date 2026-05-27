@@ -34,12 +34,10 @@ CLAUDE.md
 DESIGN.md
 WORKLOG.md
 /planning/*
-/docs/*
 /mockups/*
 /.tmp.driveupload/*
 /.tmp.drivedownload/*
-landing-page-orig.html
-landing-page.html
 /.claude/*
 /website/*
 CODE_REVIEW.md
+/planning_docs/*

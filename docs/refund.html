@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Refund Policy — AI Queue Load Manager</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    :root {
+      --bg0: #14151c;
+      --bg1: #1c1d26;
+      --bg2: #23242f;
+      --bg3: #2a2b38;
+      --purple: #7c5cff;
+      --purple-bright: #9b7dff;
+      --purple-dim: rgba(124,92,255,0.14);
+      --purple-mid: rgba(124,92,255,0.28);
+      --green: #22c55e;
+      --green-dim: rgba(34,197,94,0.10);
+      --gradient: linear-gradient(135deg,#8b6dff 0%,#6c4dff 55%,#5a3fe8 100%);
+      --text1: #f4f4f8;
+      --text2: #9b9cb8;
+      --text3: #5c5d78;
+      --border: rgba(255,255,255,0.06);
+      --radius: 10px;
+      --radius-lg: 16px;
+      --sans: "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+      --mono: "SF Mono","JetBrains Mono","Fira Code",Consolas,monospace;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg0);
+      color: var(--text1);
+      line-height: 1.65;
+      min-height: 100vh;
+    }
+
+    a { color: var(--purple); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Nav ── */
+    nav {
+      background: rgba(20,21,28,0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+    }
+    .nav-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+    .nav-logo img { height: 36px; width: auto; display: block; }
+    .nav-back {
+      font-size: 0.82rem;
+      color: var(--text2);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 150ms;
+    }
+    .nav-back:hover { color: var(--purple); text-decoration: none; }
+
+    /* ── Page header ── */
+    .page-header {
+      background: var(--bg1);
+      border-bottom: 1px solid var(--border);
+      padding: 48px 28px 40px;
+      text-align: center;
+    }
+    .page-header .label {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin-bottom: 12px;
+    }
+    .page-header h1 {
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text1);
+      margin-bottom: 10px;
+    }
+    .page-header .meta {
+      font-size: 0.82rem;
+      color: var(--text3);
+    }
+
+    /* ── Content ── */
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 56px 28px 96px;
+    }
+
+    /* Guarantee badge */
+    .guarantee {
+      background: var(--bg2);
+      border: 1px solid rgba(34,197,94,0.25);
+      border-radius: var(--radius-lg);
+      padding: 36px 28px;
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .guarantee .check {
+      width: 52px;
+      height: 52px;
+      background: var(--green-dim);
+      border: 1px solid rgba(34,197,94,0.3);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      margin: 0 auto 16px;
+    }
+    .guarantee h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text1);
+      letter-spacing: -0.01em;
+      margin: 0 0 8px;
+      text-transform: none;
+      border: none;
+      padding: 0;
+    }
+    .guarantee p {
+      font-size: 0.9rem;
+      color: var(--text2);
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    h2 {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin: 44px 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    p { color: var(--text2); font-size: 0.92rem; margin-bottom: 14px; line-height: 1.75; }
+    p strong { color: var(--text1); }
+
+    ul { margin: 10px 0 14px 0; list-style: none; }
+    ul li {
+      display: flex;
+      gap: 10px;
+      font-size: 0.9rem;
+      color: var(--text2);
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+      line-height: 1.65;
+    }
+    ul li:last-child { border-bottom: none; }
+    ul li::before {
+      content: "→";
+      color: var(--purple);
+      flex-shrink: 0;
+      margin-top: 1px;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+    }
+
+    /* Steps */
+    ol.steps { margin: 14px 0 20px 0; list-style: none; counter-reset: step; }
+    ol.steps li {
+      counter-increment: step;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--purple);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 14px 18px;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+      color: var(--text2);
+      line-height: 1.65;
+    }
+    ol.steps li::before {
+      content: counter(step);
+      background: var(--gradient);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.78rem;
+      font-family: var(--mono);
+      min-width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ── Footer ── */
+    footer {
+      background: var(--bg1);
+      border-top: 1px solid rgba(124,92,255,0.12);
+      padding: 32px 28px;
+      text-align: center;
+    }
+    footer p { font-size: 0.8rem; color: var(--text3); line-height: 1.9; margin: 0; }
+    footer a { color: var(--purple); }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo" aria-label="AI Queue Load Manager home">
+      <img src="assets/AIQLoadManager_logo_large.png" alt="AI Queue Load Manager" />
+    </a>
+    <a href="index.html" class="nav-back">← Back to home</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <span class="label">Legal</span>
+  <h1>Refund Policy</h1>
+  <p class="meta">Effective date: May 27, 2026 &nbsp;·&nbsp; Last updated: May 27, 2026</p>
+</div>
+
+<main>
+
+  <div class="guarantee">
+    <div class="check">✓</div>
+    <h2>14-Day Money-Back Guarantee</h2>
+    <p>Try AI Queue Load Manager risk-free. If you're not satisfied within 14 days of your first payment, we'll refund you in full — no questions asked.</p>
+  </div>
+
+  <h2>1. Refund Eligibility</h2>
+  <p>You are eligible for a full refund if:</p>
+  <ul>
+    <li>You request the refund within <strong>14 days</strong> of your initial subscription payment (the first payment, not renewals)</li>
+    <li>You contact us at <a href="mailto:mike@conxion.biz">mike@conxion.biz</a> with your purchase details</li>
+  </ul>
+  <p>You do not need to provide a reason, though feedback is always welcome.</p>
+
+  <h2>2. How to Request a Refund</h2>
+  <ol class="steps">
+    <li>Email <a href="mailto:mike@conxion.biz">mike@conxion.biz</a> with the subject line <strong>"Refund Request"</strong>.</li>
+    <li>Include the email address used to purchase and your Paddle order number (found in your receipt email).</li>
+    <li>We'll confirm your refund within <strong>2 business days</strong>.</li>
+    <li>Funds typically appear back on your original payment method within 5–10 business days, depending on your bank.</li>
+  </ol>
+
+  <h2>3. Renewal Payments</h2>
+  <p>The 14-day guarantee applies to your <strong>first payment only</strong>. Subsequent monthly renewal charges are not refundable, as you retain access to the Software for the full billing period you have already paid for.</p>
+  <p>To avoid being charged for another month, cancel your subscription <strong>before your next renewal date</strong>. You can cancel at any time from your Paddle billing portal (link in your receipt email) or by contacting us.</p>
+
+  <h2>4. Cancellation vs. Refund</h2>
+  <p><strong>Cancellation</strong> stops future charges. Your access continues until the end of the current billing period you have already paid for. No refund is issued for remaining days in that period.</p>
+  <p><strong>Refund</strong> reverses a charge you have already been billed for (subject to the eligibility window above) and ends your access immediately.</p>
+
+  <h2>5. Exceptions</h2>
+  <p>We reserve the right to decline a refund request if there is evidence of abuse of this policy (for example, repeated refund requests across multiple subscription periods).</p>
+  <p>Refunds cannot be issued for charges that have already been disputed as chargebacks with your bank or card issuer. Please contact us directly before initiating a chargeback — we are almost always able to resolve issues faster that way.</p>
+
+  <h2>6. AI Provider Costs Are Not Our Responsibility</h2>
+  <p>AI Queue Load Manager routes requests through your own third-party AI API accounts. Any costs you incur with AI providers (Anthropic, OpenAI, Google, Groq, etc.) are entirely separate from your AIQ Load Manager subscription and are not covered by this refund policy. Those charges are billed directly to you by the respective AI provider.</p>
+
+  <h2>7. Contact</h2>
+  <p>Refund requests or billing questions: <a href="mailto:mike@conxion.biz">mike@conxion.biz</a></p>
+  <p>We aim to respond to all refund requests within 2 business days.</p>
+
+</main>
+
+<footer>
+  <p>
+    <a href="index.html">Home</a> &nbsp;·&nbsp;
+    <a href="terms.html">Terms of Service</a> &nbsp;·&nbsp;
+    <a href="privacy.html">Privacy Policy</a> &nbsp;·&nbsp;
+    <a href="refund.html">Refund Policy</a>
+  </p>
+  <p style="margin-top:8px;">&copy; 2026 AI Queue Load Manager &nbsp;·&nbsp; conxion visual communications</p>
+</footer>
+
+</body>
+</html>

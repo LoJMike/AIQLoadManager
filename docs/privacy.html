@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — AI Queue Load Manager</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    :root {
+      --bg0: #14151c;
+      --bg1: #1c1d26;
+      --bg2: #23242f;
+      --bg3: #2a2b38;
+      --purple: #7c5cff;
+      --purple-bright: #9b7dff;
+      --purple-dim: rgba(124,92,255,0.14);
+      --purple-mid: rgba(124,92,255,0.28);
+      --green: #22c55e;
+      --gradient: linear-gradient(135deg,#8b6dff 0%,#6c4dff 55%,#5a3fe8 100%);
+      --text1: #f4f4f8;
+      --text2: #9b9cb8;
+      --text3: #5c5d78;
+      --border: rgba(255,255,255,0.06);
+      --radius: 10px;
+      --radius-lg: 16px;
+      --sans: "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+      --mono: "SF Mono","JetBrains Mono","Fira Code",Consolas,monospace;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg0);
+      color: var(--text1);
+      line-height: 1.65;
+      min-height: 100vh;
+    }
+
+    a { color: var(--purple); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Nav ── */
+    nav {
+      background: rgba(20,21,28,0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+    }
+    .nav-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+    .nav-logo img { height: 36px; width: auto; display: block; }
+    .nav-back {
+      font-size: 0.82rem;
+      color: var(--text2);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 150ms;
+    }
+    .nav-back:hover { color: var(--purple); text-decoration: none; }
+
+    /* ── Page header ── */
+    .page-header {
+      background: var(--bg1);
+      border-bottom: 1px solid var(--border);
+      padding: 48px 28px 40px;
+      text-align: center;
+    }
+    .page-header .label {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin-bottom: 12px;
+    }
+    .page-header h1 {
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text1);
+      margin-bottom: 10px;
+    }
+    .page-header .meta {
+      font-size: 0.82rem;
+      color: var(--text3);
+    }
+
+    /* ── Content ── */
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 56px 28px 96px;
+    }
+
+    .highlight-box {
+      background: rgba(34,197,94,0.08);
+      border: 1px solid rgba(34,197,94,0.2);
+      border-left: 4px solid var(--green);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 16px 20px;
+      font-size: 0.9rem;
+      color: var(--text2);
+      margin-bottom: 48px;
+      line-height: 1.7;
+    }
+    .highlight-box strong { color: var(--green); }
+
+    h2 {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin: 44px 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    p { color: var(--text2); font-size: 0.92rem; margin-bottom: 14px; line-height: 1.75; }
+    p strong { color: var(--text1); }
+
+    ul { margin: 10px 0 14px 0; list-style: none; }
+    ul li {
+      display: flex;
+      gap: 10px;
+      font-size: 0.9rem;
+      color: var(--text2);
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+      line-height: 1.65;
+    }
+    ul li:last-child { border-bottom: none; }
+    ul li::before {
+      content: "→";
+      color: var(--purple);
+      flex-shrink: 0;
+      margin-top: 1px;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+    }
+
+    /* Data table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+      margin: 16px 0 28px;
+    }
+    .data-table thead th {
+      background: var(--bg2);
+      color: var(--text3);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 10px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table tbody td {
+      padding: 12px 16px;
+      color: var(--text2);
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      line-height: 1.6;
+    }
+    .data-table tbody td:first-child {
+      color: var(--text1);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .data-table tbody tr:hover td { background: var(--bg2); }
+
+    /* ── Footer ── */
+    footer {
+      background: var(--bg1);
+      border-top: 1px solid rgba(124,92,255,0.12);
+      padding: 32px 28px;
+      text-align: center;
+    }
+    footer p { font-size: 0.8rem; color: var(--text3); line-height: 1.9; margin: 0; }
+    footer a { color: var(--purple); }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo" aria-label="AI Queue Load Manager home">
+      <img src="assets/AIQLoadManager_logo_large.png" alt="AI Queue Load Manager" />
+    </a>
+    <a href="index.html" class="nav-back">← Back to home</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <span class="label">Legal</span>
+  <h1>Privacy Policy</h1>
+  <p class="meta">Effective date: May 27, 2026 &nbsp;·&nbsp; Last updated: May 27, 2026</p>
+</div>
+
+<main>
+
+  <div class="highlight-box">
+    <strong>Short version:</strong> Your prompts, AI responses, and API keys never leave your machine. We collect only anonymous usage analytics (opt-out) and the minimum billing information needed to process your subscription.
+  </div>
+
+  <h2>1. Who We Are</h2>
+  <p>AI Queue Load Manager ("we," "us," "our") is a desktop software product operated by <strong>Michael Hall / conxion visual communications</strong>. If you have privacy questions, contact us at <a href="mailto:mike@conxion.biz">mike@conxion.biz</a>.</p>
+
+  <h2>2. What Data We Collect</h2>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Data type</th>
+        <th>What it is</th>
+        <th>Why we collect it</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Billing information</td>
+        <td>Name, email address, payment details</td>
+        <td>To process your subscription. Handled by Paddle (our payment processor) — we do not store card numbers.</td>
+      </tr>
+      <tr>
+        <td>Anonymous analytics</td>
+        <td>Feature usage events, crash reports, app version, OS type</td>
+        <td>To understand how the Software is used and identify bugs. Collected via PostHog. Contains no personally identifiable information. Opt-out available in app settings.</td>
+      </tr>
+      <tr>
+        <td>Support communications</td>
+        <td>Emails or messages you send us</td>
+        <td>To respond to your support request.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>3. What We Do NOT Collect</h2>
+  <p>The following data stays entirely on your machine and is never transmitted to us:</p>
+  <ul>
+    <li><strong>Your prompts and AI responses</strong> — all API calls go directly from your machine to the AI provider. They do not pass through our servers.</li>
+    <li><strong>Your API keys</strong> — stored locally using encrypted, OS-backed secure storage (electron-store). We never see or receive your API keys.</li>
+    <li><strong>Your queue history and usage stats</strong> — stored in a local SQLite database on your device.</li>
+    <li><strong>Your conversation content</strong> — conversation history is held in memory only and is never written to any server.</li>
+  </ul>
+
+  <h2>4. How We Use Your Data</h2>
+  <p>We use the data we collect only to:</p>
+  <ul>
+    <li>Process and manage your subscription</li>
+    <li>Send transactional emails (receipts, renewal notices, important product updates)</li>
+    <li>Improve the Software based on anonymous usage patterns</li>
+    <li>Respond to your support requests</li>
+    <li>Comply with legal obligations</li>
+  </ul>
+  <p>We do not sell, rent, or share your personal data with third parties for marketing purposes.</p>
+
+  <h2>5. Third-Party Services</h2>
+  <p><strong>Paddle</strong> — Our payment processor and Merchant of Record. Paddle processes your payment and issues your invoice. Their privacy policy applies to data they collect: <a href="https://www.paddle.com/legal/privacy" target="_blank" rel="noopener">paddle.com/legal/privacy</a>.</p>
+  <p><strong>PostHog</strong> — Anonymous analytics. PostHog receives event data with no name, email, or identifiable information attached. You can opt out in the app's Settings panel. PostHog privacy policy: <a href="https://posthog.com/privacy" target="_blank" rel="noopener">posthog.com/privacy</a>.</p>
+  <p><strong>AI providers</strong> — When you use the Software to send requests to Claude, OpenAI, Gemini, Groq, DeepSeek, Mistral, or xAI Grok, those requests are governed by each provider's own privacy policy. We have no control over and are not responsible for how those providers handle your data.</p>
+
+  <h2>6. Data Retention</h2>
+  <p>Billing records are retained as required for tax and legal compliance (typically 7 years). Anonymous analytics data is retained per PostHog's standard retention settings. Support communications are retained for up to 2 years. You may request deletion of your personal data at any time by contacting us.</p>
+
+  <h2>7. Your Rights</h2>
+  <p>Depending on where you live, you may have rights to access, correct, delete, or restrict the processing of your personal data. To exercise any of these rights, contact us at <a href="mailto:mike@conxion.biz">mike@conxion.biz</a>. We will respond within 30 days.</p>
+  <p>If you are in the European Economic Area or the UK, you also have the right to lodge a complaint with your local data protection authority.</p>
+
+  <h2>8. Data Security</h2>
+  <p>We take reasonable steps to protect personal data in our possession. Your API keys and local application data are protected by OS-level encryption on your device. Payment data is handled entirely by Paddle and is never stored on our systems.</p>
+
+  <h2>9. Children's Privacy</h2>
+  <p>The Software is not directed at children under 13. We do not knowingly collect personal data from children under 13. If you believe a child has provided us with personal data, contact us and we will delete it promptly.</p>
+
+  <h2>10. Changes to This Policy</h2>
+  <p>We may update this Privacy Policy from time to time. We will notify you of material changes by email or via a notice in the Software. The "Last updated" date at the top of this page reflects the most recent revision.</p>
+
+  <h2>11. Contact</h2>
+  <p>Privacy questions or requests: <a href="mailto:mike@conxion.biz">mike@conxion.biz</a></p>
+
+</main>
+
+<footer>
+  <p>
+    <a href="index.html">Home</a> &nbsp;·&nbsp;
+    <a href="terms.html">Terms of Service</a> &nbsp;·&nbsp;
+    <a href="privacy.html">Privacy Policy</a> &nbsp;·&nbsp;
+    <a href="refund.html">Refund Policy</a>
+  </p>
+  <p style="margin-top:8px;">&copy; 2026 AI Queue Load Manager &nbsp;·&nbsp; conxion visual communications</p>
+</footer>
+
+</body>
+</html>

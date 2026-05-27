@@ -374,11 +374,13 @@ Compare mode requires a Pro license. No conversation history is injected — eac
 
 ## Purchasing & Licensing
 
-AIQ Load Manager uses **[Lemon Squeezy](https://www.lemonsqueezy.com)** as its payment and subscription vendor (Merchant of Record). Lemon Squeezy handles checkout, global tax compliance (VAT/GST/sales tax), subscriptions, and license key issuance — no separate tax setup required.
+AIQ Load Manager uses **[Paddle](https://www.paddle.com)** as its payment and subscription vendor (Merchant of Record). Paddle handles checkout, global tax compliance (VAT/GST/sales tax), subscriptions, and license key issuance — no separate tax setup required.
 
-### Products to create in Lemon Squeezy
+**Note — BYOK model:** AIQ Load Manager is desktop software. Users bring their own API keys from each AI provider. No prompts pass through our servers; no AI usage is resold. Paddle was selected as our MoR based on this architecture.
 
-| Product | Type | Price | Lemon Squeezy product name |
+### Products to create in Paddle
+
+| Product | Type | Price | Paddle product name |
 |---|---|---|---|
 | Starter Monthly | Subscription | $9.00/mo | `AIQ Load Manager — Starter` |
 | Pro Monthly | Subscription | $19.00/mo | `AIQ Load Manager — Pro` |
@@ -389,35 +391,36 @@ Enable **License Keys** on every product (1 key per order). Free tier users down
 
 ### Newsletter opt-in
 
-In Lemon Squeezy dashboard → **Store Settings → Checkout**, enable "Show newsletter opt-in checkbox". Buyers can opt in at checkout; their emails appear in the Customers tab and are exportable to your mailing list tool.
+In the Paddle dashboard → **Checkout settings**, configure a post-purchase email flow or connect to your mailing list tool (e.g. Mailchimp via Zapier). Alternatively use Paddle's built-in customer email notifications as the initial touchpoint.
 
 ### Landing page checkout integration
 
-`website/index.html` uses **Lemon.js** (Lemon Squeezy's mini JS library) to open checkout as an overlay popup. The `CHECKOUT_URLS` block near the bottom of the file holds the four product checkout URLs — replace the placeholder strings with your real URLs after creating products in Lemon Squeezy:
+`docs/index.html` uses Paddle.js to open checkout as an overlay popup. The `CHECKOUT_URLS` block near the bottom of the file holds the product checkout URLs — replace the placeholder strings with your real Paddle checkout links after creating products in the Paddle dashboard:
 
 ```js
 const CHECKOUT_URLS = {
-  starter:  'https://your-store.lemonsqueezy.com/checkout/buy/xxxx',  // $9/mo subscription
-  pro:      'https://your-store.lemonsqueezy.com/checkout/buy/xxxx',  // $19/mo subscription
-  pro_plus: 'https://your-store.lemonsqueezy.com/checkout/buy/xxxx',  // $34/mo subscription (coming soon)
+  starter:  'https://buy.paddle.com/product/xxxx',  // $9/mo subscription
+  pro:      'https://buy.paddle.com/product/xxxx',  // $19/mo subscription
+  pro_plus: 'https://buy.paddle.com/product/xxxx',  // $34/mo subscription (coming soon)
 };
 ```
 
+Also replace the Paddle vendor/client-side token in the `<script>` initialisation block at the bottom of `docs/index.html` with your own from the Paddle dashboard → Developer Tools → Authentication.
+
 ### License key validation (TODO)
 
-`src/main/licenseChecker.js` currently stubs license validation (any stored key = pro). When ready to enforce licensing, replace the stub with a real call to the [Lemon Squeezy License API](https://docs.lemonsqueezy.com/api/license-api):
+`src/main/licenseChecker.js` currently stubs license validation (any stored key = pro). When ready to enforce licensing, replace the stub with a real call to the [Paddle License API](https://developer.paddle.com/api-reference/overview):
 
 ```
-POST https://api.lemonsqueezy.com/v1/licenses/validate
-Content-Type: application/x-www-form-urlencoded
-license_key=XXXX&instance_id=YYYY
+POST https://vendors.paddle.com/api/2.0/license/verify
+vendor_id=XXXX&vendor_auth_code=YYYY&license_code=ZZZZ
 ```
 
-The API does not require a Bearer token. Validate that the returned `store_id`, `product_id`, and `variant_id` match your products (hard-code these values in `licenseChecker.js`). Store the `instance_id` locally so activation/deactivation can be tracked per machine.
+Validate that the returned `product_id` matches your products (hard-code these values in `licenseChecker.js`). Store a locally generated `machine_id` so you can track activations per device. Paddle supports a configurable number of activations per license key — set this in the product settings.
 
 ### Testing without real money
 
-Create a 100% discount code in Lemon Squeezy (Dashboard → Discounts → New) with a limited number of uses and a short expiry. Testers go through the normal checkout flow, enter the code, and receive a real license key — no payment required.
+In the Paddle sandbox environment (toggle in the Paddle dashboard top bar), create test products with the same structure as your live ones. Sandbox checkouts use test card numbers and generate real license keys — no charge. Switch `docs/index.html` checkout URLs to the sandbox equivalents during testing, then swap back to live URLs before going public.
 
 ---
 

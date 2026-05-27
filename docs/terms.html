@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terms of Service — AI Queue Load Manager</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    :root {
+      --bg0: #14151c;
+      --bg1: #1c1d26;
+      --bg2: #23242f;
+      --bg3: #2a2b38;
+      --purple: #7c5cff;
+      --purple-bright: #9b7dff;
+      --purple-dim: rgba(124,92,255,0.14);
+      --purple-mid: rgba(124,92,255,0.28);
+      --gradient: linear-gradient(135deg,#8b6dff 0%,#6c4dff 55%,#5a3fe8 100%);
+      --text1: #f4f4f8;
+      --text2: #9b9cb8;
+      --text3: #5c5d78;
+      --border: rgba(255,255,255,0.06);
+      --radius: 10px;
+      --radius-lg: 16px;
+      --sans: "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+      --mono: "SF Mono","JetBrains Mono","Fira Code",Consolas,monospace;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg0);
+      color: var(--text1);
+      line-height: 1.65;
+      min-height: 100vh;
+    }
+
+    a { color: var(--purple); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Nav ── */
+    nav {
+      background: rgba(20,21,28,0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+    }
+    .nav-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+    .nav-logo img { height: 36px; width: auto; display: block; }
+    .nav-back {
+      font-size: 0.82rem;
+      color: var(--text2);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 150ms;
+    }
+    .nav-back:hover { color: var(--purple); text-decoration: none; }
+
+    /* ── Page header ── */
+    .page-header {
+      background: var(--bg1);
+      border-bottom: 1px solid var(--border);
+      padding: 48px 28px 40px;
+      text-align: center;
+    }
+    .page-header .label {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin-bottom: 12px;
+    }
+    .page-header h1 {
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text1);
+      margin-bottom: 10px;
+    }
+    .page-header .meta {
+      font-size: 0.82rem;
+      color: var(--text3);
+    }
+
+    /* ── Content ── */
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 56px 28px 96px;
+    }
+
+    .notice-box {
+      background: var(--purple-dim);
+      border: 1px solid var(--purple-mid);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      font-size: 0.88rem;
+      color: var(--text2);
+      margin-bottom: 48px;
+      line-height: 1.7;
+    }
+    .notice-box strong { color: var(--purple-bright); }
+
+    h2 {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin: 44px 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    p { color: var(--text2); font-size: 0.92rem; margin-bottom: 14px; line-height: 1.75; }
+    p strong { color: var(--text1); }
+
+    ul { margin: 10px 0 14px 0; list-style: none; }
+    ul li {
+      display: flex;
+      gap: 10px;
+      font-size: 0.9rem;
+      color: var(--text2);
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+      line-height: 1.65;
+    }
+    ul li:last-child { border-bottom: none; }
+    ul li::before {
+      content: "→";
+      color: var(--purple);
+      flex-shrink: 0;
+      margin-top: 1px;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+    }
+
+    /* ── Footer ── */
+    footer {
+      background: var(--bg1);
+      border-top: 1px solid rgba(124,92,255,0.12);
+      padding: 32px 28px;
+      text-align: center;
+    }
+    footer p { font-size: 0.8rem; color: var(--text3); line-height: 1.9; margin: 0; }
+    footer a { color: var(--purple); }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo" aria-label="AI Queue Load Manager home">
+      <img src="assets/AIQLoadManager_logo_large.png" alt="AI Queue Load Manager" />
+    </a>
+    <a href="index.html" class="nav-back">← Back to home</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <span class="label">Legal</span>
+  <h1>Terms of Service</h1>
+  <p class="meta">Effective date: May 27, 2026 &nbsp;·&nbsp; Last updated: May 27, 2026</p>
+</div>
+
+<main>
+
+  <div class="notice-box">
+    <strong>Please read carefully.</strong> By purchasing or using AI Queue Load Manager you agree to these Terms of Service. If you do not agree, do not purchase or use the software.
+  </div>
+
+  <h2>1. About This Agreement</h2>
+  <p>These Terms of Service ("Terms") form a legally binding agreement between you ("Customer," "you") and Michael Hall / conxion visual communications ("we," "us," "our") for your use of the AI Queue Load Manager desktop software application and any related services (collectively, the "Software").</p>
+
+  <h2>2. The Software</h2>
+  <p>AI Queue Load Manager is a desktop productivity tool that allows you to queue, manage, and route requests to third-party AI API services using <strong>your own API keys and accounts</strong>. The Software does not provide AI capabilities itself and does not include access to any AI service. All AI inference is performed by the third-party providers whose accounts you independently hold.</p>
+
+  <h2>3. Licence Grant</h2>
+  <p>Subject to your payment of the applicable subscription fee and your compliance with these Terms, we grant you a limited, non-exclusive, non-transferable, revocable licence to:</p>
+  <ul>
+    <li>Install and use the Software on your personal or business computer(s)</li>
+    <li>Use the Software for lawful personal or commercial purposes</li>
+  </ul>
+  <p>This licence does not include the right to sublicense, resell, redistribute, or modify the Software.</p>
+
+  <h2>4. Subscription &amp; Payment</h2>
+  <p>Access to the Software requires an active paid subscription. Subscriptions are billed monthly in advance. Payments are processed by our payment provider, Paddle, who acts as the Merchant of Record. By purchasing, you also agree to Paddle's terms and conditions.</p>
+  <p>We reserve the right to change subscription pricing with at least 30 days' notice to existing subscribers.</p>
+
+  <h2>5. Your Responsibilities</h2>
+  <p>You are solely responsible for:</p>
+  <ul>
+    <li>Obtaining, maintaining, and paying for your own accounts with third-party AI providers (Anthropic, OpenAI, Google, Groq, DeepSeek, Mistral, xAI, and others)</li>
+    <li>Complying with the terms of service of each AI provider whose APIs you access through the Software</li>
+    <li>Ensuring that your use of the Software and the AI APIs you connect does not violate any applicable laws or third-party rights</li>
+    <li>Keeping your account credentials and API keys secure</li>
+  </ul>
+
+  <h2>6. Prohibited Uses</h2>
+  <p>You must not use the Software to:</p>
+  <ul>
+    <li>Violate any applicable local, national, or international law or regulation</li>
+    <li>Circumvent, disable, or interfere with security features or rate limits imposed by AI providers</li>
+    <li>Resell or sublicense access to the Software or use it to provide a competing service</li>
+    <li>Reverse-engineer, decompile, or disassemble the Software except as permitted by law</li>
+    <li>Transmit malware, spam, or any harmful code</li>
+  </ul>
+
+  <h2>7. Intellectual Property</h2>
+  <p>The Software and all associated intellectual property rights are owned by us. These Terms do not transfer any ownership to you. The AI Queue Load Manager name, logo, and product identity are our property.</p>
+
+  <h2>8. Privacy &amp; Data</h2>
+  <p>Your use of the Software is subject to our <a href="privacy.html">Privacy Policy</a>, which is incorporated into these Terms by reference. Key points: your prompts and API responses are processed locally on your machine and are never transmitted to our servers. We collect only anonymous analytics data as described in the Privacy Policy.</p>
+
+  <h2>9. Third-Party Services</h2>
+  <p>The Software connects to third-party AI APIs at your direction. We are not responsible for the availability, accuracy, content, or policies of those services. Any issues with third-party AI providers must be resolved directly with those providers.</p>
+
+  <h2>10. Disclaimer of Warranties</h2>
+  <p>THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE SOFTWARE WILL BE ERROR-FREE, UNINTERRUPTED, OR COMPATIBLE WITH ALL SYSTEMS.</p>
+
+  <h2>11. Limitation of Liability</h2>
+  <p>TO THE FULLEST EXTENT PERMITTED BY LAW, IN NO EVENT SHALL WE BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS, REVENUE, DATA, OR GOODWILL, ARISING OUT OF OR IN CONNECTION WITH YOUR USE OF THE SOFTWARE, EVEN IF WE HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.</p>
+  <p>OUR TOTAL LIABILITY TO YOU FOR ANY CLAIM ARISING FROM THESE TERMS SHALL NOT EXCEED THE AMOUNT YOU PAID TO US IN THE THREE MONTHS PRECEDING THE CLAIM.</p>
+
+  <h2>12. Termination</h2>
+  <p>You may cancel your subscription at any time. Cancellation takes effect at the end of your current billing period and you retain access until then. We may suspend or terminate your access immediately if you materially breach these Terms.</p>
+  <p>Upon termination, all licences granted to you cease. Sections 7, 10, 11, and 13 survive termination.</p>
+
+  <h2>13. Governing Law</h2>
+  <p>These Terms are governed by the laws of <strong>North Carolina, United States of America</strong>, without regard to its conflict-of-law provisions. Any disputes shall be resolved in the courts of <strong>Randolph County, North Carolina</strong>.</p>
+
+  <h2>14. Changes to These Terms</h2>
+  <p>We may update these Terms from time to time. We will notify you of material changes by email or within the Software. Continued use of the Software after the effective date of revised Terms constitutes your acceptance of the changes.</p>
+
+  <h2>15. Contact</h2>
+  <p>Questions about these Terms? Contact us at: <a href="mailto:mike@conxion.biz">mike@conxion.biz</a></p>
+
+</main>
+
+<footer>
+  <p>
+    <a href="index.html">Home</a> &nbsp;·&nbsp;
+    <a href="terms.html">Terms of Service</a> &nbsp;·&nbsp;
+    <a href="privacy.html">Privacy Policy</a> &nbsp;·&nbsp;
+    <a href="refund.html">Refund Policy</a>
+  </p>
+  <p style="margin-top:8px;">&copy; 2026 AI Queue Load Manager &nbsp;·&nbsp; conxion visual communications</p>
+</footer>
+
+</body>
+</html>

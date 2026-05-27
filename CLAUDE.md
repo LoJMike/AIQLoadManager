@@ -113,22 +113,26 @@ C:\Users\mikel\Desktop\AIQLoadManager Project\
 
 ## Website / landing page
 
-All public-facing web files live in `website/`:
+All public-facing web files live in `docs/` (GitHub Pages source folder):
 
 ```
-website/
-  index.html          ← Landing page (was landing-page.html in root)
+docs/
+  index.html          ← Landing page
+  privacy.html        ← Privacy policy (linked from footer)
+  terms.html          ← Terms of service (linked from footer)
+  refund.html         ← Refund policy (linked from footer)
   landing-page-orig.html ← Archive of the original design
   screenshots/        ← App screenshots used on the landing page (PNG, 2× retina)
     README.md         ← Screenshot capture guide and filename conventions
   assets/             ← Future: logos, fonts, standalone CSS
 ```
 
-**Rules for the website folder:**
+**Rules for the docs folder:**
 - The landing page is self-contained HTML — no build step required
-- Screenshots go in `website/screenshots/` — see `README.md` there for naming conventions and capture instructions
-- The Lemon Squeezy checkout URLs live in the `<script>` block at the bottom of `index.html` — replace the `PASTE_..._CHECKOUT_URL_HERE` placeholders before going live
-- Do **not** move `mockups/` into `website/` — mockups are development references, not public assets
+- Screenshots go in `docs/screenshots/` — see `README.md` there for naming conventions and capture instructions
+- The Paddle checkout URLs live in the `CHECKOUT_URLS` object in the `<script>` block at the bottom of `index.html` — replace the placeholder strings with real Paddle product URLs before going live
+- Do **not** move `mockups/` into `docs/` — mockups are development references, not public assets
+- GitHub Pages is configured to serve from the `/docs` folder on `main` branch
 
 ---
 

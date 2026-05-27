@@ -1,5 +1,49 @@
 # Work Log — AI Queue Load Manager
 
+## Session 21 — 2026-05-27
+**Goal:** Migrate payment processor from Lemon Squeezy to Paddle after LS merchant application was rejected. Update all project files and policy pages.
+
+**Completed:**
+- [x] **Received Lemon Squeezy rejection** — LS declined the merchant application, citing our BYOK AI routing model as AI resale. Framing: AIQ routes prompts to users' own API accounts; no AI usage passes through our servers; no usage-based pricing. LS's automated review flagged it anyway.
+- [x] **Selected Paddle as replacement MoR** — Paddle accepts desktop software/utility tools; BYOK model is well within their terms; similar fee structure (5% + $0.50 on the Paddle Billing entry plan).
+- [x] **Drafted Paddle merchant application** (`Paddle_Merchant_Application.docx`) — 8-section Word document positioning AIQ as desktop software with BYOK model; includes comparison table (no AI resale, no usage-based pricing, local-only data flow); stored in project root.
+- [x] **Created standalone policy pages** in `docs/` (GitHub Pages):
+  - `privacy.html` — dark-themed, conxion visual communications entity, Paddle as payment processor
+  - `terms.html` — dark-themed, NC governing law, Randolph County jurisdiction, Paddle as payment processor
+  - `refund.html` — dark-themed, 14-day money-back guarantee, Paddle billing portal for cancellations
+- [x] **Updated `docs/index.html`** — replaced modal popup links in footer with direct hrefs to privacy.html, terms.html, refund.html; removed all modal CSS, HTML, and JS
+- [x] **Set up GitHub Pages** — renamed `website/` → `docs/`; configured GitHub Pages to serve from `/docs` on `main` branch
+- [x] **Updated all project markdown files** — replaced all Lemon Squeezy references with Paddle equivalents in README.md, CLAUDE.md, CODE_REVIEW.md, planning_docs/prompts.md, WORKLOG.md; left Session 13 as historical record with explanatory note
+
+**Decisions Made:**
+- Paddle chosen over Gumroad (higher fees), FastSpring (complex onboarding), and self-hosting Stripe (no MoR — tax burden falls on us)
+- Policy pages styled to match index.html dark theme with logo — Paddle requires real URLs, not modal popups
+- Session 13 preserved as historical record rather than rewritten — context matters for understanding why the migration happened
+- GitHub Pages serves from `/docs` on `main` — simplest setup, no separate `gh-pages` branch needed
+
+**Next Steps:**
+- [ ] Submit Paddle merchant application
+- [ ] After approval: create 4 products in Paddle (Starter/Pro/Pro+/Team monthly subscriptions) with License Keys enabled
+- [ ] Replace `CHECKOUT_URLS` placeholder strings in `docs/index.html` with real Paddle checkout links
+- [ ] Replace the Lemon.js `<script>` tag in `docs/index.html` `<head>` with Paddle.js equivalent
+- [ ] Replace the stub in `src/main/licenseChecker.js` with real Paddle License API validation call
+- [ ] Set up Paddle → Zapier → PostHog webhook for `purchase_completed` analytics event
+- [ ] Test full checkout flow in Paddle sandbox before going live
+
+**Files Changed:**
+- `docs/index.html`
+- `docs/privacy.html` *(new)*
+- `docs/terms.html` *(new)*
+- `docs/refund.html` *(new)*
+- `Paddle_Merchant_Application.docx` *(new)*
+- `README.md`
+- `CLAUDE.md`
+- `CODE_REVIEW.md`
+- `planning_docs/prompts.md`
+- `WORKLOG.md`
+
+---
+
 ## Session 20 — 2026-05-25
 **Goal:** Fix dropdown menus being hidden behind cards; bump to v0.5.0 as our testing release; update CHANGELOG, WORKLOG, and README.
 
@@ -118,7 +162,7 @@
 **Next Steps:**
 - [ ] Show retry count in Queue panel UI (e.g., "Retry 2/3" badge on the item)
 - [ ] Consider per-project standing instructions as a future enhancement (override global for a specific project)
-- [ ] Create Pro+ product in Lemon Squeezy when ready to launch
+- [ ] Create Pro+ product in Paddle when ready to launch
 **Files Changed:**
 - `src/main/multiQueueManager.js`
 - `src/main/index-v2.js`
@@ -148,9 +192,9 @@
 - Consensus mode is the headline Pro+ feature (ships with the tier); it's why Pro+ exists as a distinct tier rather than just bumped limits
 - `consensusMode` and `prioritySupport` added as explicit flags in licenseChecker.js so feature gates can be wired without further schema changes
 **Next Steps:**
-- [ ] Create Pro+ product in Lemon Squeezy when ready to launch (same flow as Starter/Pro)
+- [ ] Create Pro+ product in Paddle when ready to launch (same flow as Starter/Pro)
 - [ ] Wire `consensusMode` flag to the Compare mode result panel once Consensus mode implementation begins
-- [ ] Add waitlist email capture for Pro+ (e.g. a simple Lemon Squeezy form or Mailchimp embed)
+- [ ] Add waitlist email capture for Pro+ (e.g. a Mailchimp embed or Paddle post-purchase webhook)
 **Files Changed:**
 - `src/main/licenseChecker.js`
 - `src/renderer/components/LicensePanel.jsx`
@@ -183,13 +227,13 @@
 - Main process only — renderer never touches PostHog directly; opt-out preference flows through IPC
 - `person_profiles: 'identified_only'` on landing page — no anonymous visitor profiles, only PostHog Web Analytics aggregates
 - In-app bug/suggestion tracking stays on GitHub Issues for now; PostHog Surveys earmarked for NPS and feature voting (free tier)
-- `purchase_completed` event deferred: will use Zapier/Make to forward Lemon Squeezy webhook to PostHog (no server required)
+- `purchase_completed` event deferred: will use Zapier/Make to forward Paddle webhook to PostHog (no server required)
 **Next Steps:**
 - [ ] **REQUIRED before next dev run:** `cd "C:\Users\mikel\Desktop\AIQLoadManager Project" && npm install posthog-node`
 - [ ] Verify events appear in PostHog Live Events dashboard after `npm run dev:win`
-- [ ] Set up Lemon Squeezy → Zapier → PostHog webhook for `purchase_completed` event
+- [ ] Set up Paddle → Zapier → PostHog webhook for `purchase_completed` event
 - [ ] Add PostHog Surveys for in-app NPS and feature request collection
-- [ ] Continue Lemon Squeezy setup (paste real checkout URLs, real license validation)
+- [ ] Continue Paddle setup (paste real checkout URLs, real license validation)
 **Files Changed:**
 - `src/main/index-v2.js`
 - `src/main/preload-v2.js`
@@ -219,7 +263,7 @@
 - [ ] Bump version in `package.json` and `CLAUDE.md` when next meaningful change lands (can batch with next feature)
 - [ ] Build a structured error log in the main process (prerequisite for Option 3 / diagnostic auto-attach)
 - [ ] Implement Option 3: upgrade the Report a Bug button to collect and pre-fill diagnostics automatically
-- [ ] Continue Lemon Squeezy setup (create products, paste checkout URLs, real license validation)
+- [ ] Continue Paddle setup (create products, paste checkout URLs, real license validation)
 **Files Changed:**
 - `src/renderer/App.jsx`
 - `src/renderer/App.css`
@@ -230,6 +274,8 @@
 ---
 
 ## Session 13 — 2026-05-23
+> **⚠️ Historical note:** Lemon Squeezy subsequently rejected our merchant application, citing the BYOK AI routing model. The project migrated to **Paddle** as MoR. All forward-looking tasks below referencing Lemon Squeezy are superseded by Paddle equivalents. See Session 21 for details.
+
 **Goal:** Select a purchase/subscription vendor, document the setup process, and integrate Lemon Squeezy checkout into the landing page.
 **Completed:**
 - [x] Researched and compared 4 vendors: Gumroad, Lemon Squeezy, Paddle, Stripe — fees, tax handling, subscription support, email/newsletter capability, and integration ease
@@ -586,13 +632,13 @@
 - [x] Bumped version 0.1.42 → 0.1.43
 **Decisions Made:**
 - All feature flags are TRUE for now (preview mode) — nothing is gated yet, app behavior unchanged
-- Stored key = pro plan (stub). Real LemonSqueezy validation marked with TODO comments
+- Stored key = pro plan (stub). Real Paddle license validation marked with TODO comments
 - License tab added to nav; upgrade URL is a placeholder (example.com/upgrade)
 **Problems Encountered:**
 - None
 **Next Steps:**
 - [ ] Run `npm run dev:win` to verify License tab renders correctly
-- [ ] When ready to monetize: set up LemonSqueezy store, replace stub in licenseChecker.setKey(), tighten FREE_FLAGS
+- [ ] When ready to monetize: set up Paddle store, replace stub in licenseChecker.setKey() with real Paddle license API call, tighten FREE_FLAGS
 - [ ] Optionally: add `license` prop to components that will enforce limits (e.g., AddPromptPanel queue cap)
 **Files Changed:**
 - `src/main/licenseChecker.js` (new)
