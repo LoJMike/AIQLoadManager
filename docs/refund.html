@@ -1,6 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- GA4 Dual Tracking -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-BSSXLKP92S"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    // Main conxion.biz property
+    gtag('config', 'G-BSSXLKP92S', {
+      linker: {
+        domains: ['conxion.biz', 'lojmike.github.io']
+      }
+    });
+
+    // Product-specific property
+    gtag('config', 'G-BHLS4ZSEWL');
+  </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Refund Policy — AI Queue Load Manager</title>
