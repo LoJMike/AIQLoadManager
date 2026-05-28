@@ -1,5 +1,5 @@
 AI Queue Load Manager
-Copyright (c) 2026 Mikel Hall. All Rights Reserved.
+Copyright (c) 2026 Michael Hall. All Rights Reserved.
 
 PROPRIETARY AND CONFIDENTIAL
 
