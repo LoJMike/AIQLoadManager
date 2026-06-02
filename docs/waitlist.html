@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- GA4 Dual Tracking -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-BSSXLKP92S"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-BSSXLKP92S', { linker: { domains: ['conxion.biz', 'lojmike.github.io'] } });
+    gtag('config', 'G-BHLS4ZSEWL');
+  </script>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-WD9QG3WF');</script>
+  <!-- End Google Tag Manager -->
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Join the Waitlist — AI Queue Load Manager</title>
+  <meta name="description" content="Get early access to Pro+ and Team tiers of AI Queue Load Manager." />
+  <meta name="robots" content="noindex" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    :root {
+      --bg0: #14151c; --bg1: #1c1d26; --bg2: #23242f; --bg3: #2a2b38;
+      --purple: #7c5cff; --purple-dim: rgba(124,92,255,0.14); --purple-mid: rgba(124,92,255,0.28);
+      --orange: #f59e0b; --orange-dim: rgba(245,158,11,0.12);
+      --cyan: #22d3ee; --cyan-dim: rgba(34,211,238,0.12);
+      --gradient: linear-gradient(135deg,#8b6dff 0%,#6c4dff 55%,#5a3fe8 100%);
+      --text1: #f4f4f8; --text2: #9b9cb8; --text3: #5c5d78;
+      --border: rgba(255,255,255,0.06);
+      --radius: 10px; --radius-lg: 16px;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    }
+
+    body {
+      font-family: var(--sans); background: var(--bg0); color: var(--text1);
+      line-height: 1.65; min-height: 100vh; display: flex; flex-direction: column;
+    }
+    a { color: var(--purple); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Nav */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(20,21,28,0.92); backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      max-width: 1120px; margin: 0 auto; padding: 0 28px;
+      display: flex; align-items: center; justify-content: space-between; height: 60px;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo span { font-size: .88rem; font-weight: 600; color: var(--text1); }
+    .nav-back { font-size: .82rem; color: var(--text2); display: flex; align-items: center; gap: 6px; transition: color 150ms; }
+    .nav-back:hover { color: var(--purple); text-decoration: none; }
+
+    /* Main */
+    main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 60px 28px; }
+    .page-wrap { width: 100%; max-width: 520px; }
+
+    h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 700; letter-spacing: -0.02em; margin-bottom: 12px; }
+    .sub { font-size: .95rem; color: var(--text2); margin-bottom: 36px; line-height: 1.65; }
+
+    /* Form card */
+    .form-card {
+      background: var(--bg1); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 32px;
+    }
+
+    .field { margin-bottom: 20px; }
+    label {
+      display: block; font-size: .8rem; font-weight: 600;
+      color: var(--text2); margin-bottom: 7px;
+      letter-spacing: 0.03em; text-transform: uppercase;
+    }
+    input[type="email"],
+    input[type="text"],
+    select {
+      width: 100%; background: var(--bg2);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius);
+      padding: 11px 14px; font-size: .9rem; font-family: var(--sans);
+      color: var(--text1); transition: border-color 150ms; appearance: none;
+    }
+    input[type="email"]:focus,
+    input[type="text"]:focus,
+    select:focus { outline: none; border-color: var(--purple-mid); background: var(--bg3); }
+    select option { background: var(--bg2); }
+
+    /* Tier checkboxes */
+    .tier-checks { display: flex; flex-direction: column; gap: 10px; }
+    .tier-check {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--bg2); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius); padding: 12px 14px; cursor: pointer;
+      transition: border-color 150ms;
+    }
+    .tier-check:hover { border-color: rgba(255,255,255,0.14); }
+    .tier-check input[type="checkbox"] {
+      width: 18px; height: 18px; min-width: 18px;
+      accent-color: var(--purple); cursor: pointer;
+      margin: 0; padding: 0;
+    }
+    .tier-check-label { display: flex; flex-direction: column; gap: 2px; }
+    .tier-check-name { font-size: .9rem; font-weight: 600; color: var(--text1); }
+    .tier-check-name.pro-plus { color: var(--orange); }
+    .tier-check-name.team     { color: var(--cyan); }
+    .tier-check-desc { font-size: .78rem; color: var(--text2); }
+    .tier-check.is-checked { border-color: rgba(124,92,255,0.3); background: var(--bg3); }
+
+    .btn-submit {
+      width: 100%; background: var(--gradient); color: #fff;
+      border: none; border-radius: var(--radius); padding: 13px 24px;
+      font-size: .92rem; font-weight: 600; cursor: pointer;
+      transition: box-shadow 150ms, transform 150ms;
+      box-shadow: 0 0 18px rgba(168,85,247,0.30); margin-top: 8px;
+    }
+    .btn-submit:hover { box-shadow: 0 0 28px rgba(168,85,247,0.50); transform: translateY(-1px); }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .err-msg { font-size: .8rem; color: #f87171; margin-top: 6px; display: none; }
+    .privacy-note { font-size: .75rem; color: var(--text3); text-align: center; margin-top: 16px; }
+
+    /* Success */
+    .success { display: none; text-align: center; padding: 40px 24px; }
+    .success .check { font-size: 2.5rem; margin-bottom: 16px; }
+    .success h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 10px; }
+    .success p { font-size: .9rem; color: var(--text2); line-height: 1.6; }
+
+    /* Footer */
+    footer {
+      text-align: center; padding: 28px;
+      font-size: .78rem; color: var(--text3); border-top: 1px solid var(--border);
+    }
+    footer a { color: var(--text3); }
+    footer a:hover { color: var(--purple); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo"><span>AI Queue Load Manager</span></a>
+    <a href="index.html#pricing" class="nav-back">← Back to pricing</a>
+  </div>
+</nav>
+
+<main>
+  <div class="page-wrap">
+
+    <h1>Join the Waitlist</h1>
+    <p class="sub">
+      Select the tier(s) you're interested in. We'll send you one email when each launches — no spam.
+    </p>
+
+    <div class="form-card">
+
+      <!-- Success message -->
+      <div class="success" id="success">
+        <div class="check">✓</div>
+        <h2>You're on the list!</h2>
+        <p>We'll email you as soon as your selected tier(s) launch.<br>
+        In the meantime, <a href="index.html#pricing">Free and Pro are available now</a>.</p>
+      </div>
+
+      <!-- Waitlist form — single Formspree endpoint, tier captured via checkboxes -->
+      <form
+        id="waitlist-form"
+        method="POST"
+        action="https://formspree.io/f/xpqnvjlaD"
+      >
+        <!-- Honeypot -->
+        <input type="text" name="_gotcha" style="display:none" tabindex="-1" autocomplete="off" />
+
+        <!-- Tier selection -->
+        <div class="field">
+          <label>I'm interested in…</label>
+          <div class="tier-checks">
+
+            <label class="tier-check" id="check-pro-plus">
+              <input type="checkbox" name="tier_pro_plus" value="Pro+" id="cb-pro-plus" />
+              <div class="tier-check-label">
+                <span class="tier-check-name pro-plus">Pro+ — $34/mo</span>
+                <span class="tier-check-desc">Unlimited queue · 10K prompts/mo · Consensus mode · Priority support</span>
+              </div>
+            </label>
+
+            <label class="tier-check" id="check-team">
+              <input type="checkbox" name="tier_team" value="Team" id="cb-team" />
+              <div class="tier-check-label">
+                <span class="tier-check-name team">Team — $49/user/mo</span>
+                <span class="tier-check-desc">Shared settings · Admin controls · 25K prompts/mo pooled</span>
+              </div>
+            </label>
+
+          </div>
+          <p class="err-msg" id="tier-err">Please select at least one tier.</p>
+        </div>
+
+        <div class="field">
+          <label for="name">Your name</label>
+          <input type="text" id="name" name="name" placeholder="Jane Smith" autocomplete="name" />
+        </div>
+
+        <div class="field">
+          <label for="email">Email address <span style="color:#f87171">*</span></label>
+          <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email" />
+        </div>
+
+        <div class="field">
+          <label for="use-case">How will you use it? <span style="color:var(--text3)">(optional)</span></label>
+          <select id="use-case" name="use_case">
+            <option value="" disabled selected>Select one…</option>
+            <option>Personal productivity</option>
+            <option>Freelance / consulting work</option>
+            <option>Small business</option>
+            <option>Developer / engineer</option>
+            <option>Content creation</option>
+            <option>Research</option>
+            <option>Other</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submit-btn">Notify me at launch →</button>
+
+        <p class="privacy-note">
+          No spam. One email per tier when it launches.<br>
+          <a href="privacy.html" target="_blank">Privacy policy</a>
+        </p>
+      </form>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <p>
+    <a href="index.html">Home</a> &nbsp;·&nbsp;
+    <a href="terms.html">Terms</a> &nbsp;·&nbsp;
+    <a href="privacy.html">Privacy</a> &nbsp;·&nbsp;
+    <a href="refund.html">Refund Policy</a>
+  </p>
+  <p style="margin-top:8px;">&copy; 2026 AI Queue Load Manager &nbsp;·&nbsp; conxion visual communications</p>
+</footer>
+
+<script>
+  // Pre-check the right tier based on ?tier= param
+  var params  = new URLSearchParams(window.location.search);
+  var tierParam = params.get('tier');
+  if (tierParam === 'team') {
+    document.getElementById('cb-team').checked = true;
+    document.getElementById('check-team').classList.add('is-checked');
+  } else {
+    // Default: pre-select Pro+
+    document.getElementById('cb-pro-plus').checked = true;
+    document.getElementById('check-pro-plus').classList.add('is-checked');
+  }
+
+  // Toggle visual checked state on the card
+  ['cb-pro-plus', 'cb-team'].forEach(function (id) {
+    var cb   = document.getElementById(id);
+    var card = cb.closest('.tier-check');
+    cb.addEventListener('change', function () {
+      card.classList.toggle('is-checked', cb.checked);
+    });
+  });
+
+  // Form submit
+  document.getElementById('waitlist-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    // Validate at least one tier checked
+    var proPlus = document.getElementById('cb-pro-plus').checked;
+    var team    = document.getElementById('cb-team').checked;
+    var errMsg  = document.getElementById('tier-err');
+    if (!proPlus && !team) {
+      errMsg.style.display = 'block';
+      return;
+    }
+    errMsg.style.display = 'none';
+
+    var btn = document.getElementById('submit-btn');
+    btn.disabled    = true;
+    btn.textContent = 'Sending…';
+
+    try {
+      var res = await fetch(this.action, {
+        method:  'POST',
+        body:    new FormData(this),
+        headers: { 'Accept': 'application/json' },
+      });
+
+      if (res.ok) {
+        this.style.display = 'none';
+        document.getElementById('success').style.display = 'block';
+
+        // PostHog
+        if (window.posthog) {
+          var tiers = [];
+          if (proPlus) tiers.push('pro_plus');
+          if (team)    tiers.push('team');
+          posthog.capture('waitlist_signup', { tiers: tiers });
+        }
+      } else {
+        btn.disabled    = false;
+        btn.textContent = 'Notify me at launch →';
+        alert('Something went wrong — please try again or email mike@conxion.biz');
+      }
+    } catch (_) {
+      btn.disabled    = false;
+      btn.textContent = 'Notify me at launch →';
+      alert('Network error — please check your connection and try again.');
+    }
+  });
+</script>
+
+</body>
+</html>
