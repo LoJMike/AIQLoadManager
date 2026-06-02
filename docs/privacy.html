@@ -17,7 +17,55 @@
 
     // Product-specific property
     gtag('config', 'G-BHLS4ZSEWL');
+
+    // === 1. Base dataLayer initialization ===
+window.dataLayer = window.dataLayer || [];
+
+// === 2. GA4Measurement ID (replace with your actual ID) ===
+const GA4_MEASUREMENT_ID = 'G-BHLS4ZSEWL';
+
+// === 3. Helper: push event + merge user/state data ===
+function pushGA4Event(eventName, params = {}) {
+  const payload = {
+    event: eventName,
+    ...params
+  };
+  window.dataLayer.push(payload);
+}
+
+// === 4. Helper: set user ID (call after login) ===
+function setGA4UserId(userId) {
+  if (!userId) return;
+  window.dataLayer.push({
+    user_id: userId
+  });
+  // If you use gtag directly:
+  if (typeof gtag === 'function') {
+    gtag('config', GA4_MEASUREMENT_ID, {
+      user_id: userId
+    });
+  }
+}
+
+// === 5. Helper: set user properties (free/paid, plan, etc.) ===
+function setGA4UserProperties(props) {
+  // props: { subscription_status, plan_tier, billing_cycle, lifecycle_stage }
+  const payload = {
+    ...props
+  };
+  window.dataLayer.push(payload);
+  if (typeof gtag === 'function') {
+    gtag('config', GA4_MEASUREMENT_ID, payload);
+  }
+}
   </script>
+  <!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-WD9QG3WF');</script>
+<!-- End Google Tag Manager -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Privacy Policy — AI Queue Load Manager</title>
@@ -210,7 +258,10 @@
   </style>
 </head>
 <body>
-
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WD9QG3WF"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
 <nav>
   <div class="nav-inner">
     <a href="index.html" class="nav-logo" aria-label="AI Queue Load Manager home">
@@ -248,7 +299,7 @@
       <tr>
         <td>Billing information</td>
         <td>Name, email address, payment details</td>
-        <td>To process your subscription. Handled by Paddle (our payment processor) — we do not store card numbers.</td>
+        <td>To process your subscription. Handled by Lemon Squeezy (our payment processor and Merchant of Record) — we do not store card numbers or payment details.</td>
       </tr>
       <tr>
         <td>Anonymous analytics</td>
@@ -284,7 +335,7 @@
   <p>We do not sell, rent, or share your personal data with third parties for marketing purposes.</p>
 
   <h2>5. Third-Party Services</h2>
-  <p><strong>Paddle</strong> — Our payment processor and Merchant of Record. Paddle processes your payment and issues your invoice. Their privacy policy applies to data they collect: <a href="https://www.paddle.com/legal/privacy" target="_blank" rel="noopener">paddle.com/legal/privacy</a>.</p>
+  <p><strong>Lemon Squeezy</strong> — Our payment processor and Merchant of Record. Lemon Squeezy processes your payment, issues your invoice and license key, and manages your subscription. Their privacy policy applies to data they collect: <a href="https://www.lemonsqueezy.com/privacy" target="_blank" rel="noopener">lemonsqueezy.com/privacy</a>.</p>
   <p><strong>PostHog</strong> — Anonymous analytics. PostHog receives event data with no name, email, or identifiable information attached. You can opt out in the app's Settings panel. PostHog privacy policy: <a href="https://posthog.com/privacy" target="_blank" rel="noopener">posthog.com/privacy</a>.</p>
   <p><strong>AI providers</strong> — When you use the Software to send requests to Claude, OpenAI, Gemini, Groq, DeepSeek, Mistral, or xAI Grok, those requests are governed by each provider's own privacy policy. We have no control over and are not responsible for how those providers handle your data.</p>
 
@@ -296,7 +347,7 @@
   <p>If you are in the European Economic Area or the UK, you also have the right to lodge a complaint with your local data protection authority.</p>
 
   <h2>8. Data Security</h2>
-  <p>We take reasonable steps to protect personal data in our possession. Your API keys and local application data are protected by OS-level encryption on your device. Payment data is handled entirely by Paddle and is never stored on our systems.</p>
+  <p>We take reasonable steps to protect personal data in our possession. Your API keys and local application data are protected by OS-level encryption on your device. Payment data is handled entirely by Lemon Squeezy and is never stored on our systems.</p>
 
   <h2>9. Children's Privacy</h2>
   <p>The Software is not directed at children under 13. We do not knowingly collect personal data from children under 13. If you believe a child has provided us with personal data, contact us and we will delete it promptly.</p>

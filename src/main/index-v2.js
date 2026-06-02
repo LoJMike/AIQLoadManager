@@ -295,6 +295,12 @@ app.whenReady().then(() => {
   setupIPC();
   queue.startProcessing();
 
+  // Re-validate stored license key against Lemon Squeezy on startup (non-blocking).
+  // If the subscription has lapsed, the app reverts to free on the next getLicense() call.
+  if (license.getLicense().hasKey) {
+    license.validateStoredKey().catch(() => {});
+  }
+
   // Fire app_launched after everything is ready
   track("app_launched", { plan: license.getLicense().plan });
 

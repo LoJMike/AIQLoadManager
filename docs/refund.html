@@ -17,7 +17,55 @@
 
     // Product-specific property
     gtag('config', 'G-BHLS4ZSEWL');
+
+    // === 1. Base dataLayer initialization ===
+window.dataLayer = window.dataLayer || [];
+
+// === 2. GA4Measurement ID (replace with your actual ID) ===
+const GA4_MEASUREMENT_ID = 'G-BHLS4ZSEWL';
+
+// === 3. Helper: push event + merge user/state data ===
+function pushGA4Event(eventName, params = {}) {
+  const payload = {
+    event: eventName,
+    ...params
+  };
+  window.dataLayer.push(payload);
+}
+
+// === 4. Helper: set user ID (call after login) ===
+function setGA4UserId(userId) {
+  if (!userId) return;
+  window.dataLayer.push({
+    user_id: userId
+  });
+  // If you use gtag directly:
+  if (typeof gtag === 'function') {
+    gtag('config', GA4_MEASUREMENT_ID, {
+      user_id: userId
+    });
+  }
+}
+
+// === 5. Helper: set user properties (free/paid, plan, etc.) ===
+function setGA4UserProperties(props) {
+  // props: { subscription_status, plan_tier, billing_cycle, lifecycle_stage }
+  const payload = {
+    ...props
+  };
+  window.dataLayer.push(payload);
+  if (typeof gtag === 'function') {
+    gtag('config', GA4_MEASUREMENT_ID, payload);
+  }
+}
   </script>
+  <!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-WD9QG3WF');</script>
+<!-- End Google Tag Manager -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Refund Policy — AI Queue Load Manager</title>
@@ -238,7 +286,10 @@
   </style>
 </head>
 <body>
-
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WD9QG3WF"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
 <nav>
   <div class="nav-inner">
     <a href="index.html" class="nav-logo" aria-label="AI Queue Load Manager home">
@@ -273,14 +324,14 @@
   <h2>2. How to Request a Refund</h2>
   <ol class="steps">
     <li>Email <a href="mailto:mike@conxion.biz">mike@conxion.biz</a> with the subject line <strong>"Refund Request"</strong>.</li>
-    <li>Include the email address used to purchase and your Paddle order number (found in your receipt email).</li>
+    <li>Include the email address used to purchase and your Lemon Squeezy order number (found in your receipt email).</li>
     <li>We'll confirm your refund within <strong>2 business days</strong>.</li>
     <li>Funds typically appear back on your original payment method within 5–10 business days, depending on your bank.</li>
   </ol>
 
   <h2>3. Renewal Payments</h2>
   <p>The 14-day guarantee applies to your <strong>first payment only</strong>. Subsequent monthly renewal charges are not refundable, as you retain access to the Software for the full billing period you have already paid for.</p>
-  <p>To avoid being charged for another month, cancel your subscription <strong>before your next renewal date</strong>. You can cancel at any time from your Paddle billing portal (link in your receipt email) or by contacting us.</p>
+  <p>To avoid being charged for another month, cancel your subscription <strong>before your next renewal date</strong>. You can cancel at any time from your <strong>Lemon Squeezy customer portal</strong> (the link is in your receipt email, or visit <a href="https://app.lemonsqueezy.com/my-orders" target="_blank" rel="noopener">app.lemonsqueezy.com/my-orders</a>) or by contacting us.</p>
 
   <h2>4. Cancellation vs. Refund</h2>
   <p><strong>Cancellation</strong> stops future charges. Your access continues until the end of the current billing period you have already paid for. No refund is issued for remaining days in that period.</p>

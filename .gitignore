@@ -33,6 +33,7 @@ ai-queue-config.json
 CLAUDE.md
 DESIGN.md
 WORKLOG.md
+LEMONSQUEEZY_SETUP.md
 /planning/*
 /mockups/*
 /.tmp.driveupload/*
@@ -41,3 +42,6 @@ WORKLOG.md
 /website/*
 CODE_REVIEW.md
 /planning_docs/*
+AIQ_Testing_Guide_v0.5.0.docx
+TESTING_GUIDE.md
+/video-demo/*

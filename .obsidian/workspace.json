@@ -1,0 +1,202 @@
+{
+  "main": {
+    "id": "56881fccc8ea9c47",
+    "type": "split",
+    "children": [
+      {
+        "id": "01354f6b044fe2c4",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "253edf44c7250dd3",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "LEMONSQUEEZY_SETUP.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "LEMONSQUEEZY_SETUP"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "f2756c4e7aa89738",
+    "type": "split",
+    "children": [
+      {
+        "id": "664901ada3dd9c20",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "122a6659822a1afd",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "7311be27d0e95871",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "46f19f0650fd5b2d",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "c55f780b05b16e91",
+    "type": "split",
+    "children": [
+      {
+        "id": "f033026541609b8b",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "ed628e289f6ed624",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "LEMONSQUEEZY_SETUP.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for LEMONSQUEEZY_SETUP"
+            }
+          },
+          {
+            "id": "075ed187badc1998",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "LEMONSQUEEZY_SETUP.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from LEMONSQUEEZY_SETUP"
+            }
+          },
+          {
+            "id": "6284776615b80361",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "39a8f87b8597bd93",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "a6a7d3af0a3adcd4",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "LEMONSQUEEZY_SETUP.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of LEMONSQUEEZY_SETUP"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "253edf44c7250dd3",
+  "lastOpenFiles": [
+    "src/main/index-v2.js.tmp.66868.b5450e34cd2c",
+    "README.md",
+    "LEMONSQUEEZY_SETUP.md",
+    "LEMONSQUEEZY_SETUP.md.tmp.67996.be7795fa1d0a",
+    "docs/privacy.html.tmp.67996.0e43a95d93c9",
+    "docs/privacy.html.tmp.67996.54ccd660966c",
+    "docs/terms.html.tmp.67996.31154e6db401",
+    "README.md.tmp.67996.a0099dd87c18",
+    "src/main/licenseChecker.js.tmp.67996.9b7be20ed70f",
+    "WORKLOG.md",
+    "TESTING_GUIDE.md",
+    "CODE_REVIEW.md",
+    "CLAUDE.md"
+  ]
+}

@@ -17,7 +17,55 @@
 
     // Product-specific property
     gtag('config', 'G-BHLS4ZSEWL');
+
+    // === 1. Base dataLayer initialization ===
+window.dataLayer = window.dataLayer || [];
+
+// === 2. GA4Measurement ID (replace with your actual ID) ===
+const GA4_MEASUREMENT_ID = 'G-BHLS4ZSEWL';
+
+// === 3. Helper: push event + merge user/state data ===
+function pushGA4Event(eventName, params = {}) {
+  const payload = {
+    event: eventName,
+    ...params
+  };
+  window.dataLayer.push(payload);
+}
+
+// === 4. Helper: set user ID (call after login) ===
+function setGA4UserId(userId) {
+  if (!userId) return;
+  window.dataLayer.push({
+    user_id: userId
+  });
+  // If you use gtag directly:
+  if (typeof gtag === 'function') {
+    gtag('config', GA4_MEASUREMENT_ID, {
+      user_id: userId
+    });
+  }
+}
+
+// === 5. Helper: set user properties (free/paid, plan, etc.) ===
+function setGA4UserProperties(props) {
+  // props: { subscription_status, plan_tier, billing_cycle, lifecycle_stage }
+  const payload = {
+    ...props
+  };
+  window.dataLayer.push(payload);
+  if (typeof gtag === 'function') {
+    gtag('config', GA4_MEASUREMENT_ID, payload);
+  }
+}
   </script>
+  <!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-WD9QG3WF');</script>
+<!-- End Google Tag Manager -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Terms of Service — AI Queue Load Manager</title>
@@ -176,7 +224,10 @@
   </style>
 </head>
 <body>
-
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WD9QG3WF"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
 <nav>
   <div class="nav-inner">
     <a href="index.html" class="nav-logo" aria-label="AI Queue Load Manager home">
@@ -213,7 +264,10 @@
   <p>This licence does not include the right to sublicense, resell, redistribute, or modify the Software.</p>
 
   <h2>4. Subscription &amp; Payment</h2>
-  <p>Access to the Software requires an active paid subscription. Subscriptions are billed monthly in advance. Payments are processed by our payment provider, Paddle, who acts as the Merchant of Record. By purchasing, you also agree to Paddle's terms and conditions.</p>
+  <p>Access to paid features of the Software requires an active paid subscription. Subscriptions are billed monthly in advance. Payments are processed by <strong>Lemon Squeezy</strong> (<a href="https://www.lemonsqueezy.com" target="_blank" rel="noopener">lemonsqueezy.com</a>), who acts as the Merchant of Record for all transactions. By purchasing, you also agree to <a href="https://www.lemonsqueezy.com/terms" target="_blank" rel="noopener">Lemon Squeezy's Terms of Service</a>.</p>
+  <p><strong>Auto-renewal:</strong> Subscriptions automatically renew at the end of each monthly billing period. You will be charged the then-current subscription price unless you cancel before your renewal date.</p>
+  <p><strong>Cancellation:</strong> You may cancel your subscription at any time through your Lemon Squeezy customer portal (the link is in your receipt email) or by contacting us at <a href="mailto:mike@conxion.biz">mike@conxion.biz</a>. Cancellation takes effect at the end of your current paid period — you retain access until then. No refund is issued for unused days in a current period.</p>
+  <p><strong>License keys:</strong> A license key is issued to you by Lemon Squeezy upon purchase. The key is tied to your subscription. If your subscription lapses or is cancelled, the key becomes inactive and your access reverts to the Free tier.</p>
   <p>We reserve the right to change subscription pricing with at least 30 days' notice to existing subscribers.</p>
 
   <h2>5. Your Responsibilities</h2>

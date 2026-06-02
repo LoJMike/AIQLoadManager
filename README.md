@@ -374,53 +374,52 @@ Compare mode requires a Pro license. No conversation history is injected — eac
 
 ## Purchasing & Licensing
 
-AIQ Load Manager uses **[Paddle](https://www.paddle.com)** as its payment and subscription vendor (Merchant of Record). Paddle handles checkout, global tax compliance (VAT/GST/sales tax), subscriptions, and license key issuance — no separate tax setup required.
+AIQ Load Manager uses **[Lemon Squeezy](https://www.lemonsqueezy.com)** as its payment and subscription vendor (Merchant of Record). Lemon Squeezy handles checkout, global tax compliance (VAT/GST/sales tax), subscriptions, and license key issuance — no separate tax setup required.
 
-**Note — BYOK model:** AIQ Load Manager is desktop software. Users bring their own API keys from each AI provider. No prompts pass through our servers; no AI usage is resold. Paddle was selected as our MoR based on this architecture.
+**Note — BYOK model:** AIQ Load Manager is desktop software. Users bring their own API keys from each AI provider. No prompts pass through our servers; no AI usage is resold.
 
-### Products to create in Paddle
+### Products to create in Lemon Squeezy
 
-| Product | Type | Price | Paddle product name |
+| Product | Type | Price | LS product name |
 |---|---|---|---|
 | Starter Monthly | Subscription | $9.00/mo | `AIQ Load Manager — Starter` |
 | Pro Monthly | Subscription | $19.00/mo | `AIQ Load Manager — Pro` |
 | Pro+ Monthly | Subscription | $34.00/mo | `AIQ Load Manager — Pro+` *(Coming soon)* |
 | Team Monthly | Subscription | $49.00/user/mo | `AIQ Load Manager — Team` *(Coming soon)* |
 
-Enable **License Keys** on every product (1 key per order). Free tier users download directly from GitHub Releases — no checkout needed. All plans are monthly subscriptions — no lifetime deals are offered.
-
-### Newsletter opt-in
-
-In the Paddle dashboard → **Checkout settings**, configure a post-purchase email flow or connect to your mailing list tool (e.g. Mailchimp via Zapier). Alternatively use Paddle's built-in customer email notifications as the initial touchpoint.
+Enable **License Keys** on every product (1 key per order, activation limit 2). Free tier users download directly from GitHub Releases — no checkout needed. All plans are monthly subscriptions — no lifetime deals are offered.
 
 ### Landing page checkout integration
 
-`docs/index.html` uses Paddle.js to open checkout as an overlay popup. The `CHECKOUT_URLS` block near the bottom of the file holds the product checkout URLs — replace the placeholder strings with your real Paddle checkout links after creating products in the Paddle dashboard:
+`docs/index.html` uses Lemon.js to open checkout as an overlay popup. The `CHECKOUT_URLS` block near the bottom of the file holds the product checkout URLs — replace the placeholder strings with your real Lemon Squeezy checkout links after creating products in the dashboard:
 
 ```js
 const CHECKOUT_URLS = {
-  starter:  'https://buy.paddle.com/product/xxxx',  // $9/mo subscription
-  pro:      'https://buy.paddle.com/product/xxxx',  // $19/mo subscription
-  pro_plus: 'https://buy.paddle.com/product/xxxx',  // $34/mo subscription (coming soon)
+  starter:  'https://YOUR_STORE.lemonsqueezy.com/buy/VARIANT_UUID',  // $9/mo
+  pro:      'https://YOUR_STORE.lemonsqueezy.com/buy/VARIANT_UUID',  // $19/mo
+  pro_plus: 'https://YOUR_STORE.lemonsqueezy.com/buy/VARIANT_UUID',  // $34/mo (coming soon)
 };
 ```
 
-Also replace the Paddle vendor/client-side token in the `<script>` initialisation block at the bottom of `docs/index.html` with your own from the Paddle dashboard → Developer Tools → Authentication.
+Get these URLs from: **LS Dashboard → Store → Products → your product → Share → Checkout URL**.
 
-### License key validation (TODO)
+### License key validation
 
-`src/main/licenseChecker.js` currently stubs license validation (any stored key = pro). When ready to enforce licensing, replace the stub with a real call to the [Paddle License API](https://developer.paddle.com/api-reference/overview):
+`src/main/licenseChecker.js` calls the Lemon Squeezy Licenses API to activate and validate keys:
 
-```
-POST https://vendors.paddle.com/api/2.0/license/verify
-vendor_id=XXXX&vendor_auth_code=YYYY&license_code=ZZZZ
-```
+- **Activate** (on first key entry): `POST https://api.lemonsqueezy.com/v1/licenses/activate`
+- **Validate** (on app start): `POST https://api.lemonsqueezy.com/v1/licenses/validate`
+- **Deactivate** (on key removal): `POST https://api.lemonsqueezy.com/v1/licenses/deactivate`
 
-Validate that the returned `product_id` matches your products (hard-code these values in `licenseChecker.js`). Store a locally generated `machine_id` so you can track activations per device. Paddle supports a configurable number of activations per license key — set this in the product settings.
+Before going live, paste your LS Variant IDs into the `LS_VARIANT_PLAN_MAP` constant in `licenseChecker.js`. See `LEMONSQUEEZY_SETUP.md` for the full step-by-step.
 
 ### Testing without real money
 
-In the Paddle sandbox environment (toggle in the Paddle dashboard top bar), create test products with the same structure as your live ones. Sandbox checkouts use test card numbers and generate real license keys — no charge. Switch `docs/index.html` checkout URLs to the sandbox equivalents during testing, then swap back to live URLs before going public.
+In the Lemon Squeezy dashboard, create a **100% discount code** (Store → Discounts → New Discount → 100% off). Share the code with testers — they go through real checkout, pay $0, and receive a real license key that exercises the full activation flow. No test-mode toggle needed.
+
+### Newsletter opt-in
+
+In the Lemon Squeezy dashboard → **Store Settings → Checkout → "Show newsletter opt-in checkbox"**, enable the opt-in. No changes needed in `docs/index.html`. To pipe subscribers to an external list (Mailchimp, ConvertKit, etc.), use the LS webhooks or a Zapier integration.
 
 ---
 
