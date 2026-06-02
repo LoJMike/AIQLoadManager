@@ -126,8 +126,33 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>
-      AI Queue Load Manager — Route smarter. Spend less. Stay in flow.
+      AIQ Load Manager — Route Smarter Across Every AI Provider | One Queue
     </title>
+    <meta
+      name="keywords"
+      content="AI load manager, token usage tracker, AI rate limits, multi-provider AI gateway, OpenAI tracking, Anthropic tracking, AI queue management, LLM load balancing"
+    />
+
+    <meta
+      property="og:title"
+      content="AIQ Load Manager — One Queue for Every AI Provider"
+    />
+    <meta
+      property="og:description"
+      content="Real-time token usage and rate limit tracking across all AI providers. Route smarter with AIQ Load Manager."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.conxion.biz/aiqloadmanager" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="AIQ Load Manager — Route Smarter. Every AI. One queue."
+    />
+    <meta
+      name="twitter:description"
+      content="Unified AI queue with real-time token usage & rate limit tracking across OpenAI, Anthropic, and more."
+    />
     <!-- Lemon Squeezy checkout overlay script -->
     <script src="https://assets.lemonsqueezy.com/lemon.js" defer></script>
 
@@ -3166,12 +3191,13 @@
     <footer>
       <div class="container">
         <p>
-          <strong>AI Queue Load Manager</strong> &nbsp;&middot;&nbsp; Local-first
-          desktop app for Windows &amp; macOS
+          <strong>AI Queue Load Manager</strong> &nbsp;&middot;&nbsp;
+          Local-first desktop app for Windows &amp; macOS
         </p>
         <p style="margin-top: 8px">Route smarter. Spend less. Stay in flow.</p>
         <p style="margin-top: 16px">
-          &copy; 2026 AI Queue Load Manager. All rights reserved. &nbsp;&middot;&nbsp;
+          &copy; 2026 AI Queue Load Manager. All rights reserved.
+          &nbsp;&middot;&nbsp;
           <a href="privacy.html">Privacy</a>
           &nbsp;&middot;&nbsp;
           <a href="terms.html">Terms</a>
@@ -3186,40 +3212,43 @@
     <!-- Lemon Squeezy checkout URL script -->
     <script>
       const CHECKOUT_URLS = {
-        starter:  'https://conxion.lemonsqueezy.com/checkout/buy/57c75fe4-d22c-4a2c-998d-e6d1d94a9f00',
-        pro:      'https://conxion.lemonsqueezy.com/checkout/buy/57c75fe4-d22c-4a2c-998d-e6d1d94a9f00',
-        pro_plus: 'PASTE_PRO_PLUS_MONTHLY_CHECKOUT_URL_HERE',
+        starter:
+          "https://conxion.lemonsqueezy.com/checkout/buy/57c75fe4-d22c-4a2c-998d-e6d1d94a9f00",
+        pro: "https://conxion.lemonsqueezy.com/checkout/buy/57c75fe4-d22c-4a2c-998d-e6d1d94a9f00",
+        pro_plus: "PASTE_PRO_PLUS_MONTHLY_CHECKOUT_URL_HERE",
       };
 
-      document.addEventListener('DOMContentLoaded', function () {
-        var starterBtn = document.getElementById('starter-cta');
-        var proBtn     = document.getElementById('pro-cta');
+      document.addEventListener("DOMContentLoaded", function () {
+        var starterBtn = document.getElementById("starter-cta");
+        var proBtn = document.getElementById("pro-cta");
         if (starterBtn) starterBtn.href = CHECKOUT_URLS.starter;
-        if (proBtn)     proBtn.href     = CHECKOUT_URLS.pro;
+        if (proBtn) proBtn.href = CHECKOUT_URLS.pro;
 
         // PostHog buy-button click tracking
-        ['starter-cta', 'pro-cta'].forEach(function (id) {
+        ["starter-cta", "pro-cta"].forEach(function (id) {
           var btn = document.getElementById(id);
           if (!btn) return;
-          btn.addEventListener('click', function () {
+          btn.addEventListener("click", function () {
             if (window.posthog) {
-              posthog.capture('buy_button_clicked', {
-                plan: id === 'starter-cta' ? 'starter' : 'pro',
+              posthog.capture("buy_button_clicked", {
+                plan: id === "starter-cta" ? "starter" : "pro",
               });
             }
           });
         });
 
         // PostHog waitlist button click tracking
-        document.querySelectorAll('a[href*="waitlist.html"]').forEach(function (btn) {
-          btn.addEventListener('click', function () {
-            if (window.posthog) {
-              var href = btn.getAttribute('href') || '';
-              var tier = href.includes('team') ? 'team' : 'pro_plus';
-              posthog.capture('waitlist_button_clicked', { plan: tier });
-            }
+        document
+          .querySelectorAll('a[href*="waitlist.html"]')
+          .forEach(function (btn) {
+            btn.addEventListener("click", function () {
+              if (window.posthog) {
+                var href = btn.getAttribute("href") || "";
+                var tier = href.includes("team") ? "team" : "pro_plus";
+                posthog.capture("waitlist_button_clicked", { plan: tier });
+              }
+            });
           });
-        });
       });
     </script>
   </body>
