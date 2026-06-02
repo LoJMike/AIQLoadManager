@@ -2,6 +2,7 @@
 
 Cross-platform desktop app (Windows 10/11 + macOS) for queuing, routing, and tracking
 prompts across 12 AI providers — 7 cloud APIs plus Ollama, LM Studio, Jan.ai, LocalAI, and llama.cpp for fully local, offline AI.
+**19 providers coming soon** — 7 new cloud providers (Fireworks AI, Together AI, Cohere, MiniMax, Cerebras, Perplexity AI, and OpenAI Codex) are in active development. See the [Provider Roadmap](PROVIDER_ROADMAP.md) for integration details and timelines.
 
 **GitHub:** https://github.com/LoJMike/AIQLoadManager  
 **Current version:** v0.5.0 (testing release)  
@@ -125,6 +126,20 @@ All ports are configurable in Settings → Connectors. Each local provider card 
 | OpenAI     | $5 credit (3 months)  | `sk-...`      |
 | DeepSeek   | 5M free tokens        | `sk-...`      |
 | xAI Grok   | $25 + $150/mo program | `xai-...`     |
+
+### 🔜 Coming Soon — 7 new providers in active development
+
+See [PROVIDER_ROADMAP.md](PROVIDER_ROADMAP.md) for full integration details, model lists, pricing, and implementation order.
+
+| Provider | Highlight | Free tier | Est. availability |
+|---|---|---|---|
+| **Fireworks AI** | Fastest inference platform · hosts Llama, DeepSeek, Qwen | $1 credit | Phase 1 |
+| **Together AI** | 200+ open-source models · $25 signup credit | $25 credit | Phase 1 |
+| **MiniMax** | MiniMax M3 — competitive with GPT-4o at $0.60/M input | None | Phase 1 |
+| **Cerebras** | Wafer-scale chip · Llama 3.3 70B at ~2,000 tokens/sec | ✅ Free tier | Phase 1 |
+| **Cohere** | Enterprise-strength instruction-following · Command A/R models | ✅ Trial key | Phase 1 |
+| **Perplexity AI** | Search-grounded responses with live web citations | None | Phase 2 |
+| **OpenAI Codex** | Dedicated coding agent · shares your OpenAI API key | None | Phase 3 |
 
 ---
 
@@ -323,11 +338,11 @@ Standing instructions are stored locally via `electron-store` and survive app re
 | Mode       | Tier         | Behaviour |
 |------------|--------------|-----------|
 | `manual`   | All          | You explicitly pick provider + model per prompt |
-| `freeTier` | All          | Local providers first (Ollama / LM Studio / Jan.ai / LocalAI / llama.cpp), then Gemini, Groq, Mistral |
+| `freeTier` | All          | Local providers first (Ollama / LM Studio / Jan.ai / LocalAI / llama.cpp), then Gemini, Groq, Mistral — and Cerebras + Cohere once added |
 | `auto`     | Starter, Pro | Scores all providers on capacity, cost, and task type — all local AI providers get a +50 bonus ($0 cost, no rate limits). Task type derived from prompt tags. |
 | `balance`  | Starter, Pro | Round-robins across configured providers |
 | `cheapest` | Pro          | Always picks lowest input-token cost (local = $0, always wins) |
-| `fastest`  | Pro          | Groq → DeepSeek → Mistral → Gemini → OpenAI → Anthropic → local |
+| `fastest`  | Pro          | Cerebras → Groq → Fireworks → DeepSeek → Mistral → Gemini → OpenAI → Anthropic → local *(Cerebras and Fireworks added when providers ship)* |
 
 ---
 
