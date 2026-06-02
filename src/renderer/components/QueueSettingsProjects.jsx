@@ -13,6 +13,11 @@ const STATUS_COLORS = {
 export function QueuePanel({ queue, providers, onRefresh, highlightId, license }) {
   const [filter, setFilter] = useState('all');
   const [expanded, setExpanded] = useState(null);
+  const [showDigestOpts, setShowDigestOpts] = useState(false);
+  const [digestFrom,     setDigestFrom    ] = useState('');
+  const [digestTo,       setDigestTo      ] = useState('');
+  const [digestProject,  setDigestProject ] = useState('');
+  const [digestProjects, setDigestProjects] = useState([]);
   const api = window.aiQueue;
   const canExportDigest = license?.flags?.digestExport;
 
@@ -38,11 +43,26 @@ export function QueuePanel({ queue, providers, onRefresh, highlightId, license }
   async function clearDone() { await api.clearCompleted(); onRefresh(); }
   async function reorder(id, dir) { await api.reorderQueue(id, dir); onRefresh(); }
 
-  async function exportDigest() {
+  async function toggleDigestPanel() {
+    if (!showDigestOpts) {
+      try {
+        const projs = await api.getProjects();
+        setDigestProjects(projs || []);
+      } catch (_) {}
+    }
+    setShowDigestOpts(v => !v);
+  }
+
+  async function runExport() {
     try {
-      const result = await api.exportDigest({});
+      const opts = {};
+      if (digestFrom)    opts.since     = new Date(digestFrom).getTime();
+      if (digestTo)      opts.until     = new Date(digestTo + 'T23:59:59').getTime();
+      if (digestProject) opts.projectId = digestProject;
+      const result = await api.exportDigest(opts);
       if (result?.canceled) return;
       if (!result?.success) throw new Error('Export failed');
+      setShowDigestOpts(false);
     } catch (e) {
       alert(e.message || 'Export failed');
     }
@@ -57,13 +77,47 @@ export function QueuePanel({ queue, providers, onRefresh, highlightId, license }
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {canExportDigest && (
-            <button className="secondary" onClick={exportDigest} title="Export completed items as HTML digest">
-              Export Digest
+            <button className="secondary" onClick={toggleDigestPanel} title="Export completed items as HTML digest">
+              Export Digest {showDigestOpts ? '▲' : '▾'}
             </button>
           )}
           <button className="secondary" onClick={clearDone}>Clear completed</button>
         </div>
       </div>
+
+      {/* ── Digest export filter bar ─────────────────────────────────────────── */}
+      {canExportDigest && showDigestOpts && (
+        <div style={{
+          display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap',
+          padding: '12px 16px', marginBottom: 8, borderRadius: 8,
+          background: 'var(--bg2)', border: '1px solid var(--border)',
+        }}>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, color: 'var(--text2)' }}>
+            From
+            <input type="date" value={digestFrom} onChange={e => setDigestFrom(e.target.value)}
+              style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px', color: 'var(--text1)', fontSize: 12 }} />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, color: 'var(--text2)' }}>
+            To
+            <input type="date" value={digestTo} onChange={e => setDigestTo(e.target.value)}
+              style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px', color: 'var(--text1)', fontSize: 12 }} />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, color: 'var(--text2)' }}>
+            Project
+            <select value={digestProject} onChange={e => setDigestProject(e.target.value)}
+              style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px', color: 'var(--text1)', fontSize: 12, minWidth: 130 }}>
+              <option value="">All projects</option>
+              {digestProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </label>
+          <button className="primary" onClick={runExport} style={{ height: 30, fontSize: 12, alignSelf: 'flex-end' }}>
+            Download ↓
+          </button>
+          <span style={{ fontSize: 11, color: 'var(--text3)', alignSelf: 'flex-end', paddingBottom: 6 }}>
+            Leave dates blank to export all completed items.
+          </span>
+        </div>
+      )}
 
       <div className="segmented-tabs">
         {['all','pending','complete','error'].map(s => (
@@ -137,6 +191,16 @@ export function QueuePanel({ queue, providers, onRefresh, highlightId, license }
               {item.scheduled_for && <span>🕐 {new Date(item.scheduled_for).toLocaleString()}</span>}
               {item.cost_usd > 0  && <span>${item.cost_usd.toFixed(6)}</span>}
               {item.priority > 0  && <span style={{ color: 'var(--warning)' }}>↑ pri {item.priority}</span>}
+              {item.retry_count > 0 && (
+                <span style={{
+                  color: 'var(--warning)', fontWeight: 600, fontSize: 10,
+                  padding: '1px 6px', borderRadius: 10,
+                  background: 'color-mix(in srgb, var(--warning) 12%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--warning) 30%, transparent)',
+                }}>
+                  ↻ {item.retry_count}/{item.max_retries ?? 3}
+                </span>
+              )}
               <span style={{ marginLeft: 'auto', color: 'var(--text3)' }}>
                 {new Date(item.created_at).toLocaleTimeString()}
               </span>

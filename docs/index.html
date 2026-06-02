@@ -1352,6 +1352,7 @@
         <div class="nav-links">
           <a href="#features">Features</a>
           <a href="#mobile">Mobile</a>
+          <a href="#gateway">Agent Gateway</a>
           <a href="#roadmap">Roadmap</a>
           <a href="#pricing">Pricing</a>
           <a href="#compare">Compare</a>
@@ -1369,8 +1370,7 @@
       <div class="hero-glow"></div>
       <div class="container" style="position: relative">
         <div class="hero-badge">
-          ✦ Desktop app · Windows &amp; macOS · 12 AI providers · Mobile coming
-          soon
+          ✦ Desktop app · Windows &amp; macOS · 12 AI providers · Agent Gateway for Hermes, n8n, CrewAI &amp; more
         </div>
         <h1>
           Route <span class="hi">smarter.</span><br />Every AI. One queue.
@@ -1379,6 +1379,9 @@
           Route smarter<span class="sep">·</span>Spend less<span class="sep"
             >·</span
           >Stay in flow.
+        </div>
+        <div class="hero-tagline" style="margin-top: 8px; font-size: 0.9em; opacity: 0.7;">
+          Also works as a local gateway for Hermes, n8n, OpenClaw, LangGraph, CrewAI &amp; AutoGen — one endpoint, every provider.
         </div>
         <div class="hero-actions">
           <a
@@ -1405,6 +1408,15 @@
           <span class="p-pill-local">🖥 Jan.ai</span>
           <span class="p-pill-local">🖥 LocalAI</span>
           <span class="p-pill-local">🖥 llama.cpp</span>
+          <div class="p-pill-divider"></div>
+          <span class="lbl" style="color: var(--purple)">Soon</span>
+          <span class="p-pill" style="opacity:0.5; border-style: dashed;">Fireworks</span>
+          <span class="p-pill" style="opacity:0.5; border-style: dashed;">Together</span>
+          <span class="p-pill" style="opacity:0.5; border-style: dashed;">Cohere</span>
+          <span class="p-pill" style="opacity:0.5; border-style: dashed;">MiniMax</span>
+          <span class="p-pill" style="opacity:0.5; border-style: dashed;">Cerebras</span>
+          <span class="p-pill" style="opacity:0.5; border-style: dashed;">Perplexity</span>
+          <span class="p-pill" style="opacity:0.5; border-style: dashed;">Codex</span>
         </div>
         <div class="hero-screenshot">
           <img
@@ -1653,6 +1665,124 @@
             />
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════
+     AGENT GATEWAY — dark bg1
+═══════════════════════════════════════ -->
+    <section id="gateway" class="dot-dark" style="background: var(--bg1); padding: 80px 0;">
+      <div class="container">
+        <div class="sec-header">
+          <span class="sec-label">Agent Gateway · v0.6.0</span>
+          <h2 class="sec-title">Your agent stack.<br />AIQ's routing.</h2>
+          <p class="sec-sub">
+            Running agents through Hermes, n8n, or CrewAI? Point them at AIQ's local endpoint
+            and they inherit AIQ's full routing, rate-limit queuing, cost tracking, and
+            automatic provider fallback — without changing a line of agent code.
+          </p>
+        </div>
+
+        <div class="feature-grid" style="margin-top: 48px; --cols: 3;">
+
+          <div class="fcard" style="background: var(--bg2);">
+            <div class="fcard-icon">🔌</div>
+            <h3>One config change</h3>
+            <p>
+              Change one line in your agent framework — set <code>base_url</code> to
+              <code>http://localhost:8787/v1</code>. No code changes, no new packages,
+              no API rewrites. Every framework that speaks the OpenAI API works instantly.
+            </p>
+          </div>
+
+          <div class="fcard" style="background: var(--bg2);">
+            <div class="fcard-icon">🚦</div>
+            <h3>No more 429 errors</h3>
+            <p>
+              Long-running n8n workflows and multi-agent Hermes runs generate bursts of
+              LLM calls that hit rate limits and fail silently. AIQ queues every call,
+              waits for headroom, and retries automatically — your workflow never drops
+              a request at 2&nbsp;am.
+            </p>
+          </div>
+
+          <div class="fcard" style="background: var(--bg2);">
+            <div class="fcard-icon">🧭</div>
+            <h3>Smart routing by model name</h3>
+            <p>
+              Pass <code>aiq/auto</code>, <code>aiq/cheapest</code>,
+              <code>aiq/fastest</code>, or <code>aiq/free</code> as the model name and
+              AIQ's routing engine picks the best provider. Or pass any real model name
+              to pin a specific provider — your choice per call.
+            </p>
+          </div>
+
+          <div class="fcard" style="background: var(--bg2);">
+            <div class="fcard-icon">💰</div>
+            <h3>Cost tracking across all agents</h3>
+            <p>
+              Every token your agents spend — Hermes, n8n, CrewAI, all of them — shows
+              up in AIQ's Usage Dashboard. See real costs per provider, per project,
+              and per session without adding observability tooling to each framework.
+            </p>
+          </div>
+
+          <div class="fcard" style="background: var(--bg2);">
+            <div class="fcard-icon">🔁</div>
+            <h3>Automatic fallback</h3>
+            <p>
+              If your primary provider goes down mid-run, AIQ's router falls back to the
+              next available provider automatically. Your agent keeps running. The
+              switchover is invisible — the response comes back in the same format.
+            </p>
+          </div>
+
+          <div class="fcard" style="background: var(--bg2);">
+            <div class="fcard-icon">🔒</div>
+            <h3>100% local</h3>
+            <p>
+              The gateway runs on your machine. No data goes to our servers — agent
+              requests go from your framework, through AIQ, directly to the AI provider.
+              Optional per-project API key prevents other local processes from using
+              the endpoint without permission.
+            </p>
+          </div>
+
+        </div>
+
+        <div style="margin-top: 48px; background: var(--bg2); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 32px;">
+          <p style="color: var(--text2); font-size: 0.85em; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.08em;">Compatible frameworks — change one config line</p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;">
+            <div style="background: var(--bg3); border-radius: 8px; padding: 14px 18px;">
+              <strong>Hermes Agent</strong> <span style="color: var(--text2); font-size: 0.85em;">· NousResearch</span><br/>
+              <code style="font-size: 0.8em; color: var(--purple);">base_url: http://localhost:8787/v1</code>
+            </div>
+            <div style="background: var(--bg3); border-radius: 8px; padding: 14px 18px;">
+              <strong>n8n</strong> <span style="color: var(--text2); font-size: 0.85em;">· AI Agent node</span><br/>
+              <code style="font-size: 0.8em; color: var(--purple);">OpenAI credential → Base URL field</code>
+            </div>
+            <div style="background: var(--bg3); border-radius: 8px; padding: 14px 18px;">
+              <strong>OpenClaw</strong> <span style="color: var(--text2); font-size: 0.85em;">· self-hosted</span><br/>
+              <code style="font-size: 0.8em; color: var(--purple);">Provider config → base URL</code>
+            </div>
+            <div style="background: var(--bg3); border-radius: 8px; padding: 14px 18px;">
+              <strong>LangGraph</strong> <span style="color: var(--text2); font-size: 0.85em;">· LangChain</span><br/>
+              <code style="font-size: 0.8em; color: var(--purple);">ChatOpenAI(base_url=...)</code>
+            </div>
+            <div style="background: var(--bg3); border-radius: 8px; padding: 14px 18px;">
+              <strong>CrewAI</strong> <span style="color: var(--text2); font-size: 0.85em;">· v1.12+</span><br/>
+              <code style="font-size: 0.8em; color: var(--purple);">OPENAI_API_BASE in .env</code>
+            </div>
+            <div style="background: var(--bg3); border-radius: 8px; padding: 14px 18px;">
+              <strong>AutoGen / AG2</strong> <span style="color: var(--text2); font-size: 0.85em;">· Microsoft</span><br/>
+              <code style="font-size: 0.8em; color: var(--purple);">OAI_CONFIG_LIST base_url</code>
+            </div>
+          </div>
+          <p style="margin-top: 20px; color: var(--text2); font-size: 0.9em;">
+            Streaming (<code>stream: true</code>) fully supported. Available on all plans — free and paid. Ships in <strong>v0.6.0</strong>.
+          </p>
+        </div>
+
       </div>
     </section>
 
@@ -1996,6 +2126,31 @@
               DeepSeek-R1 and more. All server ports are configurable.
             </p>
           </div>
+          <div class="rcard" style="border-color: rgba(124, 92, 255, 0.4)">
+            <div class="rcard-header">
+              <h4>🔌 7 new cloud providers</h4>
+              <span class="tier-tag tt-pro">In development</span>
+            </div>
+            <p style="margin-bottom: 10px">
+              All 7 use the existing OpenAI SDK — no new npm packages needed.
+            </p>
+            <p style="margin-bottom: 6px">
+              <strong style="color: var(--green)">Phase 1 · v0.6.0</strong> —
+              <strong>Fireworks AI</strong> (fastest inference, Llama/DeepSeek/Qwen) ·
+              <strong>Together AI</strong> (200+ open-source models, $25 free credit) ·
+              <strong>Cerebras</strong> (wafer-scale speed, ~1,800 tok/s, free tier) ·
+              <strong>MiniMax</strong> (MiniMax M3 — GPT-4o quality at $0.60/M input) ·
+              <strong>Cohere</strong> (enterprise instruction-following, trial key)
+            </p>
+            <p style="margin-bottom: 6px">
+              <strong style="color: var(--blue)">Phase 2 · v0.7.0</strong> —
+              <strong>Perplexity AI</strong> (search-grounded responses with live web citations embedded in every reply)
+            </p>
+            <p>
+              <strong style="color: var(--purple)">Phase 3 · v0.8.0</strong> —
+              <strong>OpenAI Codex</strong> (dedicated coding agent; reuses your existing OpenAI key — zero extra setup)
+            </p>
+          </div>
           <div class="rcard">
             <div class="rcard-header">
               <h4>Pro+ tier — Unlimited queue &amp; Consensus mode</h4>
@@ -2151,6 +2306,159 @@
               output quality. Requires a local provider to be configured.
               Because analysis runs on your own hardware, no prompt content ever
               leaves the machine — the optimization is completely private.
+            </p>
+          </div>
+
+          <!-- ── v0.6.0 items ── -->
+          <div class="rcard" style="border-color: rgba(34, 197, 94, 0.3)">
+            <div class="rcard-header">
+              <h4>Agent Gateway — local OpenAI-compatible server</h4>
+              <span class="tier-tag tt-free">All tiers · v0.6.0</span>
+            </div>
+            <p>
+              AIQ spins up a local HTTP server (<code>localhost:8787</code>) that speaks
+              the standard OpenAI Chat Completions API. Any AI agent framework — Hermes,
+              OpenClaw, n8n, LangGraph, CrewAI, AutoGen, OpenAI Agents SDK — can point its
+              <code>base_url</code> at AIQ and instantly inherit AIQ's full routing,
+              rate-limit management, cost tracking, and provider fallback. No code changes
+              on the agent side. Pass <code>aiq/auto</code>, <code>aiq/cheapest</code>, or
+              <code>aiq/fastest</code> as the model name to invoke routing modes, or pass
+              any real model name to force a specific provider. Streaming (<code>stream: true</code>)
+              is fully supported. A new Gateway panel shows server status and a live
+              request log.
+            </p>
+            <p>
+              Also ships with <strong>OpenRouter</strong> as a new provider — 500+ models
+              through a single API key, using the same OpenAI-compatible SDK already in
+              the app.
+            </p>
+          </div>
+          <div class="rcard" style="border-color: rgba(34, 197, 94, 0.3)">
+            <div class="rcard-header">
+              <h4>Provider health scoring</h4>
+              <span class="tier-tag tt-pro">Pro · v0.6.0</span>
+            </div>
+            <p>
+              Replaces binary UP&thinsp;/&thinsp;DOWN status with a rolling composite score per
+              provider: latency (p50 &amp; p95), error rate&nbsp;%, token throughput
+              (tokens/sec), and RPM headroom. Each provider card in the Usage Dashboard
+              shows a live gauge. The router uses the score for weighted decisions in
+              <code>auto</code> mode — so a fast-but-unreliable provider scores lower
+              than a slightly slower but rock-solid one.
+            </p>
+          </div>
+          <div class="rcard" style="border-color: rgba(34, 197, 94, 0.3)">
+            <div class="rcard-header">
+              <h4>Provider latency &amp; throughput metrics</h4>
+              <span class="tier-tag tt-free">All tiers · v0.6.0</span>
+            </div>
+            <p>
+              Tokens/sec and average response time displayed per provider in the Usage
+              Dashboard — no new backend needed, derived from existing queue completion
+              events. Cerebras and Groq are the showcase: seeing
+              "Cerebras&nbsp;~1,800&nbsp;tok/s vs. GPT-4o&nbsp;~45&nbsp;tok/s" live
+              makes the <code>fastest</code> routing mode instantly tangible.
+            </p>
+          </div>
+          <div class="rcard" style="border-color: rgba(34, 197, 94, 0.3)">
+            <div class="rcard-header">
+              <h4>Per-project budget allocation</h4>
+              <span class="tier-tag tt-pro">Pro · v0.6.0</span>
+            </div>
+            <p>
+              Scope a monthly USD budget to a project rather than to a single provider.
+              The cap spans all providers the project uses, so "this client gets $50/month
+              of AI" works regardless of which provider processes each item. Pairs with
+              cost tracking and usage export for a complete per-project cost picture.
+            </p>
+          </div>
+
+          <!-- ── v0.7.0 items ── -->
+          <div class="rcard" style="border-color: rgba(251, 191, 36, 0.4)">
+            <div class="rcard-header">
+              <h4>Dynamic cost-based routing</h4>
+              <span class="tier-tag tt-pro">Pro · v0.7.0</span>
+            </div>
+            <p>
+              A live cost/quality scoring engine that extends the existing
+              <code>cheapest</code> mode and custom routing rules. Define thresholds
+              like "max $0.03/request" or "never use Claude for Chat prompts" and the
+              router enforces them at dispatch time, dynamically selecting the cheapest
+              provider that meets all active rules. The cost table updates live as
+              provider pricing changes — few competitors do this well.
+            </p>
+          </div>
+          <div class="rcard" style="border-color: rgba(251, 191, 36, 0.4)">
+            <div class="rcard-header">
+              <h4>SLA enforcement engine</h4>
+              <span
+                class="tier-tag"
+                style="
+                  background: rgba(245, 158, 11, 0.1);
+                  color: #d97706;
+                  border: 1px solid rgba(245, 158, 11, 0.3);
+                "
+                >Pro+ · v0.7.0</span
+              >
+            </div>
+            <p>
+              Define per-project SLA rules — maximum latency, maximum cost per request,
+              minimum reliability score. When the winning provider fails an SLA check,
+              the router falls back to the next-best provider automatically, with no
+              user intervention. Rules are stored locally per project. This is the
+              "Cloudflare for AI inference" differentiator — no other desktop tool
+              enforces SLAs across providers.
+            </p>
+          </div>
+          <div class="rcard" style="border-color: rgba(251, 191, 36, 0.4)">
+            <div class="rcard-header">
+              <h4>Audit log &amp; routing history</h4>
+              <span class="tier-tag tt-pro">Pro · v0.7.0</span>
+            </div>
+            <p>
+              An append-only local log of every routing decision: which item went where,
+              which routing mode fired, which rule matched, and what it cost. Stored in
+              SQLite alongside existing usage data — no new infrastructure. Gives
+              governance-conscious users full accountability and is the foundation for a
+              compliance reporting tier later.
+            </p>
+          </div>
+
+          <!-- ── v0.8.0 items ── -->
+          <div class="rcard">
+            <div class="rcard-header">
+              <h4>Cost allocation &amp; chargeback export</h4>
+              <span class="tier-tag tt-pro">Pro · v0.8.0</span>
+            </div>
+            <p>
+              Assign a cost-center label — client, department, or team — to any project.
+              Usage exports include the cost-center field so you can generate per-client
+              or per-department spend reports in your own spreadsheet or BI tool.
+              Enables chargeback billing for MSPs and freelancers without requiring a
+              full billing engine.
+            </p>
+          </div>
+
+          <!-- ── v1.0 items ── -->
+          <div class="rcard" style="border-color: rgba(124, 92, 255, 0.4)">
+            <div class="rcard-header">
+              <h4>Agent &amp; MCP routing</h4>
+              <span
+                class="tier-tag"
+                style="
+                  background: rgba(245, 158, 11, 0.1);
+                  color: #d97706;
+                  border: 1px solid rgba(245, 158, 11, 0.3);
+                "
+                >Pro+ · v1.0</span
+              >
+            </div>
+            <p>
+              Route agentic task payloads — OpenAI Agents, LangGraph, CrewAI, MCP tool
+              calls — through the queue the same way text prompts are routed today. The
+              queue model already handles async workloads with retry, cost tracking, and
+              provider fallback; this extends it to multi-step agent runs. An emerging
+              market with very few tools doing it well.
             </p>
           </div>
         </div>
@@ -2929,6 +3237,16 @@
                 <td><span class="chk-ic">✓</span></td>
                 <td><span class="chk-ic">✓</span></td>
                 <td><span class="chk-ic" style="color: #22d3ee">✓</span></td>
+              </tr>
+              <tr class="feat-row">
+                <td class="fn">
+                  Agent Gateway — local OpenAI-compatible server<small>Point Hermes, n8n, OpenClaw, LangGraph, CrewAI, AutoGen at AIQ — ships v0.6.0</small>
+                </td>
+                <td><span class="lim">v0.6.0</span></td>
+                <td><span class="lim">v0.6.0</span></td>
+                <td><span class="lim">v0.6.0</span></td>
+                <td><span class="lim">v0.6.0</span></td>
+                <td><span class="lim" style="color: #22d3ee">v0.6.0</span></td>
               </tr>
               <tr class="feat-row">
                 <td class="fn">Real-time rate limit tracking</td>

@@ -12,10 +12,38 @@ export function SupportPanel({ appVersion }) {
     api.openExternal(url);
   }
 
-  function openBugReport() {
+  async function openBugReport() {
+    // Gather live diagnostics — configured providers, plan, recent errors.
+    // Fails silently so a broken API call never blocks the bug report.
+    let diagSection = `**Version:** ${ver}\n**OS:** ${os}`;
+    try {
+      const [providers, queue, lic] = await Promise.all([
+        api.getProviders(),
+        api.getQueue(),
+        api.getLicense(),
+      ]);
+      const configured = providers
+        .filter(p => p.configured)
+        .map(p => p.displayName || p.name)
+        .join(', ') || 'None';
+      const plan       = lic?.plan || 'free';
+      const errorItems = queue.filter(i => i.status === 'error');
+      const recentErrs = errorItems.slice(0, 3)
+        .map(i => `  - [${i.used_provider || '?'}] ${(i.error || 'unknown error').slice(0, 120)}`)
+        .join('\n');
+      diagSection = [
+        `**Version:** ${ver}`,
+        `**OS:** ${os}`,
+        `**Plan:** ${plan}`,
+        `**Configured providers:** ${configured}`,
+        `**Queue errors (recent):** ${errorItems.length}`,
+        recentErrs ? `\`\`\`\n${recentErrs}\n\`\`\`` : '',
+      ].filter(Boolean).join('\n');
+    } catch (_) { /* keep basic diagSection */ }
+
     const title = encodeURIComponent('Bug: ');
     const body  = encodeURIComponent(
-      `**Version:** ${ver}\n**OS:** ${os}\n\n**What happened:**\n\n\n**Steps to reproduce:**\n\n1. \n2. \n\n**Expected behaviour:**\n\n`
+      `${diagSection}\n\n**What happened:**\n\n\n**Steps to reproduce:**\n\n1. \n2. \n\n**Expected behaviour:**\n\n`
     );
     api.openExternal(
       `https://github.com/LoJMike/AIQLoadManager/issues/new?title=${title}&body=${body}&labels=bug`
@@ -116,6 +144,7 @@ export function SupportPanel({ appVersion }) {
         </div>
         <div style={{ marginTop: 12, color: 'var(--text3)', fontSize: '0.78rem' }}>
           App version: <span style={{ color: 'var(--text2)' }}>{ver}</span> &nbsp;·&nbsp; OS: <span style={{ color: 'var(--text2)' }}>{os}</span>
+          &nbsp;·&nbsp; Configured providers, plan, and recent errors are auto-attached to the report.
         </div>
       </div>
 

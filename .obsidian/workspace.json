@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "LEMONSQUEEZY_SETUP.md",
+                "file": "README.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "LEMONSQUEEZY_SETUP"
+              "title": "README"
             }
           }
         ]
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "LEMONSQUEEZY_SETUP.md",
+                "file": "README.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for LEMONSQUEEZY_SETUP"
+              "title": "Backlinks for README"
             }
           },
           {
@@ -113,12 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "LEMONSQUEEZY_SETUP.md",
+                "file": "README.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from LEMONSQUEEZY_SETUP"
+              "title": "Outgoing links from README"
             }
           },
           {
@@ -156,13 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "LEMONSQUEEZY_SETUP.md",
+                "file": "README.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of LEMONSQUEEZY_SETUP"
+              "title": "Outline of README"
             }
           }
         ]
@@ -185,22 +185,24 @@
   },
   "active": "253edf44c7250dd3",
   "lastOpenFiles": [
-    "docs/waitlist.html.tmp.52952.78fceb127afc",
-    "docs/index.html.tmp.63760.f4c545dc564e",
-    "docs/index.html.tmp.63760.89dc971a068e",
-    "docs/waitlist.html",
-    "docs/waitlist.html.tmp.63760.5e7d13a8792e",
-    "docs/index.html.tmp.57328.8625b1ac0aa4",
-    "docs/index.html.tmp.57328.7250524cba8a",
-    "src/main/index-v2.js.tmp.66868.b5450e34cd2c",
+    "ROADMAP.md",
+    "README.md.tmp.74456.d857f151f287",
+    "README.md.tmp.74456.19ba67c26733",
+    "README.md.tmp.74456.3d7f78874d6c",
+    "docs/index.html.tmp.74456.8fff2ebc910b",
+    "docs/index.html.tmp.74456.b1320d8ec9c1",
+    "docs/index.html.tmp.74456.cc8317db20d8",
+    "docs/index.html.tmp.74456.a11e52107528",
+    "ROADMAP.md.tmp.65336.653883ef5cb5",
+    "ROADMAP.md.tmp.74156.ca3b3995cfb4",
+    "ROADMAP.md.tmp.74156.ee8291f0c4a0",
     "README.md",
+    "PROVIDER_ROADMAP.md",
+    "CODE_REVIEW.md",
     "LEMONSQUEEZY_SETUP.md",
-    "LEMONSQUEEZY_SETUP.md.tmp.67996.be7795fa1d0a",
-    "docs/privacy.html.tmp.67996.0e43a95d93c9",
-    "docs/privacy.html.tmp.67996.54ccd660966c",
+    "planning_docs/Missing Features That Could Differentiate AIQ.md",
     "WORKLOG.md",
     "TESTING_GUIDE.md",
-    "CODE_REVIEW.md",
     "CLAUDE.md"
   ]
 }

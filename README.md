@@ -1,7 +1,11 @@
 # AI Queue Load Manager
 
-Cross-platform desktop app (Windows 10/11 + macOS) for queuing, routing, and tracking
-prompts across 12 AI providers — 7 cloud APIs plus Ollama, LM Studio, Jan.ai, LocalAI, and llama.cpp for fully local, offline AI.
+**The AI routing layer for your entire desktop stack** — whether you're sending prompts yourself or running agents through Hermes, n8n, OpenClaw, LangGraph, or CrewAI.
+
+Use AIQ as a **prompt queue app**: fire off prompts across 12 AI providers, track costs, and never hit a rate limit wall again.
+Use AIQ as an **Agent Gateway**: point any OpenAI-compatible agent framework at `http://localhost:8787/v1` and AIQ handles routing, rate-limit queuing, cost tracking, and provider fallback transparently — no code changes in your agents.
+
+**19 providers coming soon** — 7 new cloud providers (Fireworks AI, Together AI, Cohere, MiniMax, Cerebras, Perplexity AI, OpenAI Codex) plus OpenRouter (500+ models via single API key) are in active development. See the [Provider Roadmap](PROVIDER_ROADMAP.md) for details.
 
 **GitHub:** https://github.com/LoJMike/AIQLoadManager  
 **Current version:** v0.5.0 (testing release)  
@@ -90,6 +94,35 @@ All plans are **monthly subscriptions** — cancel any time. No lifetime deals, 
 
 ---
 
+## Use AIQ as an Agent Gateway
+
+Any tool that speaks the OpenAI Chat Completions API can route through AIQ. Change one line of config — no code changes to your agents required.
+
+| Your tool | What to change | What you get |
+|---|---|---|
+| **Hermes Agent** | `base_url: http://localhost:8787/v1` in provider config | AIQ replaces Hermes's native routing with rate-limit-aware queuing |
+| **n8n** | OpenAI credential → `Base URL` field | Every AI Agent node LLM call queues through AIQ automatically |
+| **OpenClaw** | Provider config → base URL | AIQ's cost tracking and fallback underneath OpenClaw's agent logic |
+| **LangGraph** | `ChatOpenAI(base_url="http://localhost:8787/v1", ...)` | Full routing and retry for every LangGraph LLM call |
+| **CrewAI** | `OPENAI_API_BASE=http://localhost:8787/v1` in `.env` | Works with CrewAI v1.12+ native OpenAI-compatible providers |
+| **AutoGen / AG2** | `base_url` in `OAI_CONFIG_LIST` | Queue-backed routing for all AutoGen agent conversations |
+| **OpenAI Agents SDK** | `AsyncOpenAI(base_url=..., api_key=...)` | Any agentic workflow routes through AIQ |
+
+**Model name routing** — pass these as the `model` field to invoke AIQ's routing modes without changing anything else in your agent:
+
+| Model value | AIQ behaviour |
+|---|---|
+| `aiq/auto` | Score all providers on capacity, cost, and task type |
+| `aiq/cheapest` | Always pick lowest input-token cost |
+| `aiq/fastest` | Cerebras → Groq → Fireworks → others |
+| `aiq/free` | Free-tier providers only (Gemini, Groq, Mistral, Cerebras) |
+| `claude-3-5-sonnet` | Force Anthropic, specific model |
+| `gpt-4o` | Force OpenAI, specific model |
+
+Streaming (`stream: true`) is fully supported. The Gateway runs locally — no agent traffic passes through our servers. Available on all plans. **Ships in v0.6.0.**
+
+---
+
 ## Supported Providers
 
 Providers are grouped into three tiers in the app's Connectors settings panel.
@@ -125,6 +158,28 @@ All ports are configurable in Settings → Connectors. Each local provider card 
 | OpenAI     | $5 credit (3 months)  | `sk-...`      |
 | DeepSeek   | 5M free tokens        | `sk-...`      |
 | xAI Grok   | $25 + $150/mo program | `xai-...`     |
+
+### 🔜 Coming Soon — 7 new providers in active development
+
+See [PROVIDER_ROADMAP.md](PROVIDER_ROADMAP.md) for full integration details, model lists, pricing, and implementation order.
+
+See [PROVIDER_ROADMAP.md](PROVIDER_ROADMAP.md) for full integration details, model lists, pricing, and step-by-step implementation notes.
+
+| Provider | Highlight | Free tier | Phase | Target version |
+|---|---|---|---|---|
+| **Fireworks AI** | Fastest inference platform · hosts Llama, DeepSeek, Qwen | $1 credit | Phase 1 | v0.6.0 |
+| **Together AI** | 200+ open-source models · $25 signup credit | $25 credit | Phase 1 | v0.6.0 |
+| **MiniMax** | MiniMax M3 — competitive with GPT-4o at $0.60/M input | None | Phase 1 | v0.6.0 |
+| **Cerebras** | Wafer-scale chip · Llama 3.3 70B at ~2,000 tokens/sec | ✅ Free tier | Phase 1 | v0.6.0 |
+| **Cohere** | Enterprise-strength instruction-following · Command A/R models | ✅ Trial key | Phase 1 | v0.6.0 |
+| **Perplexity AI** | Search-grounded responses with live web citations | None | Phase 2 | v0.7.0 |
+| **OpenAI Codex** | Dedicated coding agent · shares your OpenAI API key | None | Phase 3 | v0.8.0 |
+
+**Phase 1** (~7–8 hours dev, all OpenAI-compatible): Add `FireworksProvider`, `TogetherProvider`, `MiniMaxProvider`, `CerebrasProvider`, `CohereProvider` to `openaiCompatProviders.js`. No new npm packages needed.
+
+**Phase 2** (~1–2 hours): Add `PerplexityProvider` with custom `sendMessage` override to surface inline citations from `res.citations[]`.
+
+**Phase 3** (~2 hours): New `codexProvider.js` using the Responses API (`/v1/responses`). Shares the existing OpenAI API key — auto-detects when OpenAI is already configured.
 
 ---
 
@@ -323,11 +378,11 @@ Standing instructions are stored locally via `electron-store` and survive app re
 | Mode       | Tier         | Behaviour |
 |------------|--------------|-----------|
 | `manual`   | All          | You explicitly pick provider + model per prompt |
-| `freeTier` | All          | Local providers first (Ollama / LM Studio / Jan.ai / LocalAI / llama.cpp), then Gemini, Groq, Mistral |
+| `freeTier` | All          | Local providers first (Ollama / LM Studio / Jan.ai / LocalAI / llama.cpp), then Gemini, Groq, Mistral — and Cerebras + Cohere once added |
 | `auto`     | Starter, Pro | Scores all providers on capacity, cost, and task type — all local AI providers get a +50 bonus ($0 cost, no rate limits). Task type derived from prompt tags. |
 | `balance`  | Starter, Pro | Round-robins across configured providers |
 | `cheapest` | Pro          | Always picks lowest input-token cost (local = $0, always wins) |
-| `fastest`  | Pro          | Groq → DeepSeek → Mistral → Gemini → OpenAI → Anthropic → local |
+| `fastest`  | Pro          | Cerebras → Groq → Fireworks → DeepSeek → Mistral → Gemini → OpenAI → Anthropic → local *(Cerebras and Fireworks added when providers ship)* |
 
 ---
 
@@ -368,6 +423,15 @@ Compare mode requires a Pro license. No conversation history is injected — eac
 | **Usage heatmap calendar** | Pro | GitHub-style contribution graph showing prompt volume and cost by day over the last 90 days. Lives inside the Insights panel alongside the scheduled-items calendar, giving a unified past/forward view of queue activity. |
 | **Prompt habit analysis** | Pro+ | Pattern observations that surface routing efficiency suggestions based on your actual usage — e.g. "You route 90% of Research prompts to Claude but Gemini costs 4× less for those queries." Runs entirely against local data, no prompt content analysed externally. |
 | **AI-powered prompt optimization** | Pro+ | A local model (Ollama or LM Studio) reviews your prompt patterns and suggests rewrites and routing changes that cut cost or improve output quality. Requires a local provider to be configured. No prompt content ever leaves the machine. |
+| **Provider health scoring** | Pro | v0.6.0 — Replaces binary UP/DOWN status with a rolling composite score per provider: latency (p50/p95), error rate %, token throughput (tokens/sec), and RPM headroom. Surfaced as a live gauge on each provider card in the Usage Dashboard. The router uses the score for weighted decisions in `auto` mode. |
+| **Provider latency & throughput metrics** | All | v0.6.0 — Display tokens/sec and average response time per provider in the Usage Dashboard. Cerebras and Groq are the showcase — seeing "Cerebras: ~1,800 tok/s vs. GPT-4o: ~45 tok/s" live makes the `fastest` routing mode tangible. Data is derived from existing queue completion events; no new backend infrastructure needed. |
+| **Per-project budget allocation** | Pro | v0.6.0 — Scope a monthly USD budget to a project rather than a provider. The cap spans all providers the project uses, so "this client gets $50/month of AI" works regardless of which provider processes each item. Pairs with cost tracking and usage export for a complete per-project cost picture. |
+| **Dynamic cost-based routing** | Pro | v0.7.0 — Extends `cheapest` mode and custom routing rules into a live cost/quality scoring engine. Define thresholds like "max $0.03/request" or "never use Claude for Chat prompts" and the router enforces them at dispatch time, dynamically selecting the cheapest provider that meets all active rules. Few competitors do this well. See [planning_docs/Missing Features That Could Differentiate AIQ.md](planning_docs/Missing%20Features%20That%20Could%20Differentiate%20AIQ.md). |
+| **SLA enforcement engine** | Pro+ | v0.7.0 — Per-project SLA rules: maximum latency, maximum cost per request, minimum reliability score. When the winning provider fails an SLA check the router falls back to the next-best automatically. Rules are defined per project and stored locally. This is the "Cloudflare for AI inference" differentiator — highly competitive against LiteLLM. |
+| **Audit log & routing history** | Pro | v0.7.0 — Append-only local log of every routing decision: which item was sent where, which routing mode fired, which rule matched, and what it cost. Stored in SQLite alongside existing usage data. Provides accountability for governance-conscious users and is the foundation for the full compliance tier later. |
+| **Cost allocation tags & chargeback export** | Pro | v0.8.0 — Assign a cost-center label (client, department, or team) to any project. Usage export includes the cost-center field so you can generate per-client or per-department spend reports from your own spreadsheet or BI tool. Enables chargeback billing for MSPs and freelancers without a full billing engine. |
+| **Agent Gateway — local OpenAI-compatible server** | All | v0.6.0 — Expose a local HTTP endpoint (`localhost:8787/v1`) that any OpenAI-compatible framework can use as its base URL. Hermes, n8n, OpenClaw, LangGraph, CrewAI, AutoGen, OpenAI Agents SDK — all route through AIQ's queue, router, and cost tracker with one config change. Streaming supported. |
+| **Agent/MCP routing (full)** | Pro+ | v1.0 — Extend the Gateway to handle full multi-step agentic runs including MCP tool calls, with per-run cost attribution and SLA enforcement. Builds on the v0.6.0 gateway foundation. |
 | **Linux native app** | All | AppImage (runs on any distro without installation — no root required) + `.deb` for Debian/Ubuntu. The `electron-builder` config is already in place and a `build:linux` script is ready. Needs testing on a Linux runner before public release. |
 
 ---
