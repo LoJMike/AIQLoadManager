@@ -18,10 +18,29 @@ const { LicenseChecker } = require("./licenseChecker");
 const { WebSearchService } = require("./webSearch");
 const { PostHog } = require("posthog-node");
 
+// ─── Load .env (dev only — production builds embed vars at build time) ────────
+(function loadEnv() {
+  const envPath = path.join(__dirname, "..", "..", ".env");
+  try {
+    const lines = fs.readFileSync(envPath, "utf8").split(/\r?\n/);
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eq = trimmed.indexOf("=");
+      if (eq < 1) continue;
+      const key = trimmed.slice(0, eq).trim();
+      const val = trimmed.slice(eq + 1).trim();
+      if (!(key in process.env)) process.env[key] = val;
+    }
+  } catch (_) {
+    // .env is optional in production
+  }
+})();
+
 // ─── PostHog anonymous analytics ─────────────────────────────────────────────
 // Tracks anonymous feature usage only. No prompt content, no API keys,
 // no personal data. Users can opt out in Settings → Analytics.
-const POSTHOG_KEY = "phc_yeEQLSv5BFKx64KbZuhRBXiR9gHp6TBLWWnNwFUVLuJ5";
+const POSTHOG_KEY = process.env.POSTHOG_KEY;
 const POSTHOG_HOST = "https://us.i.posthog.com";
 
 let posthog;
