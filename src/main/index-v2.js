@@ -40,7 +40,7 @@ const { PostHog } = require("posthog-node");
 // ─── PostHog anonymous analytics ─────────────────────────────────────────────
 // Tracks anonymous feature usage only. No prompt content, no API keys,
 // no personal data. Users can opt out in Settings → Analytics.
-const POSTHOG_KEY = process.env.POSTHOG_KEY;
+const POSTHOG_KEY = "phc_yeEQLSv5BFKx64KbZuhRBXiR9gHp6TBLWWnNwFUVLuJ5";
 const POSTHOG_HOST = "https://us.i.posthog.com";
 
 let posthog;
