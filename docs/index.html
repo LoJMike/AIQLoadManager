@@ -3623,6 +3623,209 @@
       </div>
     </section>
 
+    <!-- ═══════════════════════════════════════
+     COMPETITORS — dark bg1
+═══════════════════════════════════════ -->
+    <section id="competitors" class="comp-section dot-dark" style="padding: 80px 0;">
+      <div class="container">
+        <div class="sec-header">
+          <span class="sec-label">How it compares</span>
+          <h2 class="sec-title">Why not just use<br />LiteLLM or OpenRouter?</h2>
+          <p class="sec-sub">
+            Each tool solves a different slice of the problem. AIQ is the only one
+            that combines a desktop queue, intelligent routing, cost tracking, and
+            an agent gateway in a single local app you own.
+          </p>
+        </div>
+        <div class="comp-wrap">
+          <table class="comp-table">
+            <thead>
+              <tr>
+                <th style="min-width:200px;">Capability</th>
+                <th style="min-width:140px; color: var(--purple);">✦ AIQ Load Manager</th>
+                <th style="min-width:130px;">LiteLLM</th>
+                <th style="min-width:130px;">OpenRouter</th>
+                <th style="min-width:130px;">Hermes Agent</th>
+                <th style="min-width:130px;">n8n (built-in)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Desktop GUI — no terminal required</td>
+                <td><span class="tsm tsm-diff">✓ Native app</span></td>
+                <td><span class="tsm tsm-same">CLI / config file</span></td>
+                <td><span class="tsm tsm-same">Web UI only</span></td>
+                <td><span class="tsm tsm-same">Terminal / config</span></td>
+                <td><span class="tsm tsm-same">Browser UI</span></td>
+              </tr>
+              <tr>
+                <td>All data stays local — no cloud sync</td>
+                <td><span class="tsm tsm-diff">✓ 100% local</span></td>
+                <td><span class="tsm tsm-diff">✓ Self-hosted</span></td>
+                <td><span class="tsm tsm-same">Cloud-hosted proxy</span></td>
+                <td><span class="tsm tsm-diff">✓ Self-hosted</span></td>
+                <td><span class="tsm tsm-same">Cloud or self-host</span></td>
+              </tr>
+              <tr>
+                <td>Background queue with priority ordering</td>
+                <td><span class="tsm tsm-diff">✓ Full queue engine</span></td>
+                <td><span class="tsm tsm-same">No queue UI</span></td>
+                <td><span class="tsm tsm-same">No queue</span></td>
+                <td><span class="tsm tsm-same">No queue</span></td>
+                <td><span class="tsm tsm-same">Workflow-level only</span></td>
+              </tr>
+              <tr>
+                <td>Rate-limit awareness + auto wait-and-resume</td>
+                <td><span class="tsm tsm-diff">✓ Per-provider RPM/TPM</span></td>
+                <td><span class="tsm tsm-diff">✓ Router-level</span></td>
+                <td><span class="tsm tsm-diff">✓ Provider-level</span></td>
+                <td><span class="tsm tsm-same">Errors on 429</span></td>
+                <td><span class="tsm tsm-same">Fails on 429</span></td>
+              </tr>
+              <tr>
+                <td>Agent Gateway — OpenAI-compatible local endpoint</td>
+                <td><span class="tsm tsm-diff">✓ v0.6.0</span></td>
+                <td><span class="tsm tsm-diff">✓ Proxy server</span></td>
+                <td><span class="tsm tsm-same">Cloud endpoint only</span></td>
+                <td><span class="tsm tsm-same">Consumer only</span></td>
+                <td><span class="tsm tsm-same">Consumer only</span></td>
+              </tr>
+              <tr>
+                <td>Live cost tracking per provider + model</td>
+                <td><span class="tsm tsm-diff">✓ Real-time dashboard</span></td>
+                <td><span class="tsm tsm-same">Logs only</span></td>
+                <td><span class="tsm tsm-same">Usage page</span></td>
+                <td><span class="tsm tsm-same">None</span></td>
+                <td><span class="tsm tsm-same">None</span></td>
+              </tr>
+              <tr>
+                <td>Pre-send cost estimate before queuing</td>
+                <td><span class="tsm tsm-diff">✓ Live as you type</span></td>
+                <td><span class="tsm tsm-same">—</span></td>
+                <td><span class="tsm tsm-same">—</span></td>
+                <td><span class="tsm tsm-same">—</span></td>
+                <td><span class="tsm tsm-same">—</span></td>
+              </tr>
+              <tr>
+                <td>Routing modes (auto / cheapest / fastest / free tier)</td>
+                <td><span class="tsm tsm-diff">✓ 6 modes</span></td>
+                <td><span class="tsm tsm-diff">✓ Router strategies</span></td>
+                <td><span class="tsm tsm-diff">✓ Provider routing</span></td>
+                <td><span class="tsm tsm-same">Single-provider focus</span></td>
+                <td><span class="tsm tsm-same">Manual per node</span></td>
+              </tr>
+              <tr>
+                <td>Local AI (Ollama, LM Studio, llama.cpp, etc.)</td>
+                <td><span class="tsm tsm-diff">✓ 5 local providers</span></td>
+                <td><span class="tsm tsm-diff">✓ Ollama + others</span></td>
+                <td><span class="tsm tsm-same">Cloud only</span></td>
+                <td><span class="tsm tsm-diff">✓ Via Ollama</span></td>
+                <td><span class="tsm tsm-diff">✓ Via Ollama</span></td>
+              </tr>
+              <tr>
+                <td>Compare mode — same prompt to multiple providers</td>
+                <td><span class="tsm tsm-diff">✓ Side-by-side</span></td>
+                <td><span class="tsm tsm-same">—</span></td>
+                <td><span class="tsm tsm-same">—</span></td>
+                <td><span class="tsm tsm-same">—</span></td>
+                <td><span class="tsm tsm-same">—</span></td>
+              </tr>
+              <tr>
+                <td>Per-project budget caps &amp; alerts</td>
+                <td><span class="tsm tsm-diff">✓ Pro</span></td>
+                <td><span class="tsm tsm-diff">✓ Config-level</span></td>
+                <td><span class="tsm tsm-diff">✓ Org-level</span></td>
+                <td><span class="tsm tsm-same">—</span></td>
+                <td><span class="tsm tsm-same">—</span></td>
+              </tr>
+              <tr>
+                <td>Pricing</td>
+                <td>
+                  <span class="tsm tsm-price">Free forever</span>
+                  <span class="tsm tsm-price">$9 / mo Starter</span>
+                  <span class="tsm tsm-price">$19 / mo Pro</span>
+                </td>
+                <td><span class="tsm tsm-price">Free OSS · $49/mo cloud</span></td>
+                <td><span class="tsm tsm-price">Free + usage fees</span></td>
+                <td><span class="tsm tsm-price">Free OSS</span></td>
+                <td><span class="tsm tsm-price">Free OSS · $20/mo cloud</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top: 24px; color: var(--text3); font-size: 0.8em; text-align: center;">
+          LiteLLM is a great choice if you want a self-hosted proxy server with deep observability tooling.
+          OpenRouter is ideal if you want a single cloud endpoint across hundreds of models.
+          AIQ does both jobs locally — plus adds the queue UI, cost dashboard, and agent gateway that neither offers out of the box.
+        </p>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════
+     FAQ — light bg0
+═══════════════════════════════════════ -->
+    <section id="faq" class="light dot-light" style="background: #f7f7ff; padding: 80px 0;">
+      <div class="container">
+        <div class="sec-header">
+          <span class="sec-label">FAQ</span>
+          <h2 class="sec-title">Common questions.</h2>
+        </div>
+        <div class="faq-grid" style="margin-top: 48px;">
+
+          <div class="faq-item">
+            <h4>Is this a chat app?</h4>
+            <p>No. AIQ is a background queue engine — you fire off prompts and get on with your work while they process. It's built for people who send a lot of AI requests and need them managed, routed, and tracked, not for having a single conversation. If you want a chat interface, use Claude.ai or ChatGPT. AIQ is what sits behind your workflow.</p>
+          </div>
+
+          <div class="faq-item">
+            <h4>What is the Agent Gateway?</h4>
+            <p>The Agent Gateway (shipping v0.6.0) is a local HTTP server that AIQ runs on your machine at <code>localhost:8787</code>. It speaks the standard OpenAI Chat Completions API, so any agent framework — Hermes, n8n, CrewAI, LangGraph, AutoGen — can point its <code>base_url</code> at AIQ and immediately get rate-limit queuing, cost tracking, smart routing, and automatic provider fallback. One config change in your framework, nothing else to set up.</p>
+          </div>
+
+          <div class="faq-item">
+            <h4>Do my prompts pass through your servers?</h4>
+            <p>No. Every API call goes directly from your machine to the AI provider — Claude, OpenAI, Gemini, Groq, or whichever you've configured. AIQ is local software. We never see your prompts, your responses, or your API keys. The only data that leaves your machine is anonymous usage analytics (opt-out available in Settings), and your payment details which are handled entirely by Lemon Squeezy.</p>
+          </div>
+
+          <div class="faq-item">
+            <h4>What's the difference between AIQ and OpenRouter?</h4>
+            <p>OpenRouter is a cloud-hosted proxy that gives you access to hundreds of models through one endpoint — great for model breadth. AIQ runs locally, owns your queue, tracks your costs in real time, and provides a desktop UI. Starting in v0.6.0, AIQ also exposes its own OpenAI-compatible endpoint so you can use OpenRouter <em>as a provider inside AIQ</em> — getting both OpenRouter's model catalogue and AIQ's queue management together.</p>
+          </div>
+
+          <div class="faq-item">
+            <h4>Which plan do I need for the Agent Gateway?</h4>
+            <p>The Agent Gateway is available on all plans — including Free. There are no per-request fees beyond what your AI providers charge you directly. The gateway ships in v0.6.0 (August 2026).</p>
+          </div>
+
+          <div class="faq-item">
+            <h4>Do I need to be a developer to use this?</h4>
+            <p>Not for the core app. If you're using AIQ to queue and route prompts yourself, it's a standard desktop app — download, install, paste in your API keys, and go. The Agent Gateway does require changing one config line in your agent framework, so basic familiarity with tools like n8n or LangGraph helps there.</p>
+          </div>
+
+          <div class="faq-item">
+            <h4>What happens if a provider goes down mid-run?</h4>
+            <p>The queue retries the item automatically up to 3 times on transient errors (network timeouts, 5xx errors). If the provider is still unavailable, the item settles into an error state where you can retry manually with one click. Through the Agent Gateway, the router falls back to the next available provider automatically so your agent keeps running without seeing the switchover.</p>
+          </div>
+
+          <div class="faq-item">
+            <h4>I already use Hermes / n8n / CrewAI. Why add AIQ?</h4>
+            <p>Those frameworks handle agent logic — planning, tool use, multi-step reasoning. What they don't manage is the underlying LLM traffic: rate limits, cost tracking across providers, smart routing based on cost or speed, and automatic fallback when a provider is down. AIQ handles that layer so your agents don't have to. One config line change and every LLM call your agent makes goes through AIQ's queue.</p>
+          </div>
+
+          <div class="faq-item">
+            <h4>Can I use local models with the Agent Gateway?</h4>
+            <p>Yes. Local providers are first-class in AIQ and the gateway routes to them the same as any cloud provider. Pass <code>aiq/free</code> as the model name and AIQ prefers local providers first — fully offline, no API costs. Pass <code>aiq/auto</code> and the router weights local providers heavily because their cost is $0.</p>
+          </div>
+
+          <div class="faq-item">
+            <h4>Is there a free tier?</h4>
+            <p>Yes — free forever, no credit card required. The Free plan includes 5 local AI providers (Ollama, LM Studio, Jan.ai, LocalAI, llama.cpp), manual and free-tier routing, a 10-item queue, and the Agent Gateway when it ships. Starter ($9/mo) adds the 3 permanent free cloud tiers (Gemini, Groq, Mistral). Pro ($19/mo) unlocks all 12 providers and the full routing engine.</p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
     <div class="cta-band">
       <div class="container">
         <h2>Ready to tame your AI APIs?</h2>
@@ -3643,13 +3846,10 @@
           <strong>AI Queue Load Manager</strong> &nbsp;&middot;&nbsp;
           Local-first desktop app for Windows &amp; macOS
         </p>
-        <p style="margin-top: 8px">Route smarter. Spend less. Stay in flow.</p>
-        <p style="margin-top: 16px">
-          &copy; 2026 AI Queue Load Manager. All rights reserved.
+        <p style="margin-top: 8px">
+          <a href="privacy.html">Privacy Policy</a>
           &nbsp;&middot;&nbsp;
-          <a href="privacy.html">Privacy</a>
-          &nbsp;&middot;&nbsp;
-          <a href="terms.html">Terms</a>
+          <a href="terms.html">Terms of Service</a>
           &nbsp;&middot;&nbsp;
           <a href="refund.html">Refund Policy</a>
           &nbsp;&middot;&nbsp;
