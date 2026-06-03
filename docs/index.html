@@ -1697,7 +1697,7 @@
     >
       <div class="container">
         <div class="sec-header">
-          <span class="sec-label">Agent Gateway · v0.6.0</span>
+          <span class="sec-label">Agent Gateway</span>
           <h2 class="sec-title">Your agent stack.<br />AIQ's routing.</h2>
           <p class="sec-sub">
             Running agents through Hermes, n8n, or CrewAI? Point them at AIQ's
@@ -1710,7 +1710,7 @@
         <div class="feature-grid" style="margin-top: 48px; --cols: 3">
           <div class="fcard" style="background: var(--bg2)">
             <div class="fcard-icon">🔌</div>
-            <h3>One config change</h3>
+            <h3 style="color: #fff">One config change</h3>
             <p>
               Change one line in your agent framework — set
               <code>base_url</code> to <code>http://localhost:8787/v1</code>. No
@@ -1721,7 +1721,7 @@
 
           <div class="fcard" style="background: var(--bg2)">
             <div class="fcard-icon">🚦</div>
-            <h3>No more 429 errors</h3>
+            <h3 style="color: #fff">No more 429 errors</h3>
             <p>
               Long-running n8n workflows and multi-agent Hermes runs generate
               bursts of LLM calls that hit rate limits and fail silently. AIQ
@@ -1732,7 +1732,7 @@
 
           <div class="fcard" style="background: var(--bg2)">
             <div class="fcard-icon">🧭</div>
-            <h3>Smart routing by model name</h3>
+            <h3 style="color: #fff">Smart routing by model name</h3>
             <p>
               Pass <code>aiq/auto</code>, <code>aiq/cheapest</code>,
               <code>aiq/fastest</code>, or <code>aiq/free</code> as the model
@@ -1743,7 +1743,7 @@
 
           <div class="fcard" style="background: var(--bg2)">
             <div class="fcard-icon">💰</div>
-            <h3>Cost tracking across all agents</h3>
+            <h3 style="color: #fff">Cost tracking across all agents</h3>
             <p>
               Every token your agents spend — Hermes, n8n, CrewAI, all of them —
               shows up in AIQ's Usage Dashboard. See real costs per provider,
@@ -1754,7 +1754,7 @@
 
           <div class="fcard" style="background: var(--bg2)">
             <div class="fcard-icon">🔁</div>
-            <h3>Automatic fallback</h3>
+            <h3 style="color: #fff">Automatic fallback</h3>
             <p>
               If your primary provider goes down mid-run, AIQ's router falls
               back to the next available provider automatically. Your agent
@@ -1765,7 +1765,7 @@
 
           <div class="fcard" style="background: var(--bg2)">
             <div class="fcard-icon">🔒</div>
-            <h3>100% local</h3>
+            <h3 style="color: #fff">100% local</h3>
             <p>
               The gateway runs on your machine. No data goes to our servers —
               agent requests go from your framework, through AIQ, directly to
@@ -3890,6 +3890,18 @@
         document
           .querySelectorAll('a[href*="waitlist.html"]')
           .forEach(function (btn) {
+            btn.addEventListener("click", function () {
+              if (window.posthog) {
+                var href = btn.getAttribute("href") || "";
+                var tier = href.includes("team") ? "team" : "pro_plus";
+                posthog.capture("waitlist_button_clicked", { plan: tier });
+              }
+            });
+          });
+      });
+    </script>
+  </body>
+</html>
             btn.addEventListener("click", function () {
               if (window.posthog) {
                 var href = btn.getAttribute("href") || "";
