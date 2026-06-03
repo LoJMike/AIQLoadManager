@@ -3902,15 +3902,3 @@
     </script>
   </body>
 </html>
-            btn.addEventListener("click", function () {
-              if (window.posthog) {
-                var href = btn.getAttribute("href") || "";
-                var tier = href.includes("team") ? "team" : "pro_plus";
-                posthog.capture("waitlist_button_clicked", { plan: tier });
-              }
-            });
-          });
-      });
-    </script>
-  </body>
-</html>
