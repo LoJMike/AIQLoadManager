@@ -18,6 +18,36 @@ const COST_TABLE = {
   deepseek:  { 'deepseek-chat': [0.14, 0.28], 'deepseek-reasoner': [0.55, 2.19] },
   mistral:   { 'mistral-large-latest': [2.00, 6.00], 'mistral-small-latest': [0.10, 0.30], 'codestral-latest': [0.30, 0.90], 'open-mistral-7b': [0.04, 0.04] },
   grok:      { 'grok-4': [3.00, 15.00], 'grok-4.1-fast': [0.20, 0.50], 'grok-3-mini': [0.30, 0.50] },
+  // Phase 1 additions (v0.6.0)
+  fireworks: {
+    'accounts/fireworks/models/llama-v3p3-70b-instruct': [0.90, 0.90],
+    'accounts/fireworks/models/llama-v3p1-8b-instruct':  [0.20, 0.20],
+    'accounts/fireworks/models/deepseek-v3':             [0.90, 0.90],
+    'accounts/fireworks/models/qwen2p5-72b-instruct':    [0.90, 0.90],
+  },
+  together: {
+    'meta-llama/Llama-3.3-70B-Instruct-Turbo':          [0.88, 0.88],
+    'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo':      [0.18, 0.18],
+    'deepseek-ai/DeepSeek-V3':                           [0.60, 1.70],
+    'Qwen/Qwen2.5-72B-Instruct-Turbo':                  [1.20, 1.20],
+    'mistralai/Mixtral-8x7B-Instruct-v0.1':             [0.60, 0.60],
+  },
+  minimax: {
+    'MiniMax-M3':   [0.60, 2.40],
+    'MiniMax-M2.5': [0.15, 1.15],
+    'MiniMax-M2':   [0.26, 1.00],
+  },
+  cerebras: {
+    'llama-3.3-70b': [0.85, 1.20],
+    'llama-3.1-8b':  [0.10, 0.10],
+    'qwen-3-32b':    [0.40, 0.80],
+  },
+  cohere: {
+    'command-a-03-2025':   [2.50, 10.00],
+    'command-r-plus':      [2.50, 10.00],
+    'command-r':           [0.15,  0.60],
+    'command-r7b-12-2024': [0.04,  0.15],
+  },
   // Local providers — all models are $0.00 (any unrecognised model falls back to [0,0])
   ollama:    {},
   lmstudio:  {},
@@ -34,6 +64,12 @@ const RATE_LIMITS = {
   deepseek:  { rpm: 60,   rpd: null,   tpm: 100_000   },
   mistral:   { rpm: 2,    rpd: null,   tpm: null       },
   grok:      { rpm: 60,   rpd: null,   tpm: 500_000   },
+  // Phase 1 additions (v0.6.0)
+  fireworks: { rpm: 600,  rpd: null,   tpm: null       },
+  together:  { rpm: 600,  rpd: null,   tpm: null       },
+  minimax:   { rpm: 60,   rpd: null,   tpm: null       },
+  cerebras:  { rpm: 30,   rpd: null,   tpm: null       }, // free tier; 240 rpm paid
+  cohere:    { rpm: 20,   rpd: null,   tpm: null       }, // trial; 10,000 rpm production
   // Local providers — effectively unlimited (hardware-bound, not policy-bound)
   ollama:    { rpm: 9999, rpd: null,   tpm: null       },
   lmstudio:  { rpm: 9999, rpd: null,   tpm: null       },

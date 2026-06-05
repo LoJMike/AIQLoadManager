@@ -268,19 +268,35 @@ export function LicensePanel({ showToast }) {
           <div className="license-cta-row">
             <div style={{ flex: 1, minWidth: 160 }}>
               <div className="feature-gate-body" style={{ marginBottom: 6 }}>Don't have a key yet?</div>
-              <div className="plan-card-sub">Store coming soon — subscriptions only, cancel any time</div>
+              <div className="plan-card-sub">Subscriptions only — cancel any time</div>
             </div>
-            <button className="primary btn-starter-gradient" onClick={() => api.openExternal('https://example.com/upgrade')}>
+            <button
+              className="primary btn-starter-gradient"
+              onClick={() => api.openExternal('https://conxion.lemonsqueezy.com/checkout/buy/57c75fe4-d22c-4a2c-998d-e6d1d94a9f00')}
+            >
               ✦ Get Starter — $9/mo
             </button>
-            <button className="primary btn-pro-gradient" onClick={() => api.openExternal('https://example.com/upgrade-pro')}>
+            <button
+              className="primary btn-pro-gradient"
+              onClick={() => api.openExternal('https://conxion.lemonsqueezy.com/checkout/buy/843ad46c-b30e-4552-876d-f8f23aafc0fa')}
+            >
               ✦ Get Pro — $19/mo
             </button>
-            <button className="primary" style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', opacity: 0.8 }} onClick={() => api.openExternal('https://example.com/upgrade-pro-plus')} title="Coming soon">
-              ✦ Pro+ — $34/mo (Coming soon)
+            <button
+              className="primary"
+              style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', opacity: 0.7, cursor: 'not-allowed' }}
+              title="Coming soon — join the waitlist at conxion.lemonsqueezy.com"
+              onClick={() => api.openExternal('https://conxion.lemonsqueezy.com')}
+            >
+              ✦ Pro+ — $34/mo (Soon)
             </button>
-            <button className="primary" style={{ background: 'linear-gradient(135deg,#22d3ee,#0891b2)', opacity: 0.8 }} onClick={() => api.openExternal('https://example.com/upgrade-team')} title="Coming soon">
-              ✦ Team — $49/user/mo (Coming soon)
+            <button
+              className="primary"
+              style={{ background: 'linear-gradient(135deg,#22d3ee,#0891b2)', opacity: 0.7, cursor: 'not-allowed' }}
+              title="Coming soon"
+              onClick={() => api.openExternal('https://conxion.lemonsqueezy.com')}
+            >
+              ✦ Team — $49/user (Soon)
             </button>
           </div>
         </div>

@@ -2,14 +2,34 @@
 
 **The AI routing layer for your entire desktop stack** — whether you're sending prompts yourself or running agents through Hermes, n8n, OpenClaw, LangGraph, or CrewAI.
 
-Use AIQ as a **prompt queue app**: fire off prompts across 12 AI providers, track costs, and never hit a rate limit wall again.
+Use AIQ as a **prompt queue app**: fire off prompts across 17 AI providers, track costs, and never hit a rate limit wall again.
 Use AIQ as an **Agent Gateway**: point any OpenAI-compatible agent framework at `http://localhost:8787/v1` and AIQ handles routing, rate-limit queuing, cost tracking, and provider fallback transparently — no code changes in your agents.
 
-**19 providers coming soon** — 7 new cloud providers (Fireworks AI, Together AI, Cohere, MiniMax, Cerebras, Perplexity AI, OpenAI Codex) plus OpenRouter (500+ models via single API key) are in active development. See the [Provider Roadmap](PROVIDER_ROADMAP.md) for details.
+**2 more providers coming** — Perplexity AI (v0.7.0) and OpenAI Codex (v0.8.0) are in active development. See the [Provider Roadmap](PROVIDER_ROADMAP.md) for details.
 
 **GitHub:** https://github.com/LoJMike/AIQLoadManager  
-**Current version:** v0.5.0 (testing release)  
+**Current version:** v0.6.0  
 **Version history:** [CHANGELOG.md](CHANGELOG.md)
+
+---
+
+## What's New in v0.6.0
+
+| # | Change | Category |
+|---|--------|----------|
+| 1 | **5 new cloud providers** — Fireworks AI, Together AI, MiniMax, Cerebras, Cohere | Providers |
+| 2 | **Agent Gateway** — OpenAI-compatible HTTP proxy at `localhost:8787/v1` for agent frameworks | Feature |
+| 3 | **Results panel** — dedicated tab showing completed responses as full-text cards with search, filter, copy | Feature |
+| 4 | **Results badge** — green unread count on the nav icon; clears when you open the tab; persists across restarts | Feature |
+| 5 | **Live feature flag enforcement** — Free tier limits now active (5 providers, 10 queue items, Manual+FreeTier routing only) | Licensing |
+| 6 | **Lemon Squeezy checkout live** — Get Starter and Get Pro buttons open real checkout pages | Licensing |
+| 7 | **Pre-flight model validation** — selecting a local provider in Manual mode pings the server live, shows ✅/🔴/⚠️ banner, populates the model dropdown with actually-installed models | Local AI |
+| 8 | **Local provider reachability cache** — background ping every 20 s; auto-routing skips offline local providers; provider dots turn amber when server is down | Local AI |
+| 9 | **Windows localhost fix** — model discovery now uses the OpenAI SDK client (not native `fetch`) to avoid IPv6 resolution issues with `localhost` on Windows | Bug fix |
+| 10 | **Queue stuck at "processing" fixed** — completed items now immediately flip status in the UI (missing `queue-update` event on completion) | Bug fix |
+| 11 | **Retry delay** — auto-retries now wait 5–10 s (jittered) instead of retrying immediately | Improvement |
+| 12 | **404 / model not found no longer retried** — model-not-installed errors fail fast instead of burning all 3 retry slots | Improvement |
+| 13 | **Routing mode gate** — Free tier users who request Auto/Balance/etc. routing get a clear upgrade prompt instead of a silent fail | Improvement |
 
 ---
 
@@ -34,6 +54,7 @@ All plans are **monthly subscriptions** — cancel any time. No lifetime deals, 
 | **Batch CSV import**                                | —                 | ✓ _(Roadmap)_          | ✓ _(Roadmap)_          | ✓ _(Roadmap)_          | ✓ _(Roadmap)_          |
 | **Usage export**                                    | —                 | CSV _(Roadmap)_        | CSV + JSON _(Roadmap)_ | CSV + JSON _(Roadmap)_ | CSV + JSON _(Roadmap)_ |
 | **Response style presets**                          | ✓                 | ✓                      | ✓                      | ✓                      | ✓                      |
+| **Results panel**                                   | ✓                 | ✓                      | ✓                      | ✓                      | ✓                      |
 | **Per-project response history**                    | ✓                 | ✓                      | ✓                      | ✓                      | ✓                      |
 | **Session digest export (HTML)**                    | —                 | ✓                      | ✓                      | ✓                      | ✓                      |
 | **Per-provider default model**                      | —                 | —                      | —                      | ✓                      | ✓                      |
@@ -59,7 +80,7 @@ All plans are **monthly subscriptions** — cancel any time. No lifetime deals, 
 | **100% local — no cloud sync**                      | ✓                 | ✓                      | ✓                      | ✓                      | ✓                      |
 | **Anonymous usage analytics — opt out in Settings** | ✓                 | ✓                      | ✓                      | ✓                      | ✓                      |
 
-**Provider breakdown:** Free = 5 local AI providers (Ollama, LM Studio, Jan.ai, LocalAI, llama.cpp) — no API key needed, $0 per request. Starter adds the 3 permanent free cloud tiers (Gemini, Groq, Mistral). Pro unlocks all 4 paid cloud providers (Claude, OpenAI, DeepSeek, xAI Grok) plus everything below. **Pro+** is for solo power users who need 4× the throughput, unlimited queue depth, Consensus mode, and priority support. **Team** adds shared settings and admin controls for multi-user organisations.
+**Provider breakdown:** Free = 5 local AI providers (Ollama, LM Studio, Jan.ai, LocalAI, llama.cpp) — no API key needed, $0 per request. Starter adds 3 permanent free cloud tiers (Gemini, Groq, Mistral) + free-trial tiers (Cerebras, Cohere). Pro unlocks all paid cloud providers (Claude, OpenAI, DeepSeek, xAI Grok, Fireworks AI, Together AI, MiniMax) plus everything below. **Pro+** is for solo power users who need 4× the throughput, unlimited queue depth, Consensus mode, and priority support. **Team** adds shared settings and admin controls for multi-user organisations.
 
 ---
 
@@ -87,6 +108,7 @@ All plans are **monthly subscriptions** — cancel any time. No lifetime deals, 
 | **Batch CSV import**             | Starter+ _(Roadmap)_ | Upload a CSV of prompts and queue them all at once                                                                                                                                                         |
 | **Response style presets**       | All                  | Per-provider tone/format presets — Normal, Concise, Caveman, Bullet-only, ELI5, or Custom. Set in Settings → provider card. Appended to every prompt sent to that provider.                                |
 | **Per-provider default model**   | Pro+                 | Override the default model used for any provider when no model is specified in the queue item. Set in Settings → provider card.                                                                            |
+| **Results panel**                | All                  | Dedicated tab showing every completed response as a full-text card — search, filter by project or provider, copy with one click. Compare-mode responses shown side-by-side. Green badge on the nav icon counts unread results. |
 | **Per-project response history** | All                  | View all completed prompts and responses for any project — click "View history" on any project card in the Projects tab.                                                                                   |
 | **Session digest export**        | Starter+             | Export all completed queue items as a self-contained HTML file with summary stats, per-item prompt/response, and token costs. Opens natively after saving.                                                 |
 | **Anonymous usage analytics**    | All                  | PostHog — routing mode usage, provider config, prompt counts. No prompt content, no keys, no personal data. Opt-out toggle in Settings → Analytics.                                                        |
@@ -119,7 +141,7 @@ Any tool that speaks the OpenAI Chat Completions API can route through AIQ. Chan
 | `claude-3-5-sonnet` | Force Anthropic, specific model                            |
 | `gpt-4o`            | Force OpenAI, specific model                               |
 
-Streaming (`stream: true`) is fully supported. The Gateway runs locally — no agent traffic passes through our servers. Available on all plans. **Ships in v0.6.0.**
+Streaming (`stream: true`) is fully supported. The Gateway runs locally — no agent traffic passes through our servers. Available on Starter and above. **Shipped in v0.6.0.**
 
 ---
 
@@ -165,15 +187,15 @@ See [PROVIDER_ROADMAP.md](PROVIDER_ROADMAP.md) for full integration details, mod
 
 See [PROVIDER_ROADMAP.md](PROVIDER_ROADMAP.md) for full integration details, model lists, pricing, and step-by-step implementation notes.
 
-| Provider          | Highlight                                                      | Free tier    | Phase   | Target version |
+| Provider          | Highlight                                                      | Free tier    | Phase   | Status         |
 | ----------------- | -------------------------------------------------------------- | ------------ | ------- | -------------- |
-| **Fireworks AI**  | Fastest inference platform · hosts Llama, DeepSeek, Qwen       | $1 credit    | Phase 1 | v0.6.0         |
-| **Together AI**   | 200+ open-source models · $25 signup credit                    | $25 credit   | Phase 1 | v0.6.0         |
-| **MiniMax**       | MiniMax M3 — competitive with GPT-4o at $0.60/M input          | None         | Phase 1 | v0.6.0         |
-| **Cerebras**      | Wafer-scale chip · Llama 3.3 70B at ~2,000 tokens/sec          | ✅ Free tier | Phase 1 | v0.6.0         |
-| **Cohere**        | Enterprise-strength instruction-following · Command A/R models | ✅ Trial key | Phase 1 | v0.6.0         |
-| **Perplexity AI** | Search-grounded responses with live web citations              | None         | Phase 2 | v0.7.0         |
-| **OpenAI Codex**  | Dedicated coding agent · shares your OpenAI API key            | None         | Phase 3 | v0.8.0         |
+| **Fireworks AI**  | Fastest inference platform · hosts Llama, DeepSeek, Qwen       | $1 credit    | Phase 1 | ✅ v0.6.0      |
+| **Together AI**   | 200+ open-source models · $25 signup credit                    | $25 credit   | Phase 1 | ✅ v0.6.0      |
+| **MiniMax**       | MiniMax M3 — competitive with GPT-4o at $0.60/M input          | None         | Phase 1 | ✅ v0.6.0      |
+| **Cerebras**      | Wafer-scale chip · Llama 3.3 70B at ~2,000 tokens/sec          | ✅ Free tier | Phase 1 | ✅ v0.6.0      |
+| **Cohere**        | Enterprise-strength instruction-following · Command A/R models | ✅ Trial key | Phase 1 | ✅ v0.6.0      |
+| **Perplexity AI** | Search-grounded responses with live web citations              | None         | Phase 2 | 🔜 v0.7.0      |
+| **OpenAI Codex**  | Dedicated coding agent · shares your OpenAI API key            | None         | Phase 3 | 🔜 v0.8.0      |
 
 **Phase 1** (~7–8 hours dev, all OpenAI-compatible): Add `FireworksProvider`, `TogetherProvider`, `MiniMaxProvider`, `CerebrasProvider`, `CohereProvider` to `openaiCompatProviders.js`. No new npm packages needed.
 

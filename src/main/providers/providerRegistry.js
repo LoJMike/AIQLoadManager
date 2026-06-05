@@ -14,10 +14,14 @@
 const { AnthropicProvider }                                        = require('./anthropicProvider');
 const { OpenAIProvider }                                           = require('./openaiProvider');
 const { GeminiProvider }                                           = require('./geminiProvider');
-const { GroqProvider, DeepSeekProvider, MistralProvider, GrokProvider } = require('./openaiCompatProviders');
+const {
+  GroqProvider, DeepSeekProvider, MistralProvider, GrokProvider,
+  FireworksProvider, TogetherProvider, MiniMaxProvider, CerebasProvider, CohereProvider,
+} = require('./openaiCompatProviders');
 const { OllamaProvider, LMStudioProvider, JanProvider, LocalAIProvider, LlamaCppProvider } = require('./localProviders');
 
 const PROVIDER_CLASSES = {
+  // Cloud — paid API (per-token billing)
   anthropic: AnthropicProvider,
   openai:    OpenAIProvider,
   gemini:    GeminiProvider,
@@ -25,6 +29,13 @@ const PROVIDER_CLASSES = {
   deepseek:  DeepSeekProvider,
   mistral:   MistralProvider,
   grok:      GrokProvider,
+  // Phase 1 additions (v0.6.0)
+  fireworks: FireworksProvider,
+  together:  TogetherProvider,
+  minimax:   MiniMaxProvider,
+  cerebras:  CerebasProvider,
+  cohere:    CohereProvider,
+  // Local — runs on user's hardware; no API key, no cost
   ollama:    OllamaProvider,
   lmstudio:  LMStudioProvider,
   jan:       JanProvider,
@@ -41,7 +52,14 @@ const PROVIDER_META = {
   deepseek:  { displayName: 'DeepSeek',           color: '#4d6bfe', icon: 'ti-brain',         website: 'https://platform.deepseek.com'},
   mistral:   { displayName: 'Mistral AI',         color: '#ff7000', icon: 'ti-wind',          website: 'https://mistral.ai'           },
   grok:      { displayName: 'xAI Grok',           color: '#1da1f2', icon: 'ti-brand-x',       website: 'https://console.x.ai'         },
-  ollama:    { displayName: 'Ollama (Local)',      color: '#ffffff', icon: 'ti-server',        website: 'https://ollama.com',           local: true },
+  // Phase 1 additions (v0.6.0)
+  fireworks: { displayName: 'Fireworks AI',        color: '#ff4d00', icon: 'ti-flame',          website: 'https://fireworks.ai'                              },
+  together:  { displayName: 'Together AI',         color: '#0066ff', icon: 'ti-users-group',    website: 'https://together.ai'                               },
+  minimax:   { displayName: 'MiniMax',             color: '#6d28d9', icon: 'ti-sparkles',       website: 'https://platform.minimax.io'                       },
+  cerebras:  { displayName: 'Cerebras',            color: '#f59e0b', icon: 'ti-cpu',            website: 'https://inference.cerebras.ai'                     },
+  cohere:    { displayName: 'Cohere',              color: '#39d353', icon: 'ti-message-dots',   website: 'https://cohere.com'                                },
+  // Local providers
+  ollama:    { displayName: 'Ollama (Local)',      color: '#ffffff', icon: 'ti-server',          website: 'https://ollama.com',           local: true },
   lmstudio:  { displayName: 'LM Studio (Local)',  color: '#a855f7', icon: 'ti-cpu',           website: 'https://lmstudio.ai',          local: true },
   jan:       { displayName: 'Jan.ai (Local)',      color: '#6366f1', icon: 'ti-device-desktop',website: 'https://jan.ai',              local: true },
   localai:   { displayName: 'LocalAI',            color: '#22c55e', icon: 'ti-server-bolt',   website: 'https://localai.io',           local: true },
@@ -101,6 +119,40 @@ class ProviderRegistry {
       }
     }
     return result;
+  }
+
+  // ── Reachability (local providers) ───────────────────────────────────────
+
+  /**
+   * Returns a map of local provider names to reachability booleans.
+   * Delegates to the QueueRouter's cache — call only after the router exists.
+   * Stored on the registry so the IPC layer can reach it without importing
+   * the router directly.
+   *
+   * @param {import('../queueRouter').QueueRouter} router
+   * @returns {Object.<string, boolean>}
+   */
+  getLocalReachability(router) {
+    if (!router || typeof router.getReachabilityStatus !== 'function') return {};
+    return router.getReachabilityStatus();
+  }
+
+  // ── Live model discovery (local providers only) ──────────────────────────
+
+  /**
+   * Trigger on-demand model discovery for a local provider.
+   * Returns the live model list plus flags for reachability and whether
+   * discovery succeeded. Used by pre-flight validation in the Add tab.
+   *
+   * @param {string} name
+   * @returns {Promise<{ fetched: boolean, reachable: boolean, models: object[] }>}
+   */
+  async refreshLocalModels(name) {
+    const provider = this.get(name);
+    if (typeof provider.refreshModels !== 'function') {
+      return { fetched: true, reachable: true, models: provider.getModels() };
+    }
+    return provider.refreshModels();
   }
 
   // ── Port management (local providers only) ─────────────────────────────

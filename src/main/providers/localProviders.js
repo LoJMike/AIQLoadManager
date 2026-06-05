@@ -209,8 +209,80 @@ class LocalBaseProvider extends BaseProvider {
     }
   }
 
-  // Subclasses override this to hit their specific endpoint
-  async _fetchRemoteModels() { return null; }
+  /**
+   * Default model discovery using the OpenAI-compatible /v1/models endpoint.
+   * Uses `this.client.models.list()` (same SDK path as sendMessage) so it
+   * inherits the SDK's HTTP client and avoids the native-fetch / localhost
+   * IPv6 resolution issue on Windows.
+   *
+   * Subclasses override to add provider-specific display-name cleanup.
+   */
+  async _fetchRemoteModels() {
+    if (!this.client) return null;
+    const list = await this.client.models.list();
+    if (!Array.isArray(list?.data) || list.data.length === 0) return null;
+    return list.data.map(m => ({
+      id:            m.id,
+      name:          m.id,
+      contextWindow: 4_096,
+      inputCost:     0,
+      outputCost:    0,
+      tier:          'local',
+      free:          true,
+    }));
+  }
+
+  /**
+   * Quick reachability ping using the SDK client.
+   * Resolves true if the server responds within 3 s; false otherwise.
+   * Used by QueueRouter's background reachability monitor.
+   *
+   * @returns {Promise<boolean>}
+   */
+  async checkReachable() {
+    if (!this.client) return false;
+    try {
+      await Promise.race([
+        this.client.models.list(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('ping timeout')), 3_000)
+        ),
+      ]);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Public on-demand model refresh — called by the pre-flight validation
+   * IPC handler when the user selects a local provider in Manual routing mode.
+   * Returns the current model list plus a flag indicating whether models were
+   * live-discovered (true) or are still the hardcoded fallback list (false).
+   *
+   * @returns {Promise<{ fetched: boolean, models: object[], reachable: boolean }>}
+   */
+  async refreshModels() {
+    let reachable = false;
+    try {
+      const fetched = await this._fetchRemoteModels();
+      if (fetched && fetched.length > 0) {
+        this._models = fetched;
+        this._modelsFetched = true;
+        reachable = true;
+      } else if (fetched !== null) {
+        // Server responded but returned no models
+        reachable = true;
+      }
+    } catch (_) {
+      // Server unreachable — keep defaults, reachable stays false
+    }
+    return {
+      fetched:   this._modelsFetched,
+      reachable,
+      models:    this._models,
+    };
+  }
 
   async sendMessage(opts) {
     // Refresh model list on first actual use (best-effort, non-blocking on error)
@@ -228,22 +300,20 @@ class OllamaProvider extends LocalBaseProvider {
     super('ollama', 11434, 'Ollama', OLLAMA_DEFAULT_MODELS, usageTracker, store);
   }
 
-  // Ollama uses /api/tags — returns { models: [{ name, size, ... }] }
+  // Ollama supports /v1/models (OpenAI-compatible) — use SDK client to avoid
+  // native-fetch localhost resolution issues on Windows.
   async _fetchRemoteModels() {
-    const res  = await fetch(`http://localhost:${this._currentPort}/api/tags`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!Array.isArray(data?.models) || data.models.length === 0) return null;
-
-    return data.models.map(m => ({
-      id:            m.name,
-      name:          m.name,
-      contextWindow: 131_072,   // Ollama doesn't always report this; safe default
+    if (!this.client) return null;
+    const list = await this.client.models.list();
+    if (!Array.isArray(list?.data) || list.data.length === 0) return null;
+    return list.data.map(m => ({
+      id:            m.id,
+      name:          m.id,
+      contextWindow: 131_072,
       inputCost:     0,
       outputCost:    0,
       tier:          'local',
       free:          true,
-      size:          m.size,    // bytes — useful for display
     }));
   }
 }
@@ -255,14 +325,11 @@ class LMStudioProvider extends LocalBaseProvider {
     super('lmstudio', 1234, 'LM Studio', LM_STUDIO_DEFAULT_MODELS, usageTracker, store);
   }
 
-  // LM Studio exposes a standard OpenAI /v1/models endpoint
   async _fetchRemoteModels() {
-    const res  = await fetch(`${this._baseURL}/v1/models`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!Array.isArray(data?.data) || data.data.length === 0) return null;
-
-    return data.data.map(m => ({
+    if (!this.client) return null;
+    const list = await this.client.models.list();
+    if (!Array.isArray(list?.data) || list.data.length === 0) return null;
+    return list.data.map(m => ({
       id:            m.id,
       name:          m.id,
       contextWindow: m.context_window || m.context_length || 4_096,
@@ -281,14 +348,11 @@ class JanProvider extends LocalBaseProvider {
     super('jan', 1337, 'Jan.ai', JAN_DEFAULT_MODELS, usageTracker, store);
   }
 
-  // Jan exposes a standard OpenAI /v1/models endpoint
   async _fetchRemoteModels() {
-    const res  = await fetch(`${this._baseURL}/v1/models`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!Array.isArray(data?.data) || data.data.length === 0) return null;
-
-    return data.data.map(m => ({
+    if (!this.client) return null;
+    const list = await this.client.models.list();
+    if (!Array.isArray(list?.data) || list.data.length === 0) return null;
+    return list.data.map(m => ({
       id:            m.id,
       name:          m.name || m.id,
       contextWindow: m.context_window || m.context_length || 4_096,
@@ -313,20 +377,17 @@ class LocalAIProvider extends LocalBaseProvider {
   }
 
   async _fetchRemoteModels() {
-    const res  = await fetch(`${this._baseURL}/v1/models`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!Array.isArray(data?.data) || data.data.length === 0) return null;
-
-    return data.data.map(m => {
-      // Strip file extension from display name for readability
+    if (!this.client) return null;
+    const list = await this.client.models.list();
+    if (!Array.isArray(list?.data) || list.data.length === 0) return null;
+    return list.data.map(m => {
+      // Strip file extension and quantisation tags from display name
       const displayName = m.id
         .replace(/\.(gguf|bin|ggml|pt|ot)$/i, '')
         .replace(/[-_.]/g, ' ')
         .replace(/\bq[48]_k_[ms]\b/gi, '')
         .replace(/\s{2,}/g, ' ')
         .trim();
-
       return {
         id:            m.id,
         name:          displayName || m.id,
@@ -353,36 +414,23 @@ class LlamaCppProvider extends LocalBaseProvider {
   }
 
   async _fetchRemoteModels() {
-    // Step 1: get the loaded model name from /v1/models
-    const modRes = await fetch(`${this._baseURL}/v1/models`);
-    if (!modRes.ok) return null;
-    const modData = await modRes.json();
-    if (!Array.isArray(modData?.data) || modData.data.length === 0) return null;
+    // Use SDK client (same path as sendMessage) to avoid native-fetch issues.
+    // llama.cpp loads one model at a time — the list will have one entry.
+    if (!this.client) return null;
+    const list = await this.client.models.list();
+    if (!Array.isArray(list?.data) || list.data.length === 0) return null;
 
-    // Step 2: try /props for the actual context window size (n_ctx)
-    let ctxLen = 4_096;
-    try {
-      const propRes = await fetch(`${this._baseURL}/props`);
-      if (propRes.ok) {
-        const props = await propRes.json();
-        ctxLen = props.n_ctx ?? props.context_size ?? ctxLen;
-      }
-    } catch (_) {
-      // /props not available on older llama.cpp builds — use safe default
-    }
-
-    return modData.data.map(m => {
-      // Model ID is usually the full file path — extract just the filename
+    return list.data.map(m => {
+      // Model ID is often the full file path — extract the basename for display
       const basename    = m.id.replace(/\\/g, '/').split('/').pop() || m.id;
       const displayName = basename
         .replace(/\.(gguf|bin|ggml)$/i, '')
         .replace(/[-_.]/g, ' ')
         .trim();
-
       return {
-        id:            m.id,          // keep full path as ID for API call
+        id:            m.id,          // keep full path as ID for the API call
         name:          displayName || basename,
-        contextWindow: ctxLen,
+        contextWindow: 4_096,         // llama.cpp doesn't report n_ctx over /v1/models
         inputCost:     0,
         outputCost:    0,
         tier:          'local',

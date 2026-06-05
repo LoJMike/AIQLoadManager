@@ -40,42 +40,34 @@
 //   These protect service margins — users still pay their providers directly.
 
 const FREE_FLAGS = {
-  // TODO: tighten these when launching paid tiers (target values in comments):
-  // maxProviders: 5 local providers only (Ollama, LM Studio, Jan.ai, LocalAI, llama.cpp).
-  //   No cloud providers on Free tier.
-  maxProviders: 12, // TODO → 5  (local only)
-  maxQueueDepth: Infinity, // TODO → 10
-  maxProjects: Infinity, // TODO → 1
-  routingModes: [
-    "manual",
-    "freeTier",
-    "auto",
-    "balance",
-    "cheapest",
-    "fastest",
-  ], // TODO → ['manual', 'freeTier']
-  costTracking: true, // TODO → false  (detailed cost per provider/model; Starter+)
-  budgetView: true, // view estimated spend — available on ALL tiers
-  budgetCaps: true, // TODO → false  (set monthly caps; Starter+ = false, Pro = true)
-  tagSmartPriority: true, // TODO → false  (free: only ⚡ Urgent tag boosts)
-  compareMode: true, // TODO → false
-  batchImport: true, // TODO → false
-  promptTemplates: true, // TODO → false  (Roadmap)
-  usageExport: "csv+json", // TODO → false
-  imageGeneration: true, // TODO → false  (Roadmap)
-  videoGeneration: true, // TODO → false  (Roadmap)
-  webhookDelivery: true, // TODO → false  (Roadmap)
-  customRoutingRules: true, // TODO → false
-  costForecasting: true, // TODO → false  (Roadmap)
-  mobileApp: true, // TODO → false  (Roadmap)
+  // Free tier: local-only providers, 10 queue items, 1 project, 50 cloud prompts/mo
+  maxProviders: 5,             // local only: Ollama, LM Studio, Jan.ai, LocalAI, llama.cpp
+  maxQueueDepth: 10,
+  maxProjects: 1,
+  routingModes: ["manual", "freeTier"],
+  costTracking: false,         // cost-per-provider detail is Starter+
+  budgetView: true,            // view estimated spend — available on ALL tiers
+  budgetCaps: false,           // setting monthly caps is Starter+
+  tagSmartPriority: false,     // only ⚡ Urgent tag boosts on Free
+  compareMode: false,
+  batchImport: false,
+  promptTemplates: false,      // Roadmap
+  usageExport: false,
+  imageGeneration: false,      // Roadmap
+  videoGeneration: false,      // Roadmap
+  webhookDelivery: false,      // Roadmap
+  customRoutingRules: false,
+  costForecasting: false,      // Roadmap
+  mobileApp: false,            // Roadmap
   // AIQ-side monthly cloud caps (not provider API rate limits)
-  monthlyCloudPrompts: Infinity, // TODO → 50
-  monthlyCloudTokens: Infinity, // TODO → 100_000
-  // New feature flags
-  modelControl: true, // TODO → false  (per-provider default model; Pro+)
-  digestExport: true, // TODO → false  (session digest export; Starter+)
-  responseStylePresets: true, // available on all tiers
-  projectHistory: true, // available on all tiers
+  monthlyCloudPrompts: 50,
+  monthlyCloudTokens: 100_000,
+  // Feature flags
+  modelControl: false,         // per-provider default model is Pro+
+  digestExport: false,         // session digest export is Starter+
+  responseStylePresets: true,  // available on all tiers
+  projectHistory: true,        // available on all tiers
+  agentGateway: false,         // Agent Gateway is Starter+
   // Team-only flags
   sharedSettings: false,
   adminControls: false,
@@ -83,33 +75,32 @@ const FREE_FLAGS = {
 };
 
 const STARTER_FLAGS = {
-  // 8 providers: 5 local (Ollama, LM Studio, Jan.ai, LocalAI, llama.cpp)
-  //            + 3 free cloud (Gemini, Groq, Mistral)
+  // 8 providers: 5 local + 3 free cloud (Gemini, Groq, Mistral)
   maxProviders: 8,
   maxQueueDepth: 100,
   maxProjects: 5,
   routingModes: ["manual", "freeTier", "auto", "balance"],
   costTracking: true,
   budgetView: true,
-  budgetCaps: false, // Starter can view spend but not set caps
-  tagSmartPriority: false, // only ⚡ Urgent tag boosts queue position
+  budgetCaps: false,           // Starter can view spend but not set caps
+  tagSmartPriority: false,     // only ⚡ Urgent tag boosts queue position
   compareMode: false,
   batchImport: true,
-  promptTemplates: true, // Roadmap
+  promptTemplates: true,       // Roadmap
   usageExport: "csv",
-  imageGeneration: true, // Roadmap
+  imageGeneration: true,       // Roadmap
   videoGeneration: false,
   webhookDelivery: false,
   customRoutingRules: false,
   costForecasting: false,
-  mobileApp: true, // Roadmap — included at no extra charge
+  mobileApp: true,             // Roadmap — included at no extra charge
   monthlyCloudPrompts: 500,
   monthlyCloudTokens: 1_000_000,
-  // New feature flags
-  modelControl: false, // per-provider default model (Pro+)
-  digestExport: true, // session digest export — Starter+
-  responseStylePresets: true, // all tiers
-  projectHistory: true, // all tiers
+  modelControl: false,         // per-provider default model is Pro+
+  digestExport: true,          // Starter+
+  responseStylePresets: true,  // all tiers
+  projectHistory: true,        // all tiers
+  agentGateway: true,          // Starter+
   sharedSettings: false,
   adminControls: false,
   teamCollaboration: false,
@@ -145,10 +136,11 @@ const PRO_FLAGS = {
   monthlyCloudPrompts: 2_500,
   monthlyCloudTokens: 5_000_000,
   // New feature flags
-  modelControl: true, // per-provider default model — Pro+
-  digestExport: true, // session digest export — Pro+
-  responseStylePresets: true, // all tiers
-  projectHistory: true, // all tiers
+  modelControl: true,          // per-provider default model — Pro+
+  digestExport: true,          // Pro+
+  responseStylePresets: true,  // all tiers
+  projectHistory: true,        // all tiers
+  agentGateway: true,          // Starter+
   sharedSettings: false,
   adminControls: false,
   teamCollaboration: false,
@@ -189,6 +181,7 @@ const PRO_PLUS_FLAGS = {
   digestExport: true,
   responseStylePresets: true,
   projectHistory: true,
+  agentGateway: true,
   sharedSettings: false,
   adminControls: false,
   teamCollaboration: false,
@@ -224,11 +217,12 @@ const TEAM_FLAGS = {
   // Monthly caps are pooled across all seats
   monthlyCloudPrompts: 25_000, // pooled across team
   monthlyCloudTokens: 60_000_000, // 60M pooled across team
-  // New feature flags
+  // Feature flags
   modelControl: true,
   digestExport: true,
   responseStylePresets: true,
   projectHistory: true,
+  agentGateway: true,
   // Team-only flags
   sharedSettings: true,
   adminControls: true,
@@ -266,6 +260,7 @@ const FLAG_LABELS = {
   digestExport: "Session digest export (HTML file)",
   responseStylePresets: "Response style presets per provider",
   projectHistory: "Per-project response history",
+  agentGateway: "Agent Gateway (OpenAI-compatible proxy at localhost:8787)",
 };
 
 // ─── Lemon Squeezy configuration ─────────────────────────────────────────────
@@ -286,12 +281,13 @@ const FLAG_LABELS = {
 const LS_API_BASE = "https://api.lemonsqueezy.com/v1/licenses";
 
 // Map Lemon Squeezy Variant IDs → internal plan names.
-// Replace the 0 values with your real Variant IDs from the LS Dashboard.
+// To add Pro+ and Team: create those products in LS Dashboard, copy the
+// numeric Variant IDs, and add them here as new entries.
 const LS_VARIANT_PLAN_MAP = {
-  1735713: "starter", // TODO: replace 0 with Starter ($9/mo) Variant ID
-  1735683: "pro", // TODO: replace 0 with Pro ($19/mo) Variant ID
-  0: "pro_plus", // TODO: replace 0 with Pro+ ($34/mo) Variant ID
-  0: "team", // TODO: replace 0 with Team ($49/user/mo) Variant ID
+  1735713: "starter",  // Starter ($9/mo) — live
+  1735683: "pro",      // Pro    ($19/mo) — live
+  // 0000000: "pro_plus",  // Pro+  ($34/mo) — add variant ID when product is created
+  // 0000000: "team",      // Team  ($49/user/mo) — add variant ID when product is created
 };
 
 // Fallback: parse the plan from the LS product name if variant ID is not in the map.

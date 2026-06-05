@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import UsageDashboard from './components/UsageDashboard';
 import AddPromptPanel from './components/AddPromptPanel';
-import { QueuePanel, SettingsPanel, ProjectsPanel, TitleBar, LicensePanel, SupportPanel } from './components/index.js';
+import { QueuePanel, SettingsPanel, ProjectsPanel, TitleBar, LicensePanel, SupportPanel, ResultsPanel } from './components/index.js';
 import NavIcon from './components/NavIcons.jsx';
 import AppHeader from './components/AppHeader.jsx';
 import RightRail from './components/RightRail.jsx';
@@ -12,6 +12,7 @@ const NAV = [
   { id: 'usage',    label: 'Usage'    },
   { id: 'queue',    label: 'Queue'    },
   { id: 'add',      label: 'Add'      },
+  { id: 'results',  label: 'Results'  },
   { id: 'projects', label: 'Projects' },
   { id: 'settings', label: 'Settings' },
   { id: 'license',  label: 'License'  },
@@ -43,6 +44,12 @@ export default function App() {
   const [projects,      setProjects]      = useState([]);
   const [queueState,    setQueueState]    = useState({ paused: false, processing: false });
   const [license,       setLicense]       = useState(null);
+  const [reachability,  setReachability]  = useState({}); // local provider reachability cache
+  // Timestamp of the last time the user opened the Results tab — used to calculate
+  // how many results are "new" (completed after that moment) for the badge.
+  const [lastResultsView, setLastResultsView] = useState(
+    () => readPref('aiq-last-results-view', 0)
+  );
   const [toast,         setToast]         = useState(null);
   const [appVersion,    setAppVersion]    = useState('');
   const [theme,         setTheme]         = useState(() => readPref('aiq-theme', 'dark'));
@@ -94,8 +101,11 @@ export default function App() {
     const offUsage  = api.onUsageUpdate(({ allStatus }) => {
       if (allStatus) setUsageAll(allStatus);
     });
-    const offDone    = api.onItemComplete(({ label, provider }) => {
-      showToast('Done: "' + (label || '').slice(0, 40) + '" via ' + provider, 'success');
+    const offDone    = api.onItemComplete(async ({ label, provider }) => {
+      showToast('Done: "' + (label || '').slice(0, 40) + '" via ' + provider + ' — see Results tab', 'success');
+      // Belt-and-suspenders: refresh the queue so the item flips from
+      // "processing" to "complete" in the UI even if queue-update was missed.
+      try { setQueue(await api.getQueue()); } catch (_) {}
     });
     const offError   = api.onItemError(({ error }) => {
       showToast((error || '').slice(0, 80), 'error');
@@ -110,9 +120,17 @@ export default function App() {
       try { setUsageAll(await api.getUsageAll()); } catch (_) {}
     }, 15_000);
 
+    // Poll local provider reachability every 15 s so dots reflect online/offline state
+    const reachabilityTimer = setInterval(async () => {
+      try { setReachability(await api.getLocalReachability()); } catch (_) {}
+    }, 15_000);
+    // Also fetch once on mount
+    api.getLocalReachability().then(setReachability).catch(() => {});
+
     return () => {
       offQueue(); offUsage(); offDone(); offError(); offCompare();
       clearInterval(usageTimer);
+      clearInterval(reachabilityTimer);
     };
   }, []);
 
@@ -135,12 +153,28 @@ export default function App() {
 
   const pendingCount = queue.filter(i => i.status === 'pending').length;
 
+  // Count results completed since the user last viewed the Results tab
+  const unseenResultsCount = queue.filter(i =>
+    i.status === 'complete' &&
+    (i.completed_at || i.created_at || 0) > lastResultsView
+  ).length;
+
+  /** Switch tab; record view time when opening Results so the badge clears */
+  function navigateTo(id) {
+    setTab(id);
+    if (id === 'results') {
+      const now = Date.now();
+      setLastResultsView(now);
+      writePref('aiq-last-results-view', now);
+    }
+  }
+
   function handleFontScaleChange(delta) {
     setFontScaleIdx(i => Math.max(0, Math.min(FONT_SCALES.length - 1, i + delta)));
   }
 
   function handleNavigate(targetTab, itemId) {
-    setTab(targetTab);
+    navigateTo(targetTab);
     if (itemId) setHighlightId(itemId);
   }
 
@@ -170,13 +204,16 @@ export default function App() {
                 key={n.id}
                 type="button"
                 className={'nav-item-v ' + (tab === n.id ? 'active' : '')}
-                onClick={() => setTab(n.id)}
+                onClick={() => navigateTo(n.id)}
                 title={n.label}
               >
                 <span className="nav-icon-wrap">
                   <NavIcon name={n.id} size={21} />
                   {n.id === 'queue' && pendingCount > 0 && (
                     <span className="nav-badge-v">{pendingCount}</span>
+                  )}
+                  {n.id === 'results' && unseenResultsCount > 0 && (
+                    <span className="nav-badge-v" style={{ background: 'var(--success)' }}>{unseenResultsCount}</span>
                   )}
                 </span>
                 <span className="nav-label-v">{n.label}</span>
@@ -208,15 +245,24 @@ export default function App() {
               )}
             </button>
             <div className="provider-dots">
-              {providers.map(p => (
-                <span
-                  key={p.name}
-                  className={'provider-dot ' + (p.configured ? 'on' : 'off')}
-                  title={p.displayName}
-                  aria-label={p.displayName + (p.configured ? ' — configured' : ' — no API key')}
-                  style={p.configured ? { background: p.color } : undefined}
-                />
-              ))}
+              {providers.map(p => {
+                const isLocal    = ['ollama','lmstudio','jan','localai','llamacpp'].includes(p.name);
+                const reachable  = isLocal ? (reachability[p.name] ?? true) : true;
+                const isOffline  = p.configured && isLocal && !reachable;
+                const dotClass   = p.configured ? (isOffline ? 'offline' : 'on') : 'off';
+                const tip        = p.configured
+                  ? (isOffline ? `${p.displayName} — server offline` : p.displayName + ' — ready')
+                  : p.displayName + ' — no API key';
+                return (
+                  <span
+                    key={p.name}
+                    className={'provider-dot ' + dotClass}
+                    title={tip}
+                    aria-label={tip}
+                    style={p.configured && !isOffline ? { background: p.color } : undefined}
+                  />
+                );
+              })}
             </div>
           </div>
         </nav>
@@ -242,6 +288,7 @@ export default function App() {
               {tab === 'usage'    && <UsageDashboard providers={providers} usageAll={usageAll} queue={queue} />}
               {tab === 'queue'    && <QueuePanel queue={queue} providers={providers} onRefresh={loadAll} highlightId={highlightId} license={license} />}
               {tab === 'add'      && <AddPromptPanel providers={providers} projects={projects} onSubmit={handleAddPrompt} license={license} />}
+              {tab === 'results'  && <ResultsPanel queue={queue} providers={providers} onRefresh={loadAll} />}
               {tab === 'projects' && <ProjectsPanel projects={projects} providers={providers} onRefresh={loadAll} license={license} />}
               {tab === 'settings' && <SettingsPanel providers={providers} onRefresh={loadAll} showToast={showToast} />}
               {tab === 'license'  && <LicensePanel showToast={showToast} />}

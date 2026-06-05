@@ -171,4 +171,158 @@ class GrokProvider extends BaseProvider {
   async sendMessage(opts) { return sendViaOpenAICompat(this, opts); }
 }
 
-module.exports = { GroqProvider, DeepSeekProvider, MistralProvider, GrokProvider };
+// ── Fireworks AI ───────────────────────────────────────────────────────────
+// Fastest inference platform. Hosts Llama, DeepSeek, Qwen, Gemma.
+// Best candidate for 'fastest' routing mode alongside Groq/Cerebras.
+
+class FireworksProvider extends BaseProvider {
+  constructor(usageTracker, store) { super('fireworks', usageTracker, store); }
+
+  validateApiKey(key) { return typeof key === 'string' && key.startsWith('fw_'); }
+  _initClient(key) {
+    this.apiKey = key;
+    this.client = makeOpenAICompatClient(key, 'https://api.fireworks.ai/inference/v1');
+  }
+
+  getModels() {
+    return [
+      { id: 'accounts/fireworks/models/llama-v3p3-70b-instruct', name: 'Llama 3.3 70B',  contextWindow: 131_072, inputCost: 0.90, outputCost: 0.90, tier: 'standard' },
+      { id: 'accounts/fireworks/models/llama-v3p1-8b-instruct',  name: 'Llama 3.1 8B',   contextWindow: 131_072, inputCost: 0.20, outputCost: 0.20, tier: 'fast'     },
+      { id: 'accounts/fireworks/models/deepseek-v3',             name: 'DeepSeek V3',    contextWindow: 64_000,  inputCost: 0.90, outputCost: 0.90, tier: 'standard' },
+      { id: 'accounts/fireworks/models/qwen2p5-72b-instruct',    name: 'Qwen 2.5 72B',   contextWindow: 32_768,  inputCost: 0.90, outputCost: 0.90, tier: 'standard' },
+    ];
+  }
+
+  // $1 signup credit; pay-as-you-go after
+  getRateLimits() { return { rpm: 600, rpd: null, tpm: null, tpd: null }; }
+  getDefaultModel() { return 'accounts/fireworks/models/llama-v3p3-70b-instruct'; }
+
+  async sendMessage(opts) { return sendViaOpenAICompat(this, opts); }
+}
+
+// ── Together AI ────────────────────────────────────────────────────────────
+// 200+ open-source models; $25 signup credit. Best for variety and routing.
+
+class TogetherProvider extends BaseProvider {
+  constructor(usageTracker, store) { super('together', usageTracker, store); }
+
+  // Together keys start with 'sk-' but are longer than a minimal OpenAI key
+  validateApiKey(key) {
+    return typeof key === 'string' && key.startsWith('sk-') && key.length > 32;
+  }
+  _initClient(key) {
+    this.apiKey = key;
+    this.client = makeOpenAICompatClient(key, 'https://api.together.xyz/v1');
+  }
+
+  getModels() {
+    return [
+      { id: 'meta-llama/Llama-3.3-70B-Instruct-Turbo',      name: 'Llama 3.3 70B Turbo',  contextWindow: 131_072, inputCost: 0.88, outputCost: 0.88, tier: 'standard' },
+      { id: 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',  name: 'Llama 3.1 8B Turbo',   contextWindow: 131_072, inputCost: 0.18, outputCost: 0.18, tier: 'fast'     },
+      { id: 'deepseek-ai/DeepSeek-V3',                       name: 'DeepSeek V3',          contextWindow: 64_000,  inputCost: 0.60, outputCost: 1.70, tier: 'standard' },
+      { id: 'Qwen/Qwen2.5-72B-Instruct-Turbo',              name: 'Qwen 2.5 72B Turbo',   contextWindow: 32_768,  inputCost: 1.20, outputCost: 1.20, tier: 'standard' },
+      { id: 'mistralai/Mixtral-8x7B-Instruct-v0.1',         name: 'Mixtral 8x7B',         contextWindow: 32_768,  inputCost: 0.60, outputCost: 0.60, tier: 'fast'     },
+    ];
+  }
+
+  // $25 signup credit; no ongoing free RPM tier
+  getRateLimits() { return { rpm: 600, rpd: null, tpm: null, tpd: null }; }
+  getDefaultModel() { return 'meta-llama/Llama-3.3-70B-Instruct-Turbo'; }
+
+  async sendMessage(opts) { return sendViaOpenAICompat(this, opts); }
+}
+
+// ── MiniMax ────────────────────────────────────────────────────────────────
+// High-quality frontier models. MiniMax-M3 is competitive with GPT-4o at
+// ~$0.60/M input — excellent price/performance ratio.
+
+class MiniMaxProvider extends BaseProvider {
+  constructor(usageTracker, store) { super('minimax', usageTracker, store); }
+
+  // MiniMax keys have no standard prefix — validate by length
+  validateApiKey(key) { return typeof key === 'string' && key.length > 30; }
+  _initClient(key) {
+    this.apiKey = key;
+    this.client = makeOpenAICompatClient(key, 'https://api.minimax.io/v1');
+  }
+
+  getModels() {
+    return [
+      { id: 'MiniMax-M3',   name: 'MiniMax M3',   contextWindow: 1_000_000, inputCost: 0.60, outputCost: 2.40, tier: 'premium'  },
+      { id: 'MiniMax-M2.5', name: 'MiniMax M2.5', contextWindow: 1_000_000, inputCost: 0.15, outputCost: 1.15, tier: 'standard' },
+      { id: 'MiniMax-M2',   name: 'MiniMax M2',   contextWindow: 1_000_000, inputCost: 0.26, outputCost: 1.00, tier: 'standard' },
+    ];
+  }
+
+  // Pay-as-you-go; no free tier
+  getRateLimits() { return { rpm: 60, rpd: null, tpm: null, tpd: null }; }
+  getDefaultModel() { return 'MiniMax-M3'; }
+
+  async sendMessage(opts) { return sendViaOpenAICompat(this, opts); }
+}
+
+// ── Cerebras ───────────────────────────────────────────────────────────────
+// Wafer-scale chip with the fastest raw inference available (Llama 70B at
+// ~2,000 tokens/sec). Best candidate for 'fastest' mode alongside Groq.
+
+class CerebasProvider extends BaseProvider {
+  constructor(usageTracker, store) { super('cerebras', usageTracker, store); }
+
+  validateApiKey(key) { return typeof key === 'string' && key.startsWith('csk-'); }
+  _initClient(key) {
+    this.apiKey = key;
+    this.client = makeOpenAICompatClient(key, 'https://api.cerebras.ai/v1');
+  }
+
+  getModels() {
+    return [
+      { id: 'llama-3.3-70b', name: 'Llama 3.3 70B', contextWindow: 128_000, inputCost: 0.85, outputCost: 1.20, tier: 'fast',     free: true },
+      { id: 'llama-3.1-8b',  name: 'Llama 3.1 8B',  contextWindow: 128_000, inputCost: 0.10, outputCost: 0.10, tier: 'fast',     free: true },
+      { id: 'qwen-3-32b',    name: 'Qwen 3 32B',    contextWindow: 128_000, inputCost: 0.40, outputCost: 0.80, tier: 'standard', free: true },
+    ];
+  }
+
+  // Free tier: 30 RPM, rate-limited but no $ required
+  getRateLimits() { return { rpm: 30, rpd: null, tpm: null, tpd: null }; }
+  hasFreeFreeTier() { return true; }
+  getDefaultModel() { return 'llama-3.3-70b'; }
+
+  async sendMessage(opts) { return sendViaOpenAICompat(this, opts); }
+}
+
+// ── Cohere ─────────────────────────────────────────────────────────────────
+// Enterprise-focused. Excellent at RAG, structured output, and document Q&A.
+// NOTE: Cohere's OpenAI-compatible endpoint is at /compatibility/v1 (not /v1).
+
+class CohereProvider extends BaseProvider {
+  constructor(usageTracker, store) { super('cohere', usageTracker, store); }
+
+  // Cohere keys have no standard prefix — validate by length
+  validateApiKey(key) { return typeof key === 'string' && key.length > 20; }
+  _initClient(key) {
+    this.apiKey = key;
+    // Note the non-standard path: /compatibility/v1 (not just /v1)
+    this.client = makeOpenAICompatClient(key, 'https://api.cohere.com/compatibility/v1');
+  }
+
+  getModels() {
+    return [
+      { id: 'command-a-03-2025',   name: 'Command A',   contextWindow: 256_000, inputCost: 2.50, outputCost: 10.00, tier: 'premium'  },
+      { id: 'command-r-plus',      name: 'Command R+',  contextWindow: 128_000, inputCost: 2.50, outputCost: 10.00, tier: 'premium'  },
+      { id: 'command-r',           name: 'Command R',   contextWindow: 128_000, inputCost: 0.15, outputCost:  0.60, tier: 'standard' },
+      { id: 'command-r7b-12-2024', name: 'Command R7B', contextWindow: 128_000, inputCost: 0.04, outputCost:  0.15, tier: 'fast',    free: true },
+    ];
+  }
+
+  // Trial key: 20 RPM — production key: 10,000 RPM
+  getRateLimits() { return { rpm: 20, rpd: null, tpm: null, tpd: null }; }
+  hasFreeFreeTier() { return true; } // trial key is free with rate limits
+  getDefaultModel() { return 'command-r'; }
+
+  async sendMessage(opts) { return sendViaOpenAICompat(this, opts); }
+}
+
+module.exports = {
+  GroqProvider, DeepSeekProvider, MistralProvider, GrokProvider,
+  FireworksProvider, TogetherProvider, MiniMaxProvider, CerebasProvider, CohereProvider,
+};

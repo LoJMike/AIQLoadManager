@@ -35,6 +35,13 @@ const paths = {
       <path d="M12 2l8 4v6c0 5-3.5 9.5-8 10-4.5-.5-8-5-8-10V6l8-4z" />
     </>
   ),
+  results: (
+    <>
+      <path d="M4 6h16M4 12h10" strokeLinecap="round" />
+      <circle cx="17" cy="15" r="4" />
+      <path d="M15.5 15l1 1 2-2" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
   support: (
     <>
       <circle cx="12" cy="12" r="10" />

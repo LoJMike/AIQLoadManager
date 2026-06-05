@@ -173,10 +173,18 @@ export default function AddPromptPanel({ providers, projects, onSubmit, license 
   const [compareMode,      setCompareMode]  = useState(false);
   const [compareSel,       setCompareSel]   = useState([]); // selected provider names
 
+  // ── Pre-flight model validation state ──────────────────────────────────
+  // 'idle' | 'checking' | 'ready' | 'unreachable' | 'empty'
+  const [modelCheck,       setModelCheck]   = useState('idle');
+  const [liveModels,       setLiveModels]   = useState(null); // null = not yet checked
+
   // Feature flags — default true while the app is in skeleton/preview mode
   const canCompare      = license?.flags?.compareMode  ?? true;
   const canBatch        = license?.flags?.batchImport  ?? true;
   const availableModes  = license?.flags?.routingModes ?? ROUTING_MODES.map(m => m.value);
+
+  // Local providers — these need live model validation
+  const LOCAL_PROVIDERS = new Set(['ollama', 'lmstudio', 'jan', 'localai', 'llamacpp']);
 
   // If the currently selected routing mode is not available on this tier, reset to 'manual'
   useEffect(() => {
@@ -215,6 +223,43 @@ export default function AddPromptPanel({ providers, projects, onSubmit, license 
     }
   }, [form.provider]);
 
+  // Pre-flight: when Manual mode + local provider is selected, ping the server
+  // and get the real installed model list.
+  useEffect(() => {
+    if (form.routingMode !== 'manual' || !form.provider || !LOCAL_PROVIDERS.has(form.provider)) {
+      setModelCheck('idle');
+      setLiveModels(null);
+      return;
+    }
+
+    let cancelled = false;
+    setModelCheck('checking');
+    setLiveModels(null);
+
+    api.refreshLocalModels(form.provider)
+      .then(result => {
+        if (cancelled) return;
+        if (!result.reachable) {
+          setModelCheck('unreachable');
+        } else if (!result.models || result.models.length === 0) {
+          setModelCheck('empty');
+        } else {
+          setModelCheck('ready');
+          setLiveModels(result.models);
+          // Reset model selection if the previously chosen model no longer exists
+          // in the live list (e.g. the user switched Ollama profiles).
+          if (form.model && !result.models.find(m => m.id === form.model)) {
+            set('model', '');
+          }
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setModelCheck('unreachable');
+      });
+
+    return () => { cancelled = true; };
+  }, [form.provider, form.routingMode]);
+
   // Live route preview — fires 500 ms after the user stops changing key fields
   useEffect(() => {
     if (!form.prompt.trim()) { setPreview(null); return; }
@@ -234,9 +279,16 @@ export default function AddPromptPanel({ providers, projects, onSubmit, license 
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
-  const availableModels = form.provider
-    ? providers.find(p => p.name === form.provider)?.models || []
-    : [];
+  // Use live-discovered models for local providers when available;
+  // fall back to the provider's static model list for cloud providers.
+  const availableModels = useMemo(() => {
+    if (!form.provider) return [];
+    if (liveModels) return liveModels;
+    return providers.find(p => p.name === form.provider)?.models || [];
+  }, [form.provider, liveModels, providers]);
+
+  // The model that will actually be used: explicit selection or first in list
+  const resolvedModel = form.model || availableModels[0]?.id || null;
 
   const configuredProviders = providers.filter(p => p.configured);
 
@@ -557,12 +609,56 @@ export default function AddPromptPanel({ providers, projects, onSubmit, license 
                     </select>
                   </div>
                   <div className="form-group">
-                    <label>Model</label>
-                    <select value={form.model} onChange={e => set('model', e.target.value)} disabled={!form.provider}>
-                      <option value="">— default —</option>
-                      {availableModels.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                    <label>
+                      Model
+                      {modelCheck === 'checking' && (
+                        <span className="label-hint"> — checking…</span>
+                      )}
+                      {modelCheck === 'ready' && liveModels && (
+                        <span className="label-hint" style={{ color: 'var(--success)' }}> — {liveModels.length} installed</span>
+                      )}
+                    </label>
+                    <select value={form.model} onChange={e => set('model', e.target.value)} disabled={!form.provider || modelCheck === 'unreachable'}>
+                      <option value="">
+                        {resolvedModel && form.model === '' ? `— default (${resolvedModel}) —` : '— default —'}
+                      </option>
+                      {availableModels.map(m => <option key={m.id} value={m.id}>{m.name || m.id}</option>)}
                     </select>
                   </div>
+
+                  {/* ── Pre-flight validation banner ── */}
+                  {form.provider && LOCAL_PROVIDERS.has(form.provider) && modelCheck !== 'idle' && (
+                    <div className={`preflight-banner preflight-${modelCheck}`} style={{ gridColumn: '1 / -1' }}>
+                      {modelCheck === 'checking' && (
+                        <>⏳ Checking {providers.find(p => p.name === form.provider)?.displayName ?? form.provider}…</>
+                      )}
+                      {modelCheck === 'unreachable' && (
+                        <>
+                          🔴 <strong>{providers.find(p => p.name === form.provider)?.displayName ?? form.provider} is not running.</strong>
+                          {' '}Start the server before queuing, or the item will error immediately.
+                        </>
+                      )}
+                      {modelCheck === 'empty' && (
+                        <>
+                          ⚠️ <strong>No models found.</strong>
+                          {' '}The server is running but has no models loaded. Pull one first:
+                          {form.provider === 'ollama' && (
+                            <code style={{ display: 'block', marginTop: 4, fontSize: 11 }}>ollama pull llama3.2</code>
+                          )}
+                        </>
+                      )}
+                      {modelCheck === 'ready' && (
+                        <>
+                          ✅ <strong>
+                            {form.model
+                              ? `${availableModels.find(m => m.id === form.model)?.name ?? form.model} — verified`
+                              : `Default: ${resolvedModel ?? '—'}`}
+                          </strong>
+                          {' '}— found in your local server.
+                        </>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
             </div>

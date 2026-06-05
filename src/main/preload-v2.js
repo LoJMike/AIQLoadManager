@@ -78,6 +78,16 @@ contextBridge.exposeInMainWorld('aiQueue', {
   getAnalyticsEnabled: ()             => ipcRenderer.invoke('get-analytics-enabled'),
   setAnalyticsEnabled: (enabled)      => ipcRenderer.invoke('set-analytics-enabled', enabled),
 
+  // Local provider reachability — router's cached ping results
+  getLocalReachability: ()           => ipcRenderer.invoke('get-local-reachability'),
+  // Pre-flight model validation — trigger live discovery for a local provider
+  refreshLocalModels: (name)         => ipcRenderer.invoke('refresh-local-models', name),
+
+  // Agent Gateway (Starter+) — OpenAI-compatible proxy at localhost:8787/v1
+  getGatewayStatus:   ()             => ipcRenderer.invoke('get-gateway-status'),
+  startGateway:       (port)         => ipcRenderer.invoke('start-gateway', port),
+  stopGateway:        ()             => ipcRenderer.invoke('stop-gateway'),
+
   // Misc
   openExternal:       (url)           => ipcRenderer.invoke('open-external', url),
 

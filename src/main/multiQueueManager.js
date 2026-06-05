@@ -418,6 +418,11 @@ class MultiQueueManager {
     if (status === 401 || status === 403) return false;
     if (/api.?key|unauthorized|forbidden|invalid.?key/i.test(msg)) return false;
 
+    // Never retry 404s — missing model, bad endpoint, or resource not found.
+    // e.g. Ollama "model 'llama3.2' not found" — pulling the model is required.
+    if (status === 404) return false;
+    if (/not found|model.*not.*found|no such model/i.test(msg)) return false;
+
     // Never retry spend-blocked items — user needs to change the budget setting.
     if (/spend.?block|budget.?set.?to.*\$0/i.test(msg)) return false;
 
@@ -485,6 +490,9 @@ class MultiQueueManager {
         provider: result.provider, model: result.model,
         response: result.response, usage: result.usage,
       });
+      // Notify the renderer that the queue item's status changed to 'complete'
+      // so it re-fetches the queue and the item stops showing "processing".
+      this.push('queue-update', { action: 'complete', id: item.id });
       this.push('usage-update', { allStatus: this.tracker.getStatusAll() });
 
     } catch (err) {
@@ -493,13 +501,18 @@ class MultiQueueManager {
       const maxRetries = (item.max_retries != null ? item.max_retries : 3);
 
       if (this._isRetryable(err) && retryCount < maxRetries) {
-        // Auto-retry: reset to pending with an incremented counter and a brief note.
-        const attempt = retryCount + 1;
+        // Auto-retry: reset to pending with a 5–10 s jittered delay so retries
+        // don't hammer the provider immediately. Uses the existing scheduled_for
+        // mechanism — _tick() already skips items whose scheduled_for is in the future.
+        const attempt   = retryCount + 1;
+        const delayMs   = 5_000 + Math.floor(Math.random() * 5_000); // 5–10 s
+        const retryAt   = Date.now() + delayMs;
         this._set(item.id, {
-          status:      STATUS.PENDING,
-          started_at:  null,
-          retry_count: attempt,
-          error:       `Retry ${attempt}/${maxRetries}: ${msg}`,
+          status:        STATUS.PENDING,
+          started_at:    null,
+          scheduled_for: retryAt,
+          retry_count:   attempt,
+          error:         `Retry ${attempt}/${maxRetries} in ${Math.round(delayMs / 1000)}s: ${msg}`,
         });
         this.push('queue-update', {
           action: 'retry-auto',
@@ -648,7 +661,7 @@ class MultiQueueManager {
   // so we whitelist them explicitly to prevent injection if a future caller passes
   // attacker-influenced field names.
   static _SETTABLE = new Set([
-    'status', 'started_at', 'completed_at', 'response',
+    'status', 'started_at', 'completed_at', 'scheduled_for', 'response',
     'used_provider', 'used_model', 'input_tokens', 'output_tokens',
     'cost_usd', 'routing_reason', 'retry_count', 'error',
   ]);

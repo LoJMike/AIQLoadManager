@@ -20,7 +20,7 @@ Every field below must always match the others. When one changes, update all of 
 | **Project name (display — short)**           | `AIQ Load Manager`                               |
 | **`package.json` → `"name"`**                | `aiq-load-manager`                               |
 | **`package.json` → `"productName"`** (build) | `AI Queue Load Manager`                          |
-| **`package.json` → `"version"`**             | `0.5.0`                                          |
+| **`package.json` → `"version"`**             | `0.6.0`                                          |
 | **GitHub repo**                              | https://github.com/LoJMike/AIQLoadManager        |
 | **Local path (Windows)**                     | `C:\Users\mikel\Desktop\AIQLoadManager Project`  |
 

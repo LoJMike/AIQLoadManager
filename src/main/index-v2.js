@@ -16,6 +16,7 @@ const {
 } = require("./multiQueueManager");
 const { LicenseChecker } = require("./licenseChecker");
 const { WebSearchService } = require("./webSearch");
+const { AgentGateway }    = require("./agentGateway");
 const { PostHog } = require("posthog-node");
 
 // ─── Load .env (dev only — production builds embed vars at build time) ────────
@@ -217,7 +218,7 @@ function escHtml(str) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 let mainWindow;
-let tracker, convStore, registry, router, queue, license, webSearch;
+let tracker, convStore, registry, router, queue, license, webSearch, gateway;
 
 function createWindow() {
   const isMac = process.platform === "darwin";
@@ -310,6 +311,24 @@ app.whenReady().then(() => {
     } catch (_) {}
   }
 
+  // ── Reachability monitor ───────────────────────────────────────────────────
+  // Starts background pings so the router knows which local providers are online
+  // before the first prompt is queued. Runs every 20 s; pings on startup.
+  router.startReachabilityMonitor();
+
+  // ── Agent Gateway ──────────────────────────────────────────────────────────
+  // Start the OpenAI-compatible HTTP proxy if the license allows it and the
+  // user hasn't disabled it. Gateway is Starter+ only.
+  gateway = new AgentGateway(registry, tracker, router);
+  const gatewayEnabled = store.get("agentGateway.enabled", false);
+  const lic = license.getLicense();
+  if (gatewayEnabled && lic.flags.agentGateway) {
+    const gwPort = store.get("agentGateway.port", 8787);
+    gateway.start(gwPort).catch((err) => {
+      console.error("[AgentGateway] Failed to start:", err.message);
+    });
+  }
+
   createWindow();
   setupIPC();
   queue.startProcessing();
@@ -333,6 +352,8 @@ app.on("window-all-closed", () => {
 });
 app.on("before-quit", () => {
   queue?.stopProcessing();
+  router?.stopReachabilityMonitor();
+  gateway?.stop().catch(() => {});
   posthog?.shutdown().catch(() => {}); // flush any queued events before exit
 });
 
@@ -400,6 +421,18 @@ function setupIPC() {
           `Queue limit reached (${maxDepth} items on your current plan). Clear some items or upgrade.`,
         );
       }
+    }
+
+    // Enforce allowed routing modes for the current plan
+    const requestedMode = routingMode || "auto";
+    if (
+      lic.flags.routingModes &&
+      !lic.flags.routingModes.includes(requestedMode)
+    ) {
+      throw new Error(
+        `Routing mode "${requestedMode}" is not available on your current plan. ` +
+        `Available modes: ${lic.flags.routingModes.join(", ")}. Upgrade in the License tab.`,
+      );
     }
 
     // Compare mode requires a Pro license (not available on Starter)
@@ -708,6 +741,53 @@ function setupIPC() {
   ipcMain.handle("set-analytics-enabled", (_, enabled) => {
     _store.set("analytics.enabled", enabled);
     return { success: true };
+  });
+
+  // ── Local provider reachability ──────────────────────────────────────────
+  // Returns the router's cached reachability map so the UI can dim offline dots
+  ipcMain.handle("get-local-reachability", () =>
+    router.getReachabilityStatus()
+  );
+
+  // ── Pre-flight model validation (local providers) ────────────────────────
+  // Triggers live model discovery for a local provider so the Add tab can
+  // show whether the server is reachable and which models are actually installed.
+  ipcMain.handle("refresh-local-models", async (_, providerName) => {
+    try {
+      return await registry.refreshLocalModels(providerName);
+    } catch (err) {
+      return { fetched: false, reachable: false, models: [], error: err.message };
+    }
+  });
+
+  // ── Agent Gateway IPC ────────────────────────────────────────────────────
+
+  /** Returns gateway status + saved settings */
+  ipcMain.handle("get-gateway-status", () => ({
+    ...(gateway?.getStatus() ?? { running: false, port: 8787, url: null }),
+    enabled: store.get("agentGateway.enabled", false),
+    port:    store.get("agentGateway.port", 8787),
+    licensed: license.getLicense().flags.agentGateway ?? false,
+  }));
+
+  /** Start the gateway (Starter+ only) */
+  ipcMain.handle("start-gateway", async (_, port) => {
+    const lic = license.getLicense();
+    if (!lic.flags.agentGateway) {
+      throw new Error("Agent Gateway requires a Starter or higher license. Upgrade in the License tab.");
+    }
+    const gwPort = (typeof port === "number" && port > 1024 && port < 65536) ? port : 8787;
+    store.set("agentGateway.enabled", true);
+    store.set("agentGateway.port", gwPort);
+    await gateway.start(gwPort);
+    return gateway.getStatus();
+  });
+
+  /** Stop the gateway */
+  ipcMain.handle("stop-gateway", async () => {
+    store.set("agentGateway.enabled", false);
+    await gateway?.stop();
+    return gateway?.getStatus() ?? { running: false };
   });
 
   // App version — read from package.json via Electron so the renderer never

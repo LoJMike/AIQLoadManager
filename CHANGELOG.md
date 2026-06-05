@@ -5,6 +5,18 @@ Each entry describes what changed in plain language — no jargon.
 
 ---
 
+## [0.6.0] — Phase 1 providers, Agent Gateway, live licensing
+
+- Added **5 new cloud providers** (Phase 1): Fireworks AI, Together AI, MiniMax, Cerebras, and Cohere. Provider count grows from 12 to 17. All 5 use the existing OpenAI-compatible SDK — no new npm packages needed.
+- Added **Agent Gateway** — an OpenAI-compatible HTTP proxy that runs at `http://localhost:8787/v1`. Point any agent framework (LangChain, CrewAI, AutoGen, etc.) at the gateway and AIQ handles routing, rate-limit queuing, cost tracking, and provider fallback automatically. Available on Starter and above. Start/stop in Settings → Agent Gateway. Requires Starter license.
+- **Lemon Squeezy licensing is now live** — `setKey()` calls the real LS Activate API; `validateStoredKey()` runs on every app startup; `removeKey()` deactivates on the LS side. Variant IDs for Starter ($9/mo) and Pro ($19/mo) are wired in.
+- Fixed **duplicate key bug** in `LS_VARIANT_PLAN_MAP` — the two `0:` placeholder entries for Pro+ and Team were silently overwriting each other in JavaScript. Replaced with commented-out placeholders.
+- **Feature flags now enforced** — `FREE_FLAGS` reflects the real free tier limits (5 local providers, 10 queue items, 1 project, `manual`+`freeTier` routing only, 50 cloud prompts/month). The `add-to-queue` IPC handler now gates on both queue depth AND routing mode, returning clear upgrade prompts.
+- Added **Cerebras** and **Cohere** to `freeTier` routing mode — both offer free/trial API tiers.
+- Updated fastest routing order: Cerebras and Fireworks AI move to the front (wafer-scale / optimised inference).
+
+---
+
 ## [0.5.0] — Testing release
 
 - **v0.5.0 is our first dedicated testing release** — intended for internal testing before public launch. All features from v0.4.0 are included.

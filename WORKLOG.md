@@ -1,5 +1,59 @@
 # Work Log — AI Queue Load Manager
 
+## Session 22 — 2026-06-05
+**Goal:** Implement v0.6.0 — Phase 1 providers, Agent Gateway, live LS licensing enforcement, tighten feature flags.
+
+**Completed:**
+- [x] **Lemon Squeezy variant map bug fixed** — `LS_VARIANT_PLAN_MAP` had two duplicate `0:` keys (`pro_plus` and `team`), which JS silently collapsed. Replaced with commented-out placeholders. Starter (1735713) and Pro (1735683) variant IDs confirmed live.
+- [x] **FREE_FLAGS tightened** — now reflects actual free tier limits: `maxProviders:5`, `maxQueueDepth:10`, `maxProjects:1`, `routingModes:['manual','freeTier']`, `compareMode:false`, `digestExport:false`, `monthlyCloudPrompts:50`, `monthlyCloudTokens:100_000`. All higher tiers unchanged.
+- [x] **Routing mode gate** — `add-to-queue` IPC handler now checks `lic.flags.routingModes` and throws a clear upgrade error if the requested mode is not in the plan's allowed list.
+- [x] **Queue depth gate** — already existed; confirmed correct.
+- [x] **`agentGateway` flag** added to all 5 tier flag sets (Starter+ = true) and to `FLAG_LABELS`.
+- [x] **5 Phase 1 providers added to `openaiCompatProviders.js`**: `FireworksProvider`, `TogetherProvider`, `MiniMaxProvider`, `CerebasProvider`, `CohereProvider`. All use the existing `sendViaOpenAICompat` shared function — no extra npm packages.
+- [x] **Providers registered** in `providerRegistry.js` (PROVIDER_CLASSES + PROVIDER_META, 5 new entries each).
+- [x] **COST_TABLE + RATE_LIMITS** updated in `multiUsageTracker.js` for all 5 new providers.
+- [x] **Routing updated** in `queueRouter.js`: Cerebras + Fireworks added to `fastest` order (Cerebras leads); Cerebras + Cohere added to `FREE_TIER_PROVIDERS`; all 5 new providers added to relevant `TASK_STRENGTHS` lists.
+- [x] **Agent Gateway** (`src/main/agentGateway.js`) — new file: OpenAI-compatible HTTP server on `localhost:8787/v1`. Endpoints: `GET /v1/models` (returns all configured providers/models), `POST /v1/chat/completions` (routes through QueueRouter → ProviderRegistry). Model field accepts routing mode names (`auto`, `fastest`, etc.) or `provider/model` strings. AIQ extension fields (`x_aiq_provider`, `x_aiq_routing_mode`) appended to every response.
+- [x] **Gateway wired into `index-v2.js`**: imported, instantiated, auto-started on app launch if `agentGateway.enabled = true` + Starter license; stopped on `before-quit`.
+- [x] **Gateway IPC handlers** added to `index-v2.js`: `get-gateway-status`, `start-gateway`, `stop-gateway`.
+- [x] **Gateway IPC exposed** in `preload-v2.js`: `getGatewayStatus`, `startGateway`, `stopGateway`.
+- [x] **Version bumped 0.5.0 → 0.6.0** in `package.json` and `CLAUDE.md`.
+- [x] Updated `CHANGELOG.md` with v0.6.0 entry.
+- [x] Confirmed retry count badge already exists in `QueueSettingsProjects.jsx` (lines 194–203). ✓
+- [x] Confirmed LS `validateStoredKey()` called on app startup. ✓
+- [x] Confirmed PostHog initialized with correct key and events tracked. ✓
+
+**Decisions Made:**
+- Agent Gateway is Starter+ — free tier users can't use it (enforced by `agentGateway` flag in licenseChecker).
+- Gateway binds to `127.0.0.1` only (not `0.0.0.0`) — local access only, never exposed to the network.
+- Streaming (`stream: true`) is not yet supported by the gateway — returns a clear 400 error rather than silently ignoring the flag.
+- `CerebasProvider` leads the `fastest` routing order ahead of Groq — Cerebras wafer-scale chip achieves ~2,000 tokens/sec on Llama 70B.
+- Duplicate LS variant key `0` for Pro+/Team was only a JS-level bug (silent overwrite); no data was corrupted. Pro+ and Team products don't exist yet so no functional impact.
+
+**Next Steps:**
+- [ ] Run `npm run dev:win` and test all new providers (enter API keys in Settings → Connectors)
+- [ ] Test Agent Gateway: enable in Settings, run `curl http://localhost:8787/v1/models`, send a test completion
+- [ ] Test LS license flow: enter a real Starter key, verify `getLicense().plan === 'starter'`, verify feature flags match
+- [ ] Verify PostHog events appear in PostHog Live Events dashboard
+- [ ] Add Agent Gateway UI toggle to Settings panel (QueueSettingsProjects.jsx)
+- [ ] Add Pro+ variant ID to LS_VARIANT_PLAN_MAP once Pro+ product is created in LS Dashboard
+
+**Files Changed:**
+- `src/main/licenseChecker.js`
+- `src/main/index-v2.js`
+- `src/main/preload-v2.js`
+- `src/main/agentGateway.js` *(new)*
+- `src/main/providers/openaiCompatProviders.js`
+- `src/main/providers/providerRegistry.js`
+- `src/main/multiUsageTracker.js`
+- `src/main/queueRouter.js`
+- `package.json`
+- `CLAUDE.md`
+- `CHANGELOG.md`
+- `WORKLOG.md`
+
+---
+
 ## Session 21 — 2026-05-27
 **Goal:** Migrate payment processor from Lemon Squeezy to Paddle after LS merchant application was rejected. Update all project files and policy pages.
 
