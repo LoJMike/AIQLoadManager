@@ -1,0 +1,12 @@
+# robots.txt — AI Queue Load Manager
+# https://aiqloadmanager.conxion.biz/robots.txt
+
+User-agent: *
+Allow: /
+
+# Block access to any CI/build artefacts if they ever land here
+Disallow: /dist/
+Disallow: /dist-app/
+Disallow: /node_modules/
+
+Sitemap: https://aiqloadmanager.conxion.biz/sitemap.xml

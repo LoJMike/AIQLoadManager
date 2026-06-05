@@ -1,9 +1,9 @@
 AI Queue Load Manager
-Copyright (c) 2026 Michael Hall. All Rights Reserved.
+Copyright (c) 2026 Michael Hall (conxion visual communications). All Rights Reserved.
 
 PROPRIETARY AND CONFIDENTIAL
 
-This software and its source code are the exclusive property of Mikel Hall
+This software and its source code are the exclusive property of Michael Hall and conxion visual communications
 ("Owner"). All rights are reserved.
 
 You may NOT, without the prior written permission of the Owner:
